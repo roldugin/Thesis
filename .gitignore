@@ -1,0 +1,7 @@
+# Tex compilation
+*.dvi
+*.aux
+*.log
+
+# Careful with this one
+*.pdf
