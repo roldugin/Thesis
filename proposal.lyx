@@ -1,0 +1,3697 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\begin_preamble
+\usepackage{tikz}
+\usepackage{pspicture}
+\usepackage{pstricks}
+
+\usepackage{pst-gantt}
+% gantt charts
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language british
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+pst-gannt package does not work with pdflatex, use ps2pdf instead
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Title
+A Fresh Look at
+\begin_inset Newline newline
+\end_inset
+
+Array Fusion for Data Parallelism
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset space \space{}
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+Literature Review and Research Proposal
+\end_layout
+
+\begin_layout Author
+Georgy Roldugin
+\end_layout
+
+\begin_layout Standard
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename img/UNSW_PortraitGreyscale_Black.eps
+	lyxscale 30
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="2">
+<features tabularvalignment="middle">
+<column alignment="left" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0">
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Supervisor
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Manuel Chakravarty
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset space ~
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Co-Supervisor
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Gabriele Keller
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+External Supervisor
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Ricardo Peña
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+thispagestyle{empty}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+The need for the research (aims, problem statement and justification) ½
+ to 1page introduction
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The past decade has seen a rise in development of increasingly sophisticated
+ multi-core and multi-processor computer systems.
+ From the early hyperthreaded solutions boosting the performance of interleaved
+ IO and CPU bound computations, to the modern architectures comprising of
+ a number of independent processing cores, the horsepower for demanding
+ applications is now available even in the most affordable consumer systems.
+ The high grade systems targeting scientific applications exposing a large
+ amount of parallelism combine multiple processors with multiple cores,
+ where each of the cores can run a number of hardware scheduled threads.
+\end_layout
+
+\begin_layout Standard
+While the hardware for running highly parallel computations is available
+ and is improving at a high pace, the development of such applications targeting
+ an arbitrary number of processing elements (be that cores, processors or
+ hardware threads) is often a challenging task.
+ The problems involved are finding an appropriate parallel implementation
+ of the task at hand, implementing it such that the computations are evenly
+ distributed across processing elements and synchronising parallel computations
+ when necessary.
+ The latter two require a substantial programmer's intervention to get the
+ algorithm running fast.
+ 
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+It is not uncommon for the initial parallel implementation to run only slightly
+ faster than the sequential version.
+\end_layout
+
+\end_inset
+
+ The resulting application is a mixture of the actual algorithm and the
+ implementation specific code, dealing with concurrency and parallelism.
+ This obscures code clarity and may generally be error-prone.
+\end_layout
+
+\begin_layout Standard
+One alternative to this practice of explicit parallelisation is to provide
+ a common set of operations on large data structures.
+ Programs implemented in terms of these operations would be automatically
+ parallelised across the available processing elements.
+ This approach is exercised by several frameworks covering a number of host
+ languages, target architectures and suitable applications domains 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "PLKC08,KCL+10,CKL+11,AS07"
+
+\end_inset
+
+.
+ In the pursuit of a high level view of the problem a major inefficiency
+ is introduced.
+ Having provided a number of primitive operations the problem of multiple
+ traversals arises.
+ In a manually written program the programmer could merge multiple primitive
+ operations into one.
+ That would only traverse a data structure once keeping the memory traffic
+ to the necessary minimum and utilising cache correctly.
+ On the other hand a straight forward high level library implementation
+ would potentially traverse the same data structure in each operation.
+ For large data structures this may lead to poor cache utilisation and high
+ memory traffic.
+ Additionally the operations may allocate temporary data structures to store
+ their intermediate results which leads to further memory and runtime penalties.
+ Optimising out the superfluous data structure traversals and allocations
+ is collectively referred to as Loop Fusion.
+ It allows to transform a program expressed in terms of high level operations
+ into a program that would be semantically comparable to a handwritten one.
+ The following chapters provide the motivation behind fusion, introduce
+ the context of the project as well as the previous work in the field.
+ A research proposal and a planned list of milestones are provided in the
+ final chapters.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Motivation
+\end_layout
+
+\begin_layout Standard
+Suppose we have the following computation to perform:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell,tabsize=4"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+sum (zipWith (*) xs ys)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A person familiar with the fundamentals of functional programming is likely
+ to spot the computation of the dot product of two vectors in this snippet
+ of Haskell code.
+ Indeed, the 
+\begin_inset Formula $zipWith$
+\end_inset
+
+ list combinator conventionally creates a list, whose elements are calculated
+ by applying some given function to the elements of the input lists occurring
+ at the same positions in both lists.
+ In the above case 
+\begin_inset Quotes eld
+\end_inset
+
+zipping
+\begin_inset Quotes erd
+\end_inset
+
+ with the product as the function will element-wise multiply the two vectors
+ 
+\begin_inset Formula $xs$
+\end_inset
+
+ and 
+\begin_inset Formula $ys$
+\end_inset
+
+.
+ Quite expectedly the 
+\begin_inset Formula $sum$
+\end_inset
+
+ combinator will sum the elements of the resulting vector into a scalar
+ value, yielding the dot product of 
+\begin_inset Formula $xs$
+\end_inset
+
+ and 
+\begin_inset Formula $ys$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+This one-liner was an attempt to develop the motivation for the high-level
+ view on numeric computations.
+ It may seem reasonable to replace the lists with arrays and reimplement
+ the same high-level interface in terms of traditional arrays to avoid random
+ memory access penalties as in the case of lists.
+ Providing an instantly familiar interface without compromising performance
+ has been one of the goals of the Data Parallel Haskell (DPH) project 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "PLKC08,CLP+07"
+
+\end_inset
+
+.
+ The work in this thesis has been carried out in the context of this project.
+ It will be discussed in more detail in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Lit:DPH"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+However, even if we replaced the lists with arrays and gave efficient implementa
+tions to 
+\begin_inset Formula $sum$
+\end_inset
+
+ and 
+\begin_inset Formula $zipWith$
+\end_inset
+
+, the resulting algorithm is still likely to be slower than on written by
+ hand.
+ The 
+\begin_inset Formula $zipWith$
+\end_inset
+
+ combinator produces an intermediate array containing the element-wise product
+ of the two input vectors.
+ It is immediately consumed by 
+\begin_inset Formula $sum$
+\end_inset
+
+, yielding the final (scalar) value.
+ Thus the algorithm performs two traversals and allocates another array
+ of the size of the input arrays.
+ The same algorithm could be expressed by the following function in C:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=C,tabsize=4"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+double dotProduct (int len, double xs[], double ys[]) {
+\end_layout
+
+\begin_layout Plain Layout
+
+	int i;
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+	double* temp = malloc(sizeof(double)*len);
+\end_layout
+
+\begin_layout Plain Layout
+
+	for(i=0; i<len; ++i)
+\end_layout
+
+\begin_layout Plain Layout
+
+		temp[i] = xs[i]*ys[i];
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+	double result = 0;
+\end_layout
+
+\begin_layout Plain Layout
+
+	for(i=0; i<len; ++i)
+\end_layout
+
+\begin_layout Plain Layout
+
+		result += temp[i];
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+	return result;
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+It should be obvious that the same result could be achieved by using a single
+ loop computing the final result incrementally without allocating a temporary
+ array as in the following:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=C,tabsize=4"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+double dotProduct (int len, int[] xs, int[] ys) {
+\end_layout
+
+\begin_layout Plain Layout
+
+	double result = 0;
+\end_layout
+
+\begin_layout Plain Layout
+
+	int i;
+\end_layout
+
+\begin_layout Plain Layout
+
+	for(i=0; i<len; ++i)
+\end_layout
+
+\begin_layout Plain Layout
+
+		result += xs[i]*ys[i];
+\end_layout
+
+\begin_layout Plain Layout
+
+	return result;
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The process of finding and exploiting the opportunities for squashing multiple
+ loops into one is referred to as loop fusion.
+ Another term for this commonly encountered in literature is deforestation,
+ first coined by Philip Wadler in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Wad90"
+
+\end_inset
+
+.
+ In reality the code in the the above examples has been optimised in two
+ ways.
+ Just fusing the two loops together on the basis that they iterate over
+ the same range would have produced:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=C,tabsize=4"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+for(i=0; i<len; ++i) {
+\end_layout
+
+\begin_layout Plain Layout
+
+	temp[i] = xs[i]*ys[i];
+\end_layout
+
+\begin_layout Plain Layout
+
+	result += temp[i];
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+which does not completely bypass the extra allocation.
+ The optimisation that gets rid of the unnecessary temporary arrays and
+ is commonly applied when fusing loops, is called scalarisation or, more
+ generally, array contraction.
+ During this optimisation we attempt to remove a dimension from the array.
+ In this particular case we contracted a one dimensional array to a scalar,
+ hence scalarisation.
+ However, in the examples with arrays of higher dimensions the dimension
+ could just be reduced, and not eliminated entirely.
+\end_layout
+
+\begin_layout Standard
+The work described in this thesis is oriented towards complementing the
+ fusion mechanisms
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+While there is the distinction between loop fusion and array contraction,
+ in many cases throughout this document the term 
+\begin_inset Formula $fusion$
+\end_inset
+
+ will be used to describe both optimisations applied together.
+ 
+\end_layout
+
+\end_inset
+
+ currently employed in DPH.
+ In the remainder of this chapter we will introduce the reader to the Data
+ Parallel Haskell (DPH) project and similar systems, progressing to the
+ description of some of the most common fusion systems.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Lit:DPH"
+
+\end_inset
+
+Context
+\end_layout
+
+\begin_layout Standard
+Data Parallel Haskell is an active library for the Haskell programming language,
+ providing high level access to nested data parallelism.
+ The above definition may seem complicated at first and should probably
+ be backed up by a set of explanations:
+\end_layout
+
+\begin_layout Itemize
+Nested data parallelism is a type of SPMD parallelism, which operates on
+ irregular data structures.
+ Some of the examples of irregular data structures are sparse matrices and
+ unbalanced trees
+\end_layout
+
+\begin_layout Itemize
+An active library may be defined as one which takes active part in the optimisat
+ion and the compilation of its client code.
+ Indeed, DPH guides the compilation process in many ways including choosing
+ the data representation 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "CDL09"
+
+\end_inset
+
+ and applying rewrite rules 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "PTH01"
+
+\end_inset
+
+ to improve performance.
+ In fact, a major part of DPH -- the vectoriser -- is implemented in the
+ Glasgow Haskell Compiler
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+Glasgow Haskell Compiler: http://www.haskell.org/ghc
+\end_layout
+
+\end_inset
+
+ (GHC).
+\end_layout
+
+\begin_layout Standard
+In essence, DPH reimplements the familiar list interface in terms of seamlessly
+ parallelised arrays.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Lit:DPH-interface-functions"
+
+\end_inset
+
+ lists some of the most important functions in the DPH interface.
+ Since DPH has language support, the bracket notation for parallel arrays
+ closely resembles that for Haskell lists: 
+\begin_inset listings
+lstparams "basicstyle={\ttfamily}"
+inline true
+status open
+
+\begin_layout Plain Layout
+
+[:a:]
+\end_layout
+
+\end_inset
+
+ denotes a parallel array of type 
+\begin_inset listings
+lstparams "basicstyle={\ttfamily}"
+inline true
+status open
+
+\begin_layout Plain Layout
+
+a
+\end_layout
+
+\end_inset
+
+.
+ The counterpart of Haskell's list comprehensions is also present and is
+ called 
+\emph on
+parallel array comprehensions.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell,tabsize=4"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+(!:)		:: [:a:] -> Int -> a
+\end_layout
+
+\begin_layout Plain Layout
+
+sliceP		:: [:a:] -> (Int,Int) -> [:a:]
+\end_layout
+
+\begin_layout Plain Layout
+
+replicateP	:: Int -> a -> [:a:]
+\end_layout
+
+\begin_layout Plain Layout
+
+mapP		:: (a->b) -> [:a:] -> [:b:]
+\end_layout
+
+\begin_layout Plain Layout
+
+zipP		:: [:a:] -> [:b:] -> [:(a,b):]
+\end_layout
+
+\begin_layout Plain Layout
+
+zipWithP	:: (a->b->c) -> [:a:] -> [:b:] -> [:c:]
+\end_layout
+
+\begin_layout Plain Layout
+
+filterP		:: (a->Bool) -> [:a:] -> [:a:]
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+concatP		:: [:[:a:]:] -> [:a:]
+\end_layout
+
+\begin_layout Plain Layout
+
+concatMapP	:: (a -> [:b:]) -> [:a:] -> [:b:]
+\end_layout
+
+\begin_layout Plain Layout
+
+unconcatMapP:: [:[:a:]:] -> [:b:] -> [:[:b:]:]
+\end_layout
+
+\begin_layout Plain Layout
+
+transposeP	:: [:[:a:]:] -> [:[:a:]:]
+\end_layout
+
+\begin_layout Plain Layout
+
+expandP		:: [:[:a:]:] -> [:b:] -> [:b:]
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+combineP	:: [:Bool:] -> [:a:] -> [:a:] -> [:a:]
+\end_layout
+
+\begin_layout Plain Layout
+
+splitP		:: [:Bool:] -> [:a:] -> ([:a:], [:a:])
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+
+\lang english
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Lit:DPH-interface-functions"
+
+\end_inset
+
+
+\lang british
+Type signatures for parallel array operations.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Collective operations on parallel arrays are executed in parallel when hardware
+ supports it.
+ Currently, a backend supporting Haskell threads 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Jones08atutorial"
+
+\end_inset
+
+ exists.
+ Due to the flexible design of the library, support for other parallel architect
+ures may be added in the future.
+ By design the computation is split evenly across processing elements even
+ for highly irregular parallel programs.
+ The remainder of the section will outline the library structure, cover
+ the basics of vectorisation and describe the current stages of fusion in
+ DPH.
+\end_layout
+
+\begin_layout Subsection
+Vectorisation
+\end_layout
+
+\begin_layout Standard
+The main goal behind DPH was to allow the programmer to write parallel programs
+ without worrying about scheduling, load balancing and low level optimisations.
+ The work on DPH was originally inspired by Blelloch's pioneering work on
+ NESL 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "BCH+"
+
+\end_inset
+
+, a research language designed specifically to explore the potential of
+ the new approach to nested data parallelism.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename ../../GSOE9400/Proposal/img/TreeRepr.eps
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+
+\lang english
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Lit:Tree"
+
+\end_inset
+
+
+\lang british
+Value of type 
+\family typewriter
+[:Tree:]
+\family default
+ and its vectorised representation.
+ Empty subtrees are omitted from the conceptual representation.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If we were to take a tree of an arbitrary shape and tried to apply some
+ computation to its every node in parallel, a naive tree representation
+ would have probably failed to provide us with enough clues on how to split
+ the load between processing elements.
+ Suppose we store an element of type 
+\family typewriter
+Int
+\family default
+ and an array of subtrees at each node.
+ Then the tree can be expressed as
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell,tabsize=4"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+data Tree = Tree Int [:Tree:]
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A sample tree is given in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Lit:Tree"
+
+\end_inset
+
+.
+ Just by looking at the top level of the tree it would not be possible to
+ know the branching.
+ What vectorisation does is it translates user programs that use nested
+ data parallelism to those using flat data parallelism.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Lit:Tree"
+
+\end_inset
+
+ presents the same tree with each of its levels placed into a parallel array.
+ At the implementation level it is flattened even further by storing a flat
+ data array with all the node values and a 
+\emph on
+segment descriptor 
+\emph default
+defining the partitioning to recreate the original nesting.
+ Thus, a parallel array with elements
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+[: [:5:],[::],[:4,2:],[::],[:3:],[:17:],[::],[:11:] :]
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+which may have been the deepest level of the discussed tree, would have
+ been stored as an array of unboxed values
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+[# 5, 4, 2, 3, 17, 11 #]        -- data
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+together with the segment descriptor containing the lengths and the starting
+ index positions of the contained arrays (offsets into the data array):
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+([# 1, 0, 2, 0, 1, 1, 0, 1 #],  -- lengths
+\end_layout
+
+\begin_layout Plain Layout
+
+ [# 0, 1, 1, 3, 3, 4, 5, 5 #])  -- indices
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:DPH-Data-Repr"
+
+\end_inset
+
+Data Representation
+\end_layout
+
+\begin_layout Standard
+Together with flattening, the vectoriser chooses the best representation
+ for the data, e.g.
+ for sum types and product types.
+ Haskell's product types, or the tuples of two of more heterogeneous elements,
+ are allocated as boxed values on the heap.
+ Storing an array of pointers to heap allocated values would have been a
+ major hit on performance due to the costs of unboxing as well as loading
+ the individual values from memory instead of fetching multiple at a time.
+ Instead, an array of pairs 
+\family typewriter
+[:(a,b):]
+\family default
+ is stored as a pair of arrays 
+\family typewriter
+([:a:],[:b:])
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+Similarly, the sum types, or the user defined ADT's, are stored as tuples
+ of arrays.
+ Having multiple arrays, each storing the interesting values wrapped by
+ the same constructor, not only avoids the cost of unboxing but also facilitates
+ pattern matching on constructors.
+ Thus the values constructed by the same constructor are stored in the same
+ array.
+ The penalty paid is keeping a selector array to recreate the original interleav
+ing.
+ Quite clearly sum types and product types can be recursively nested.
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+TODO: give an example of sum types and their representation in parrs
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We have discussed the way the data is represented in DPH but said nothing
+ about how the vectoriser adapts the functions to fit the new data representatio
+n.
+ We do not need to delve into too much detail here, since by the time we
+ get to the backend of the library (where the fusion takes place) we are
+ no longer interested in how it's done.
+ One important intuition to develop can be illustrated by the following:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+f :: Float -> Float
+\end_layout
+
+\begin_layout Plain Layout
+
+f x = x*x + 1
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For every such function the vectoriser generates its 
+\emph on
+lifted 
+\emph default
+version 
+\family typewriter
+f^
+\family default
+ thus:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+f^ :: [:Float:] -> [:Float:] -> [:Float:]
+\end_layout
+
+\begin_layout Plain Layout
+
+f^ x = (x *^ x) +^ (replicateP n 1)
+\end_layout
+
+\begin_layout Plain Layout
+
+       where n = lengthP x
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This new definition obeys the equation 
+\family typewriter
+f^ = mapP f
+\family default
+, thus it is possible to replace 
+\family typewriter
+(mapP f)
+\family default
+ with 
+\family typewriter
+f^
+\family default
+.
+ Now if we return to the tree example, there we may need to apply 
+\family typewriter
+f 
+\family default
+to an array of arrays.
+ The flat data representation we chose above allows us to easily derive
+ 
+\family typewriter
+f^^
+\family default
+ in terms of 
+\family typewriter
+f^
+\family default
+ like this:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+f^^ :: [:[:Float:]:] -> [:[:Float:]:]
+\end_layout
+
+\begin_layout Plain Layout
+
+f^^ xss = unconcatP xss (f^ (concatP xss))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Recalling that we use a flat data array together with a segment descriptor
+ to represent 
+\family typewriter
+xss
+\family default
+, it becomes clear that both 
+\family typewriter
+concatP
+\family default
+ and 
+\family typewriter
+unconcatP
+\family default
+ are simple constant time operations that do nothing more than replacing
+ one segment descriptor with another.
+\end_layout
+
+\begin_layout Standard
+Vectorisation is more thoroughly covered in the tutorial-style paper 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "PLKC08"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Backend and Fusion
+\end_layout
+
+\begin_layout Standard
+By the time the backend is reached the nesting in the original user program
+ is only defined in terms of segment descriptors where required.
+ As discussed in the previous section the vectoriser has also stripped out
+ the product and sum types including those defined by the user and conveniently
+ arranged them in flat data arrays.
+ Thus, the backend, or the library of primitive operations, needs only support
+ the arrays of primitive types.
+ Since some of the operations on nested arrays need to respect the boundaries
+ of the inner arrays (e.g.
+ reductions), the segmentation information is still present.
+\end_layout
+
+\begin_layout Standard
+The primitive library implements a fixed interface that is called by the
+ vectoriser.
+ The support for any architectures other than multi-core systems can be
+ added through reimplementing the primitive library interface, though the
+ parallel programming model heavily relies on shared memory architectures
+ for efficiency.
+ The primitive library in its current state uses the Vector library
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+http://hackage.haskell.org/package/vector
+\end_layout
+
+\end_inset
+
+ to store arrays and Haskell threads to implement parallelism 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Jones08atutorial"
+
+\end_inset
+
+.
+ Essentially each thread is given a chunk of array(s) and a sequential operation
+ to apply to it.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset label
+LatexCommand label
+name "Lit:DPH-fusion-levels"
+
+\end_inset
+
+DPH introduces fusion at three different levels:
+\end_layout
+
+\begin_layout Enumerate
+Removing synchronisation points
+\begin_inset Newline newline
+\end_inset
+
+Due to the use of Haskell threads, the code responsible for distributing
+ the processing across the processing elements introduces many fork/join
+ points.
+ Due to the specifics of the other two fusion levels, this does not allow
+ the fusion to be applied.
+ Thus, if there is no processing to be done between the join and the next
+ fork, these are fused together using the rewrite rules 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "PTH01"
+
+\end_inset
+
+.
+ One problem with this approach is that the rewrite happens unconditionally
+ when matched, which may lead to unbalanced load, e.g.
+ after a 
+\family typewriter
+filter
+\family default
+ operation.
+\end_layout
+
+\begin_layout Enumerate
+A minimal set of sequential rewrite rules
+\begin_inset Newline newline
+\end_inset
+
+Just like removing superfluous synchronisation points, some adjacent array
+ operations can be optimised away with the help of rewrite rules.
+ An example of an easy optimisation would be on two consecutive maps on
+ the same array, i.e.
+ 
+\family typewriter
+map f (map g xs) = map (f .
+ g) xs
+\family default
+.
+ While these optimisations are quick and effective, it is not feasible to
+ come up with a rewrite rule for every pair of fusible operations.
+ A small set of such rewrite rule is employed in DPH to get rid of the most
+ common combinations at a relatively low cost.
+\end_layout
+
+\begin_layout Enumerate
+Stream Fusion
+\begin_inset Newline newline
+\end_inset
+
+Stream fusion receives the most attention as far as the fusion in DPH goes.
+ It not only considerably affects the internal implementation of primitive
+ operations in DPH and in the Vector library, but also relies on a certain
+ set of optimisations in the compiler.
+ It will be described in a later section.
+ Like the two previous fusion rules, this one also includes a rewrite rule
+ which triggers the optimisation.
+\end_layout
+
+\begin_layout Standard
+Unfortunately, the common point of failure of all of the above fusion types
+ is that they rely on the consecutive operations being inlined and always
+ following each other with nothing in between.
+ This is a necessary condition for the rewrite rules to fire.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Background
+\end_layout
+
+\begin_layout Subsection
+DESOLA
+\end_layout
+
+\begin_layout Standard
+Delayed Evaluation Self Optimising Linear Algebra (DESOLA) 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "RMKB06"
+
+\end_inset
+
+ is a C++ active library which was designed to explore the benefits of runtime
+ code generation and optimisation for scientific computing.
+ In contrast to DPH, DESOLA puts portability across compilers as one of
+ its priorities, thus it may provide several insights in doing thing differently.
+ In particular, most of the interesting code generation and optimisation
+ happens at runtime.
+ Quoting the authors of the library, they take the following approach:
+\end_layout
+
+\begin_layout Description
+Delay
+\begin_inset space ~
+\end_inset
+
+library
+\begin_inset space ~
+\end_inset
+
+call
+\begin_inset space ~
+\end_inset
+
+execution Calls made to the library are used to build a “recipe” for the
+ delayed computation.
+ When execution is finally forced by the need for a result, the recipe will
+ often represent a complex composition of primitive calls.
+\end_layout
+
+\begin_layout Description
+Generate
+\begin_inset space ~
+\end_inset
+
+optimised
+\begin_inset space ~
+\end_inset
+
+code
+\begin_inset space ~
+\end_inset
+
+at
+\begin_inset space ~
+\end_inset
+
+runtime Code is generated at runtime to perform the operations present in
+ the delayed recipe.
+ In order to improve performance over a conventional library, it is important
+ that the generated code should execute faster than a statically generated
+ counterpart in a conventional library.
+ To achieve this, we apply optimisations that exploit the structure, semantics
+ and context of each library call.
+ Compiled recipes are cached to limit overheads, but need to be executed
+ enough times to offset the cost of the initial compilation.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename ../../GSOE9400/Proposal/img/DESOLA_running_example.png
+	rotateOrigin center
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+
+\lang english
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Lib:DESOLA-DAG"
+
+\end_inset
+
+
+\lang british
+An example DAG.
+ The rectangular node denotes a handle held by the library client.
+ The expression represents the matrix-vector multiply function y = αAx +
+ βy.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Lib:DESOLA-DAG"
+
+\end_inset
+
+ shows a tree, or more generally a directed acyclic graph (DAG), accumulated
+ during the evaluation of a matrix-vector multiply function.
+ The important thing to note is that the authors insist on that DAG is a
+ more effective way to record computations than a tree as it exposes the
+ sharing of 
+\begin_inset Quotes eld
+\end_inset
+
+recipes
+\begin_inset Quotes erd
+\end_inset
+
+ among handles in the client code.
+ This may not always be possible in a purely functional context and will
+ have to be explored.
+ The actual fusion algorithms employed in DESOLA are not explained in much
+ detail.
+ The authors found that their achievements in fusion using the information
+ only available at runtime compensated the runtime code generation cost
+ for many real sized problems.
+ The authors also believe that the benefits of array contraction will be
+ more noticeable once they add support for sparse matrices and similar irregular
+ data structures to their library.
+ As this is the focus of DPH, array contraction may be beneficial to look
+ at in more detail.
+\end_layout
+
+\begin_layout Standard
+Overall, the approach of delaying the evaluation until it it required seems
+ promising and aligns well with Haskell's approach to lazy evaluation (only
+ from the ideological point of view, since the performance is the first
+ priority for DPH).
+\end_layout
+
+\begin_layout Subsection
+Haskell Fusion Systems
+\end_layout
+
+\begin_layout Standard
+This section will review the previous approaches to fusion in Haskell.
+ It will cover Shortcut Fusion and DPH's very own Stream Fusion and Functional
+ Array Fusion.
+\end_layout
+
+\begin_layout Subsubsection
+Shortcut Fusion
+\end_layout
+
+\begin_layout Standard
+Shortcut Fusion 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "GLP93"
+
+\end_inset
+
+ is one of the most referenced techniques for fusion in Haskell.
+ It has been developed to be used in GHC to fuse pipelined list operations.
+ It employs two combinators, 
+\begin_inset Formula $foldr$
+\end_inset
+
+ and 
+\begin_inset Formula $build$
+\end_inset
+
+, and a single rewrite rule to eliminate adjacent occurrences of the combinators.
+ It is suitable for use in the cases when the functions to be fused can
+ be defined in terms of these combinators.
+ 
+\begin_inset Formula $ $
+\end_inset
+
+The definition of 
+\begin_inset Formula $foldr$
+\end_inset
+
+ is reused from Prelude, Haskell's standard library:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+foldr :: (a -> b -> b) -> b -> [a] -> b
+\end_layout
+
+\begin_layout Plain Layout
+
+foldr f z []     = z
+\end_layout
+
+\begin_layout Plain Layout
+
+foldr f z (x:xs) = f x z : (foldr f z xs)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+To understand the motivation behind shortcut fusion one may think of 
+\begin_inset Formula $foldr$
+\end_inset
+
+ as of replacing each 
+\begin_inset Formula $Cons$
+\end_inset
+
+ of a list with a binary operator and 
+\begin_inset Formula $Nil$
+\end_inset
+
+ with the neutral element.
+ The other combinator, 
+\begin_inset Formula $build$
+\end_inset
+
+, takes a second order function which in turn takes an operator to be used
+ as 
+\begin_inset Formula $Cons$
+\end_inset
+
+, and a value to be used as 
+\begin_inset Formula $Nil$
+\end_inset
+
+.
+ Since we are building a list, these immediately become 
+\family typewriter
+(:)
+\family default
+ and 
+\family typewriter
+[ ]
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+build :: ((a -> b -> b) -> b -> b) -> [a]
+\end_layout
+
+\begin_layout Plain Layout
+
+build g = g (:) []
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+To illustrate the approach a 
+\begin_inset Formula $map$
+\end_inset
+
+ could be defined in terms of 
+\begin_inset Formula $build/foldr$
+\end_inset
+
+ as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+map f xs = build (
+\backslash
+c n -> foldr (c .
+ f) n xs)
+\end_layout
+
+\begin_layout Plain Layout
+
+-- c is (:), n is []
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the above code the list is being folded into another list.
+ With the help of a rewrite rule
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\text{⟨}foldr/build\, fusion\text{⟩\,}\forall g\, k\, z.foldr\, k\, z\,(build\, g)\mapsto g\, k\, z$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+the two consecutive 
+\begin_inset Formula $map$
+\end_inset
+
+s could be reduced to as in the following:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+map h (map f xs)
+\end_layout
+
+\begin_layout Plain Layout
+
+ -- inline
+\end_layout
+
+\begin_layout Plain Layout
+
+ = build(
+\backslash
+c n -> foldr (c.h) n 
+\end_layout
+
+\begin_layout Plain Layout
+
+  (build (
+\backslash
+c n -> foldr (c.f) n xs)))
+\end_layout
+
+\begin_layout Plain Layout
+
+ -- apply rewrite rule
+\end_layout
+
+\begin_layout Plain Layout
+
+ = build(
+\backslash
+c n -> ((
+\backslash
+c n -> foldr (c.f) n xs) (c.h) n)
+\end_layout
+
+\begin_layout Plain Layout
+
+ -- beta reduce
+\end_layout
+
+\begin_layout Plain Layout
+
+ = build(
+\backslash
+c n -> foldr (c.h.f) n xs)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+While this leads to the desired results in many cases, it requires the programme
+r to define the functions in a not very readable form.
+ This may be acceptable for some of the code in the standard library but
+ is not likely to be widely accepted among client programmers.
+ Thus the fusion breaks for the parts of the code that do not use the explicit
+ 
+\begin_inset Formula $build/foldr$
+\end_inset
+
+ definitions.
+ To solve this, Chitil proposed a type inference algorithm to automatically
+ infer the 
+\begin_inset Formula $build/foldr$
+\end_inset
+
+ definitions
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Chi99"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Some of the other limitations of the Shortcut Fusion include the inability
+ to effectively fuse left folds and zips.
+ These shortcomings make this approach less attractive for DPH.
+\end_layout
+
+\begin_layout Subsubsection
+Stream Fusion
+\end_layout
+
+\begin_layout Standard
+Stream Fusion 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "CLS07,CSL06"
+
+\end_inset
+
+ is currently employed in the DPH primitive library at one of the three
+ levels of fusion discussed in Section 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "Lit:DPH-fusion-levels"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+It introduces two data types: a stream and a stepper.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+data Stream a = forall s.
+ Stream (s -> Step s a) s
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A 
+\begin_inset Formula $Stream$
+\end_inset
+
+ is defined by its stepper function and seed.
+ The stepper is used to produce a stream by taking the current seed and
+ yielding the next step.
+ That is, the stepper produces next element and state from current state.
+ The next step may be one of the following:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+data Step s a = Yield a s
+\end_layout
+
+\begin_layout Plain Layout
+
+              | Skip s
+\end_layout
+
+\begin_layout Plain Layout
+
+              | Done
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A 
+\begin_inset Formula $Done$
+\end_inset
+
+ would flag the end of the stream, while 
+\begin_inset Formula $Yield$
+\end_inset
+
+ would contain an element and the next seed.
+ If a 
+\begin_inset Formula $Skip$
+\end_inset
+
+ is retrieved that would mean that the current step does not contain an
+ element.
+ Thus streaming of a list could be defined in the following way:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+stream :: [a] -> Stream a
+\end_layout
+
+\begin_layout Plain Layout
+
+stream step0 = Stream next step0
+\end_layout
+
+\begin_layout Plain Layout
+
+  where next []     = Done
+\end_layout
+
+\begin_layout Plain Layout
+
+        next (x:xs) = Yield x xs
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the above the list itself is being used as the seed.
+ Unstreaming back to a list takes the following form:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+unstream :: Stream a -> [a]
+\end_layout
+
+\begin_layout Plain Layout
+
+unstream (Stream next0 step0) = unfold step0
+\end_layout
+
+\begin_layout Plain Layout
+
+  where unfold s = case next0 s of
+\end_layout
+
+\begin_layout Plain Layout
+
+          Done       -> []
+\end_layout
+
+\begin_layout Plain Layout
+
+          Skip s'    -> unfold s'
+\end_layout
+
+\begin_layout Plain Layout
+
+          Yield x s' -> x : unfold s'
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Any fusible list function should now be defined in terms of Streams as opposed
+ to lists, e.g.:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+mapS :: (a -> b) -> Stream a -> Stream b
+\end_layout
+
+\begin_layout Plain Layout
+
+mapS f (Stream next0 s0) = Stream next s0
+\end_layout
+
+\begin_layout Plain Layout
+
+  where next s = case next0 s of
+\end_layout
+
+\begin_layout Plain Layout
+
+    Done       -> Done
+\end_layout
+
+\begin_layout Plain Layout
+
+    Skip    s' -> Skip        s'
+\end_layout
+
+\begin_layout Plain Layout
+
+    Yield x s' -> Yield (f x) s'
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+map :: (a -> b) -> [a] -> [b]
+\end_layout
+
+\begin_layout Plain Layout
+
+map f xs = unstream (mapS f (stream xs))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+To see how a 
+\begin_inset Formula $Skip$
+\end_inset
+
+ step might be used it may be worthwhile to look at the definition of the
+ 
+\begin_inset Formula $filter$
+\end_inset
+
+ function.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+filterS :: (a -> Bool) -> Stream a -> Stream a
+\end_layout
+
+\begin_layout Plain Layout
+
+filterS p (Stream next0 s0) = Stream next s0
+\end_layout
+
+\begin_layout Plain Layout
+
+  where next s = case next0 s of
+\end_layout
+
+\begin_layout Plain Layout
+
+    Done                   -> Done
+\end_layout
+
+\begin_layout Plain Layout
+
+    Skip    s'             -> Skip    s'
+\end_layout
+
+\begin_layout Plain Layout
+
+    Yield x s' | p x       -> Yield x s'
+\end_layout
+
+\begin_layout Plain Layout
+
+               | otherwise -> Skip    s'
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+map :: (a -> b) -> [a] -> [b]
+\end_layout
+
+\begin_layout Plain Layout
+
+map f xs = unstream (mapS f (stream xs))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The fusion opportunity such as 
+\begin_inset Formula $(map\, f\cdot filter\, p)$
+\end_inset
+
+ may now be exploited with the following rewrite rule
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\text{⟨}stream/unstream\, fusion\text{⟩}\,\forall stream(unstream\, s)\mapsto s$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In order to completely remove all traces of the helper data structures Stream
+ Fusion relies on general purpose compiler optimisations.
+ This makes this approach highly depended on GHC.
+ However, due to the non-portability of DPH this does not pose a problem.
+ The major problem with this approach is that the two primitive operations
+ must be adjacent to each other when inlined.
+ This is not always possible.
+ However, the approach is very solid otherwise and it might turn out to
+ be yet more effective when combined with a runtime fusion system.
+\end_layout
+
+\begin_layout Subsubsection
+Functional Array Fusion
+\end_layout
+
+\begin_layout Standard
+This last approach will be described by first developing an intuition that
+ would lead to the solution more thoroughly described in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "CK01,CK03"
+
+\end_inset
+
+.
+ We will go to a greater depth describing this approach since it lays down
+ the basis for the work presented.
+\end_layout
+
+\begin_layout Standard
+When talking about fusion it it important to do so with reference to the
+ context.
+ In our case the interface to the primitive library is limited by a number
+ of predefined functions.
+ This is contrary to the approaches that optimising compilers take for fusing
+ generic free-form loops 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "KA02"
+
+\end_inset
+
+.
+ Now that we have established that the interface to the arrays is fixed
+ it is worthwhile to consider the types of operations it offers.
+ Quite expectedly it follows some of the Haskell Prelude conventions as
+ well as the client interface to DPH (Figure 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "fig:Lit:DPH-interface-functions"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+Suppose that one of the evaluation paths of the program arrives at the following
+ computation:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+fold (+) 0 (filter isPrime (map (+1) (map (^2) (enumFromTo 0 9))))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The dependence graph 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "RMKB06,KA02"
+
+\end_inset
+
+ for this computation is presented on the left of Figure 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "fig:Prime-Sum-evaluation"
+
+\end_inset
+
+.
+ One of the ways in which the library functions can be classified is by
+ the types of their arguments and return types.
+ We only focus on whether the function produces or consumes array(s).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename ../../GSOE9400/Proposal/img/SumPrimes.eps
+	lyxscale 60
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+
+\lang english
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Prime-Sum-evaluation"
+
+\end_inset
+
+
+\lang british
+Prime Sum evaluation tree.
+ Delayed evaluation tree (left) and values at every step (right).
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the above example we have an enumeration which always produces and array
+ but consumes none.
+ This functions of this type are called generators by the original authors.
+ A more generic name for them is anamorphisms [bananas].
+ These functions are used to bring arrays into the scope of array operations.
+\end_layout
+
+\begin_layout Standard
+The dual of anamorphisms are catamorphisms, or reductions, which consume
+ array(s) and only return scalar values.
+ Folds are one example of such functions.
+\end_layout
+
+\begin_layout Standard
+Most of the functions in the library, however, are hylomorphism which means
+ they consume and produce at least one array.
+ If fusion is not used, each of such functions would allocate a new array
+ and fill it in before the next combinator consumes the newly created array.
+ It is desirable to avoid this.
+ The way Functional Array Fusion looks at this problem is it considers the
+ computation as a pipeline of array combinators, whereby each element is
+ consumed in a lockstep and is directly projected to the correct position
+ in the resulting array.
+ As the right of Figure 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "fig:Prime-Sum-evaluation"
+
+\end_inset
+
+ suggests, each element is visualised as being 
+\emph on
+mutated 
+\emph default
+in some way to produce the final result.
+ Thus, for each new element 
+\emph on
+enumFromTo 
+\emph default
+generates it is first squared, then incremented by one.
+ It is then run through the predicate of the filter and is taken into account
+ when folding to the final value if found to be true.
+\end_layout
+
+\begin_layout Standard
+The way in which the original authors approached the problem was to generalise
+ generators, reductions and producer/consumers to a small set of combinators
+ covering most of the library interface.
+ They came up with the 
+\emph on
+loop
+\emph default
+ combinator of the following type (adjusted to be consistent with the rest
+ of this document):
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+loop :: (e -> a -> (Maybe e', a)) -- mutator function
+\end_layout
+
+\begin_layout Plain Layout
+
+     -> a                         -- accumulator
+\end_layout
+
+\begin_layout Plain Layout
+
+     -> Array e                   -- input array
+\end_layout
+
+\begin_layout Plain Layout
+
+     -> (Array e', a)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The 
+\emph on
+loop 
+\emph default
+combinator traverses the input array 
+\emph on
+arr
+\emph default
+.
+ The mutator function is made generic so as to be able to act as function
+ supplied to 
+\emph on
+map
+\emph default
+, 
+\emph on
+filter
+\emph default
+ and 
+\emph on
+fold
+\emph default
+ combinators.
+ Thus, 
+\emph on
+map f
+\emph default
+ can be implemented as 
+\emph on
+loop 
+\emph default
+with a unit accumulator and the following mutator function:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+map_mf :: (e -> a -> (Maybe e', a))
+\end_layout
+
+\begin_layout Plain Layout
+
+map_mf x acc = (Just (f x), acc)    -- acc unused
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Similarly, 
+\emph on
+filter p 
+\emph default
+and 
+\emph on
+fold f acc 
+\emph default
+can be implemented as 
+\emph on
+loop
+\emph default
+s
+\emph on
+ 
+\emph default
+with the following mutator functions:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+filt_mf :: (e -> a -> (Maybe e', a))
+\end_layout
+
+\begin_layout Plain Layout
+
+filt_mf x acc = (filt, acc)         -- acc unused
+\end_layout
+
+\begin_layout Plain Layout
+
+  where filt = case (p x) of
+\end_layout
+
+\begin_layout Plain Layout
+
+                 True  = Just x
+\end_layout
+
+\begin_layout Plain Layout
+
+                 False = Nothing
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+fold_mf :: (e -> a -> (Maybe e', a))
+\end_layout
+
+\begin_layout Plain Layout
+
+fold_mf x acc = (Nothing, f x acc)  -- no elt produced
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+It should be noted from the above that the 
+\emph on
+loop 
+\emph default
+combinator is able to express both hylomorphisms (
+\emph on
+map, filter
+\emph default
+) and catamorphisms (
+\emph on
+fold
+\emph default
+).
+ The latter are identified by the 
+\emph on
+Nothing 
+\emph default
+value unconditionally returned by the 
+\emph on
+mutator function.
+ 
+\emph default
+The only function from the original example that is left to be defined in
+ terms of the 
+\emph on
+loop 
+\emph default
+combinator is the anamorphism 
+\emph on
+enumFromTo.
+
+\emph default
+ Its mutator function might
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+The library implementation generalises enumerations to 
+\emph on
+enumFromStepLen
+\emph default
+, which takes a value for the first element, the increment and desired length
+ of the resulting sequence.
+\end_layout
+
+\end_inset
+
+ take the following form:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+enum_mf :: (e -> a -> (Maybe e', a))
+\end_layout
+
+\begin_layout Plain Layout
+
+enum_mf _ acc = (Just acc, acc+1)   -- acc is next val
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The above implementation of 
+\emph on
+enum 
+\emph default
+suggests that it might be possible to express generators using the generic
+ 
+\emph on
+loop 
+\emph default
+combinator.
+ However, a careful reader may have noticed that 
+\emph on
+loop, 
+\emph default
+by definition, traverses 
+\emph on
+an array
+\emph default
+, even though the value of the element is ignored in this particular mutator
+ function.
+ Thus, a cheap but generic implementation of generators would have been
+ possible if we had a dummy array to iterate over.
+ As discussed previously in 
+\begin_inset CommandInset ref
+LatexCommand formatted
+reference "sub:DPH-Data-Repr"
+
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand vpageref
+reference "sub:DPH-Data-Repr"
+
+\end_inset
+
+ an array of units can be represented by a single value -- its length.
+ Indexing the array at any position within the bounds would just return
+ a unit value
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+In Haskell a Unit type conveniently represented in source code as 
+\emph on
+() 
+\emph default
+is similar to a 
+\emph on
+void 
+\emph default
+in C.
+\end_layout
+
+\end_inset
+
+.
+ Now, a generator like 
+\emph on
+enumFromTo
+\emph default
+ could be easily and cheaply implemented as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+enumFromTo :: Int -> Int -> Array Int
+\end_layout
+
+\begin_layout Plain Layout
+
+enumFromTo start end = fst (loop enum_mf start units)
+\end_layout
+
+\begin_layout Plain Layout
+
+  where units = replicate (end - start + 1) ()
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the above implementation an array of units is first constructed by replicatin
+g (repeating) a unit value the desired number of times.
+ It is then traversed using the appropriate mutator function resulting in
+ a tuple with the desired enumeration in the first position and the final
+ accumulator in the second (
+\emph on
+end+1
+\emph default
+ in this case).
+ We can safely drop the accumulator as we are only interested in the array.
+\end_layout
+
+\begin_layout Standard
+The true convenience of the 
+\emph on
+loop 
+\emph default
+combinator is revealed if we try to squash multiple 
+\emph on
+loop 
+\emph default
+combinators into a single 
+\emph on
+loop
+\emph default
+.
+ GHC's rewrite rules mechanism is employed to pipeline two adjacent 
+\emph on
+loop
+\emph default
+s.
+ For the sake of being concise we will omit here most of the infrastructure
+ required for the approach to work.
+ We present the way by which two mutator functions can be merged into a
+ single one:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+-- mutator function of the first loop
+\end_layout
+
+\begin_layout Plain Layout
+
+mf1 :: e0 -> a1 -> (Maybe e1, a1)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+-- mutator function of the second loop
+\end_layout
+
+\begin_layout Plain Layout
+
+mf2 :: e1 -> a2 -> (Maybe e2, a2)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\ttfamily},language=Haskell"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+-- mutator function to express
+\end_layout
+
+\begin_layout Plain Layout
+
+-- loop mf2 ..
+ (loop mf1 ..
+ (..)) as a single loop
+\end_layout
+
+\begin_layout Plain Layout
+
+mf :: e0 -> (a1,a2) -> (Maybe e2, (a1,a2))
+\end_layout
+
+\begin_layout Plain Layout
+
+mf x (acc1, acc2) =
+\end_layout
+
+\begin_layout Plain Layout
+
+  case (mf1 x0 acc1) of
+\end_layout
+
+\begin_layout Plain Layout
+
+    (Nothing, acc1') = (Nothing, (acc1', acc2))
+\end_layout
+
+\begin_layout Plain Layout
+
+    (Just x1, acc1') =
+\end_layout
+
+\begin_layout Plain Layout
+
+      case (mf2 x1 acc2) of
+\end_layout
+
+\begin_layout Plain Layout
+
+        (Nothing, acc2') = (Nothing, (acc1', acc2'))
+\end_layout
+
+\begin_layout Plain Layout
+
+        (Just x2, acc2') = (Just x2, (acc1', acc2'))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Since the mutator function may not always return a value (e.g.
+ in the case with 
+\emph on
+filter
+\emph default
+ combinator) merging two mutator functions proceeds in two steps:
+\end_layout
+
+\begin_layout Enumerate
+We first run the given array element through the first mutator function.
+ If that does not produce a value (produces a 
+\emph on
+Nothing
+\emph default
+) we do not proceed to the second mutator and yield 
+\emph on
+Nothing 
+\emph default
+as the overall result.
+\end_layout
+
+\begin_layout Enumerate
+In case the first mutator did produce a value (
+\emph on
+Just
+\emph default
+) we run it through the second mutator, returning the final result whatever
+ it might be.
+\end_layout
+
+\begin_layout Standard
+Clearly, some trickery is involved in dropping the first accumulator in
+ a (potentially deeply nested) pair, but the above conveys the main concepts
+ behind the Functional Array Fusion.
+\end_layout
+
+\begin_layout Subsection
+Summary
+\end_layout
+
+\begin_layout Standard
+This section has reviewed some of the array fusion frameworks covering a
+ number of:
+\end_layout
+
+\begin_layout Itemize
+languages (C++, Haskell),
+\end_layout
+
+\begin_layout Itemize
+applications (algebraic libraries, general purpose list library, data parallel
+ framework),
+\end_layout
+
+\begin_layout Itemize
+approaches (runtime evaluation graph optimisation, equational fusion based
+ on rewrite rules).
+\end_layout
+
+\begin_layout Standard
+The discussion in the next section will be based on the fusion frameworks
+ described above.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Proposal
+\end_layout
+
+\begin_layout Standard
+The current project is carried out completely within the context of the
+ Data Parallel Haskell project.
+ Therefore, the fusion frameworks designed specifically for Haskell were
+ the first to turn to.
+ The Background section discussed three of them: Shortcut Fusion, Stream
+ Fusion and Functional Array Fusion.
+ Glasgow Haskell Compiler's rewrite rules functionality plays crucial rule
+ in all three of them.
+ This is not coincidental:
+\end_layout
+
+\begin_layout Itemize
+Compile-time term rewriting is fundamental optimisation technique in the
+ implementation of functional programming languages 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Pey87"
+
+\end_inset
+
+.
+ Exposing it to the user 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "PTH01"
+
+\end_inset
+
+ makes it an attractive way to expose compiler functionality to pure library
+ code
+\end_layout
+
+\begin_layout Itemize
+Inlining 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "PM02"
+
+\end_inset
+
+ is another technique which is crucial in compilers like GHC which heuristically
+ removes superfluous levels of indirection in the original code.
+ As a side effect it provides more opportunities for term rewriting to happen
+\end_layout
+
+\begin_layout Itemize
+Haskell is a purely functional language therefore valid term can be done
+ without a sophisticated analysis of side effects.
+ Rewriting would generally be unsafe in a non pure context
+\end_layout
+
+\begin_layout Itemize
+(In the case with Stream Fusion) it is reasonable to rely on the existence
+ of certain compiler optimisations since DPH relies on GHC and is not designed
+ for other Haskell implementations
+\end_layout
+
+\begin_layout Standard
+The above statements suggest that compile time equational fusion seems like
+ a natural choice for the Haskell programming language.
+ This is especially valid for Stream Fusion where the authors were able
+ to achieve, through inlining, rewriting and compiler optimisations, the
+ speed of handwritten code.
+ Moreover, the generated code for many examples was the same as a human
+ programmer would normally write.
+ However, the strong dependence on the optimisation systems of such a complex
+ system as GHC makes the fusion frameworks fragile and non-portable.
+\end_layout
+
+\begin_layout Standard
+One of the cases in which fusion breaks is when two array operation do not
+ end up being adjacent after inlining.
+ This may happen due to the so called 
+\emph on
+let floating 
+\emph default
+optimisation in GHC 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "PPS96"
+
+\end_inset
+
+.
+ This optimisation is designed to avoid duplicating work.
+ When GHC finds two identical terms in an expression and considers them
+ large enough to benefit from computing them only once, it 
+\emph on
+floats
+\emph default
+ them out to a new 
+\emph on
+let 
+\emph default
+binding outside of the expression.
+ This optimisation is the opposite of inlining.
+ If the term that was forcibly floated out would have otherwise completed
+ a pattern for a fusion rule, that fusion opportunity is missed.
+\end_layout
+
+\begin_layout Standard
+The other problem with equational fusion is that 
+\emph on
+sharing 
+\emph default
+is not clearly defined.
+ This is related to the above problem.
+ Sharing prevents large amounts of work to be duplicated.
+ Aggressive unconditional inlining would have introduced a major inefficiency
+ for programs in which the result of a pipeline of costly array operations
+ is independently used in more than on place.
+ Recomputing the shared portion may result in a noticeable performance hit.
+\end_layout
+
+\begin_layout Standard
+Both of the above two problems suggests that correct inlining plays a major
+ part in the process of fusion.
+ It also suggest that the decisions taken by the inliner do not always result
+ in the optimal code for exploiting fusion.
+ 
+\end_layout
+
+\begin_layout Standard
+One of the goals of the current work is to reduce the dependency of successfully
+ exploited fusion opportunities on the behaviour of the inliner.
+ It was decided to explore the possibility of performing fusion at runtime
+ of the program.
+ That would eliminate the need for the inliner at least for the part of
+ decision making when fusing array operations together.
+ The DESOLA library, while designed for C++, serves as a starting point
+ for performing fusion at runtime.
+ The new framework would reuse its approach of constructing a dependence
+ tree.
+ When an array computation is later forced by a catamorphism, the tree can
+ be optimised yielding an equivalent computation in a fused form.
+\end_layout
+
+\begin_layout Standard
+The very first design decision to make would be the way to represent delayed
+ array operations as nodes in the tree.
+ Haskell's ability to delaying function application and effortless function
+ composition to create new functions has lead the author to reusing the
+ approach of Functional Array Fusion.
+ Thus each node in the tree could be:
+\end_layout
+
+\begin_layout Enumerate
+A handle to a 
+\emph on
+loop 
+\emph default
+based computation for which we store an appropriate mutator function, the
+ initial accumulator value and the parent node in the previous node in the
+ tree
+\end_layout
+
+\begin_layout Enumerate
+Alternatively, it could be a handle to a delayed replication, i.e.
+ an array of a given length which has the same value in each position
+\end_layout
+
+\begin_layout Standard
+The tree represented in this manner may be flattened at any time to a replicatio
+n handle, call it 
+\emph on
+ReplicateH
+\emph default
+ wrapped in a loop handle, 
+\emph on
+LoopH
+\emph default
+.
+ All of the library's interface functions can then be implemented in terms
+ of the handles to the delayed tree operations.
+ As a special case, the catamorphic functions, not only obtain a new delayed
+ array handle but also force the evaluation of the tree.
+\end_layout
+
+\begin_layout Standard
+The next feature of the new framework to be implemented would be the support
+ for segmented array operations.
+ Segmented array operations are central to DPH.
+ Implementing them would complete the interface of the library.
+ Luckily the authors of Functional Array Fusion have provided one solution
+ for it.
+ Implementing it would require modifying the the type signature of the mutator
+ function and generalising the 
+\emph on
+loop 
+\emph default
+combinator to support segment boundaries.
+\end_layout
+
+\begin_layout Standard
+The next major feature required for DPH to be used with the new backend
+ as intended would require adding support for distributing computations
+ over the available processing elements.
+ At present time DPH has two backends: one purely sequential and one parallel.
+ However, they are not entirely independent.
+ The parallel backend is concerned with only the following:
+\end_layout
+
+\begin_layout Itemize
+splitting (chunking) arrays and distributing them among a 
+\emph on
+gang of threads
+\end_layout
+
+\begin_layout Itemize
+calling a sequential implementation from the sequential backend on each
+ chunk
+\end_layout
+
+\begin_layout Itemize
+joining the chunks from the finished parallel operations
+\end_layout
+
+\begin_layout Itemize
+statically removing as many synchronisation points as possible (split-joins)
+ 
+\end_layout
+
+\begin_layout Standard
+The last item on the list was parallel backend's own fusion system described
+ 
+\begin_inset CommandInset ref
+LatexCommand vpageref
+reference "Lit:DPH-fusion-levels"
+
+\end_inset
+
+.
+ Fusion in the sequential backend occurs only after that in the parallel
+ backend (more precisely after a split and before the next join).
+ On one hand that allows the two fusion systems to be independent.
+ However, considering the nature of the new sequential backend it may sometimes
+ do no work between the two split-joins.
+ Indeed, we said initially that we were only forcing the evaluation of the
+ tree when reaching a catamorphism.
+ A dynamic technique for eliminating superfluous synchronisation points
+ in the context of functional programming languages has been suggested in
+ [Operator fusion] under the name Operator Fusion for the Scala programming
+ language.
+ It is a simple algorithm with requires every function in the library to
+ be classified according to:
+\end_layout
+
+\begin_layout Itemize
+whether or not the inputs are consumed sequentially (
+\emph on
+map
+\emph default
+ vs.
+ 
+\emph on
+backpermute
+\emph default
+),
+\end_layout
+
+\begin_layout Itemize
+whether or not the outputs are produced sequentially (
+\emph on
+map
+\emph default
+ vs.
+ 
+\emph on
+permute
+\emph default
+),
+\end_layout
+
+\begin_layout Itemize
+whether or not load unbalancing may happen (
+\emph on
+map
+\emph default
+ vs.
+ 
+\emph on
+filter
+\emph default
+)
+\end_layout
+
+\begin_layout Standard
+While the 
+\emph on
+loop 
+\emph default
+operator presumes traversing the array from left to right, the aforementioned
+ work may prove to be useful when adjusting the parallel backend.
+\end_layout
+
+\begin_layout Standard
+Lastly, there are two optional features that may be researched and possibly
+ implemented:
+\end_layout
+
+\begin_layout Enumerate
+Traversing more than one array
+\emph on
+ 
+\emph default
+one after the other, e.g.
+ using 
+\emph on
+concat 
+\emph default
+or 
+\emph on
+concatMap
+\end_layout
+
+\begin_layout Enumerate
+Sharing recovery and fusion preserving sharing.
+ Normally, it is not possible in the purely functional context to refer
+ to the same tree node from two other nodes to share computation between
+ them.
+ Turning the tree into a Directed Acyclic Graph (DAG) to enable sharing
+ would require extra effort.
+ This problem has been researched in the context of Accelerate Domain Specific
+ Language embedded in Haskell 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "CKL+11"
+
+\end_inset
+
+.
+ Fusion preserving sharing is a step up from sharing recovery enabling to
+ continue running running multiple computations in a fused manner (as opposed
+ to first precomputing the shared portion of the DAG).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Planning
+\end_layout
+
+\begin_layout Standard
+In the previous sections we reviewed several approaches to array fusion.
+ We proposed a new approach to runtime fusion based on Functional Array
+ Fusion previously applied in DPH.
+ It also uses ideas from the DESOLA library to turn an equational array
+ fusion framework into a runtime one.
+\end_layout
+
+\begin_layout Standard
+To initiate the discussion it would be appropriate to recall the original
+ problem any fusion system attempts to solve.
+ In the beginning we said that fusion transforms a high level program to
+ one that approaches the semantics and performance of a low level handwritten
+ program.
+ The authors of Stream Fusion framework have found that Functional Array
+ Fusion was not up to the speed of their system even in the cases where
+ all of the fusion opportunities have been exploited by both system 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "CSL06"
+
+\end_inset
+
+.
+ They suggest that this is due to the overhead introduced by the Functional
+ Array Fusion framework.
+ In is important to note that both frameworks benefit from such compile-time
+ optimisations as inlining and term rewriting.
+ However, when we turn a compile-time to a run-time fusion none of these
+ optimisations are available, so at runtime we end up with unoptimised loops
+ with function closures and boxed values.
+ It is clear that a fusion system would not be useful if it exploits more
+ opportunities yet introduces a large constant factor minimising the positive
+ effects.
+ In other words it would not be appropriate to transform one major problem
+ into another.
+\end_layout
+
+\begin_layout Standard
+There are eight major milestones two of which are optional and will depend
+ on the actual time spent on other tasks.
+ The remainder of the project is spanned across a period of 24-36 months
+ ending with a thesis submission.
+ The following is the detailed descriptions of the tasks depicted on the
+ chart:
+\end_layout
+
+\begin_layout Description
+1.
+\begin_inset space \space{}
+\end_inset
+
+Delayed
+\begin_inset space \space{}
+\end_inset
+
+sequential
+\begin_inset space \space{}
+\end_inset
+
+evaluation will require providing a basic tree structure and simple 
+\emph on
+loop
+\emph default
+ combinator implementation.
+ It must provide means for flattening the tree and evaluating it to a final
+ result.
+ Primitive library functions that do not use segmentation can now be implemented
+ in terms of the delayed tree handles [completed]
+\end_layout
+
+\begin_layout Description
+2.
+\begin_inset space \space{}
+\end_inset
+
+Efficient
+\begin_inset space \space{}
+\end_inset
+
+loop
+\begin_inset space \space{}
+\end_inset
+
+combinator
+\begin_inset space \space{}
+\end_inset
+
+implementation will require implementing the 
+\emph on
+loop 
+\emph default
+combinator in terms of unboxed arrays.
+ Preliminary benchmarking can be done at this stage [completed]
+\end_layout
+
+\begin_layout Description
+3.
+\begin_inset space \space{}
+\end_inset
+
+Performance
+\begin_inset space \space{}
+\end_inset
+
+tuning will require optimising the new framework to reduce the overhead
+ associated with bringing fusion into runtime.
+ Preliminary results have been collected by running programs fused by hand
+ with the potential of a runtime fusion system in mind.
+ They show a performance improvement of up to 30-50% in real world applications,
+ compared to the current Stream Fusion.
+ This majour objective includes adding support for runtime code generation,
+ compilation and dynamic loading.
+ Preliminary tests show the necessity in the research of polyvariadic functions
+ and automating argument/return values unboxing
+\end_layout
+
+\begin_layout Description
+4.
+\begin_inset space \space{}
+\end_inset
+
+Sharing
+\begin_inset space \space{}
+\end_inset
+
+recovery is an non-optional task highly important for high performance.
+ Where conditional inlining would prevent Stream Fusion from duplicating
+ the work, a runtime fusion system such as ours would collect all of the
+ operations into one tree.
+ This may lead to duplicate subtrees which my be difficult to identify in
+ a purely functional context.
+ An appropriate sharing recovery mechanism would allow us to surpass the
+ Stream Fusion system in many real world DPH programs
+\end_layout
+
+\begin_layout Description
+5.
+\begin_inset space \space{}
+\end_inset
+
+Segmented
+\begin_inset space \space{}
+\end_inset
+
+sequential
+\begin_inset space \space{}
+\end_inset
+
+evaluation will require extending the tree representation and the 
+\emph on
+loop 
+\emph default
+combinator to support segmentation.
+ Previous work on Functional Array Fusion is likely to be of help.
+ Adding support for segmented evaluation will complete a major part of all
+ functions in the primitive library.
+ This would allow to benchmark real DPH programs (i.e.
+ on irregular data structures).
+\end_layout
+
+\begin_layout Description
+6.
+\begin_inset space \space{}
+\end_inset
+
+Delayed
+\begin_inset space \space{}
+\end_inset
+
+parallel
+\begin_inset space \space{}
+\end_inset
+
+evaluation will require adding support for true parallel evaluation.
+ This would allow DPH to be used as intended, automatically parallelising
+ tasks across the available processing elements
+\end_layout
+
+\begin_layout Description
+7.
+\begin_inset space \space{}
+\end_inset
+
+Traversing
+\begin_inset space \space{}
+\end_inset
+
+multiple
+\begin_inset space \space{}
+\end_inset
+
+arrays would allow the framework to cover more of the library's array operations.
+ While this is not a task of immediate importance, making operations such
+ as 
+\emph on
+concat 
+\emph default
+and 
+\emph on
+concatMap 
+\emph default
+fusible bringing the overall coverage of the proposed system closer to that
+ of Stream Fusion
+\end_layout
+
+\begin_layout Description
+8.
+\begin_inset space \space{}
+\end_inset
+
+Thesis
+\begin_inset space \space{}
+\end_inset
+
+write
+\begin_inset space \space{}
+\end_inset
+
+up
+\begin_inset space \space{}
+\end_inset
+
+and
+\begin_inset space \space{}
+\end_inset
+
+submission would report on the work done and conclusions reached.
+ The final benchmark results will be provided to support the arguments
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Conclusion
+\end_layout
+
+\begin_layout Standard
+The problem of array fusion is not in its infancy.
+ Yet there is not a definitive widely accepted approach to it.
+ Most approaches have to be tailored to the surrounding context and align
+ well with the programming model offered by the framework.
+ The proposed research is an attempt to provide an alternative to an already
+ functioning fusion system in the Data Parallel Haskell framework.
+ The currently employed Stream Fusion system is mature yet fragile as it
+ heavily relies on correct inlining, term rewriting and compiler optimisations.
+ The proposed alternative fusion system would deliver on at least the following
+ goals:
+\end_layout
+
+\begin_layout Enumerate
+Simplifier independency
+\end_layout
+
+\begin_layout Enumerate
+Efficient implementation of 
+\emph on
+loop 
+\emph default
+combinator based on unboxed arrays
+\end_layout
+
+\begin_layout Enumerate
+Flat and segmented fusible implementations for most operations in the primitive
+ library
+\end_layout
+
+\begin_layout Enumerate
+Parallel and sequential fusible implementations for most operation in the
+ primitive library
+\end_layout
+
+\begin_layout Enumerate
+Explanations as to why some operations do not have fusible implementations.
+ These would be one of the following forms:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+fusion is not available in the current design of the system
+\end_layout
+
+\begin_layout Enumerate
+fusion is not available without further research
+\end_layout
+
+\begin_layout Enumerate
+fused implementation does not exist due to the semantics of the operation
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+Due to the time constraints additional goals set out in previous sections
+ are left as optional and will leave room for further research on the topic.
+ It is expected that the fusion system resulting from this research would
+ be competitive to the current one in the number and types of array operations
+ that can be fused.
+ It is also expected that the new system would be able to exploit more fusion
+ opportunities due to the reduced complexity compared to equational fusion
+ systems.
+\end_layout
+
+\begin_layout Standard
+Lastly, the research has the potential to benefit the implementors of numeric
+ libraries in other languages especially if they follow the functional programmi
+ng paradigm.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "bib"
+options "is-alpha"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
