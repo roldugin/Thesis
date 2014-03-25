@@ -1,3 +1,4 @@
+%!TEX program = lualatex
 %% LyX 2.0.0 created this file.  For more info, see http://www.lyx.org/.
 %% Do not edit unless you really know what you are doing.
 \documentclass[english,british]{article}
@@ -10,6 +11,7 @@
 \usepackage{textcomp}
 \usepackage{amstext}
 \usepackage{graphicx}
+\usepackage{babel}
 
 \makeatletter
 
@@ -33,18 +35,11 @@
   {\def\RSlemtxt{lemma~}\newref{lem}{name = \RSlemtxt}}
   {}
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
-\usepackage{tikz}
-\usepackage{pspicture}
-\usepackage{pstricks}
-
-\usepackage{pst-gantt}
-% gantt charts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% END LyX specific LaTeX commands.
 
 \makeatother
 
-\usepackage{babel}
+
 \begin{document}
 \pagebreak{}
 
@@ -1139,6 +1134,258 @@ to continue running running multiple computations in a fused manner
 \end{enumerate}
 \pagebreak{}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{LiveFusion}
+
+\subsection{Delaying computation: LiveFusion AST}
+
+In its essence LiveFusion take the approach of deeply embedded domain specific languages (EDSLs). The principle idea of deep embedding is the introduction of its own abstract syntax tree (AST) which is separate from the host language AST but is rather presented as a tree structure in the host language. The difference with the AST found in compilers is that it allows one to analyse, optimise and compile or interpret the EDSL's AST at runtime using the host language in the library code, withought the difficulties of writing a complete standalone optimising compiler. The added benefit of the approach is that the EDSL code can interact with the other code in the language.
+\begin{comment}TODO separate EDSL discussion from deep embedding\end{comment}
+
+The fundamental concept by which LiveFusion makes fusion possible is constructing an AST of pending array operations at runtime and compiling that AST to fast code when the result in required in the host program. An AST defined in the host language (Haskell in this case) is what makes the delaying of computations possible. It is the topmost layer of LiveFusion system in that most of the library's user-facing combinators discussed in Section \begin{comment}TODO\end{comment} are for the most part just constructing the nodes of the AST. This way an AST representing the core of QuickHull example discussed previously becomes the following (TODO figure ref).
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+farAndAbove :: (Point,Point) -> Array Point -> (Array Point, Point)
+farAndAbove line points
+  = let distances = map (dist line) points
+
+        -- Find maximum point
+        indexed     = zip (indices distances) distances
+        farthest_ix = fst $$ fold maxSnd 0 distances
+        farthest    = points !! farthest_ix
+        maxSnd x y  = if snd x >. snd y
+                      then x
+                      else y
+
+        -- Find all points above the line
+        positive    = map (>. 0) distances
+        above       = packByTag positive points
+
+    in  (above, farthest)
+\end{lstlisting}
+
+\begin{comment}INSERT FLAT QH AST FIGURE HERE\end{comment}
+
+The above example uses six aray combinators: $map$, $zip$, $indices$, $pack$, $fold$ and the indexing combinator $!!$. The first four of them are $array transducers$ in that they both consume and produce arrays. On the other hand $fold$ and $!!$ consume arrays and return a scalar value, so we call them pure consumers.
+
+It is now time to show the AST node constructors these combinators correspond to. LiveFusion AST is a Generalised Algebraic Data Type (GADT) (TODO cite) whose individual constuctors correspond to delayed array operations. In principle, given an interpreting function such as $eval :: AST t -> t$ an value of type $t$ encoded in the $AST$ language can be computed. Nowhere does it specify that $t$ is an array. In fact we know not all of the array combinators return an array: it has been discussed that $fold$, $!!$ and several others return a scalar value. To express the dimensionality of the result we introduce $type ArrData a$ which in our implementation is represented by $Vector a$ from $vector$ package (TODO ref). We introduce type synonyms $ArrayAST a$ and $ScalarAST a$ to distinguish between the two.
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+type ArrayAST a = AST (ArrData a)
+type ScalarAST a = AST a
+
+data AST t where
+  Map      :: (Elt a, Elt b)
+           => Fun (a -> b)
+           -> ArrayAST a
+           -> ArrayAST b
+
+  Zip      :: (Elt a, Elt b)
+           -> ArrayAST a
+           -> ArrayAST b
+           -> ArrayAST (a,b)
+
+  Fold     :: Elt a
+           => Fun (a -> a -> a)
+           -> ScalarAST a
+           -> ArrayAST a
+           -> ScalarAST a
+
+  PackByTag :: Elt a
+            => ArrayAST Bool
+            -> ArrayAST a
+            -> ArrayAST a
+
+  Indices  :: Elt a
+           => ArrayAST a
+           => ArrayAST Int
+
+  Index    :: Elt a
+           -> ArrayAST a
+           -> ArrayAST Int
+           -> ScalarAST a
+\end{lstlisting}
+
+Another notable feature of the interface to note here is the type of functions parametrising the higher-order combinators like $map$ and $fold$. The corresponding functions in Haskell Prelude or array libraries like $Vector$ or $Repa$ accept as arguments simple Haskell functions like $a -> b$ or $a -> a -> a$ as long as the types match. So why cannot LiveFusion be the same? The answer lies in the approach to evaluating the AST. LiveFusion AST is open to interpretation by several backends as discussed in Section (TODO ref), and the first proposed one includes the compilation step. In it, the AST is compiled to one or more loops for which Haskell code is generated and written out to file. If the parametrising functions were simple Haskell functions, they would have be compiled to machine code before the program is run. When the AST is constructed at runtime they would only be available in form of closures which can be called but not inspected (TODO FOOTNOTE: there is a way to explore closures in Haskell, but it will not allow one to easily make use of the code compiled to binary. See discussion in section (TODO ref)) Suppose the user calls $map (+1) xs$. The mentioned array libraries rely on the function $(+1)$ being inlined into the compiled loop code. If this does not happen, calling $(+1)$ for every element in the array will result in the following:
+\begin{enumerate}
+\item Boxing the element value by putting it in the heap
+\item Calling the closure with the pointer to the boxed value
+\item Following the pointer to the function code contained in the closure
+\item The code will unbox the value, increment it and create a new value on the heap
+\item The loop code will then need to unbox the result and write it into the result array
+\end{enumerate}
+
+This is a very round-about way of incrementing a value in a tight loop and will ruin the performance of the loop. Unfortunately, at the time of generating code for AST, all these haskell functions will have been compiled to machine code and be only available as closures. There is currently no way to inline them or get the original haskell source code from which they were created. We needed to find a way to generate efficient code for user specified functions at runtime
+
+
+Besides the user facing array operationsThis is the uppermost layer of LiveFusion system
+- Closest to the API
+- User-facing arrays are internally represented a DETs.
+- Give example
+- What does DET need to keep track of
+- Show the data structure
+- A deeply embedded EDSL
+- Creates an internal AST of type $DET a$, which represents a delayed computation returning $a$.
+- LiveFusion is an array processing system, so our main type is an array, say $Vector a$. Thus a delayed computation returning a $Vector$ of element of type $a$s would be represented as $DET (Vector a)$
+- But vectors are not the only data type we can handle, hence we can also have $DET (Int, Float)$ - a delayed computation, which, when forced, produces a pair of an $Int$ and a $Float$.
+
+
+\subsection{Sharing recovery: Delayed Evaluation Graphs}
+- Find example, should be plenty in QuickHull
+- Talk about ref transparancy of Haskell
+- While can still fuse, it performs unneccessary work
+- Still represented by the same object internally at runtime
+- StableNames, Gill's, but can do other
+- It's is IO, but since we are in a library and can guarranty safety by design we don't care
+
+\subsection{Retreiving the result}
+- LiveFusion delayed computations live in its own data type.
+- 
+
+\subsection{Loop representation: Loop Language}
+- inherently procedural
+
+\subsubsection{Communication by Convention}
+- Many of the combinators use a similar set of variables, e.g. both Map and Scan produce a value at each iteration which they assign to an intermediate variable in the body of the loop, say elt
+- Thus if there are two maps one after the other, we need to distinguish between the two
+- We give earch such variable a unique identifier which coincides with the identifier of the combinator in the graph (see section), e.g. $elt_3$ is always an intermediate element produced by combinator 3 in each iteration (provided the combinator is a producer)
+- Other examples include $len_1$, $i_1$, $o_5$, $acc_4$
+- Not only this removes any potential name clashes (since ids are unique), but also allows us to refer to any variable in the loop just knowing what function it's performing as well as the combinator id.
+- When is it useful? Can we have a DS passing those variables without stupid conventions?
+- The problem is that the names are generated by convention, so in case of any error, the program would either fail to compile at runtime or produce incorrect results
+- The easiest way 
+- Like global variables
+- Spooky action at a distance
+- Untracked interaction between different parts of loop
+- In many cases a flaw of software design, often discouraged and even semantically prohibited in functional languages like haskell and ml.
+
+
+\subsection{Procedural code: Imperator Language}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Code generation and loading}
+
+Ways (haskell, external (c), llvm)
+
+\subsubsection{Haskell code generation}
+
+\subsubsection{What do we need to generate}
+-
+\subsubsection{Efficient numeric computations in Haskell}
+- Talk about haskell data structures (lists, arrays)
+- about boxed values
+- Prohibitive performance costs
+- Unboxed values
+
+\subsubsection{Mutable vectors}
+- Very low level access
+- Haskell vector or GHC.Prim
+- Largely the same underneath
+- Vector may be more intuitive
+- Offers many types of vectors and levels of access to them
+- Uses ST monad, to make sure...
+
+\subsubsection{Looping}
+- There are many ways a loop can be represented in code
+- FPrs see it as a recursive function
+- Procedural programmers see it as a while or for C loop
+- Down at the machine level is a chunk of code with a label and jump statement to the beginning of the loop (or alternatively out of the loop)
+- When generating HsCode only rec fun, however want fast machine code in the end
+- Tail rec
+- Give example of what machine code it becomes
+- Thus need to make sure we always have tail rec
+
+\subsubsection{Tail recursion}
+- Perhaps put the points from above here
+
+\subsubsection{Strictness}
+- What is it and why
+- Strictness analysis example
+- Where in our case it would fail
+- What to do: two things, the easiest is !
+
+\subsubsection{Inlining}
+- Funcall costs
+- Perhaps give an example with benchmark
+- LLVM helps?
+
+\subsubsection{Unboxing}
+- Give example
+- Rewrite $case i\# of I\# ->$ which rewrites
+
+
+\subsubsection{Compilation and loading}
+
+\subsubsection{Impedance matching}
+
+\subsubsection{Unboxing}
+
+\subsubsection{Performance considerations}
+
+\subsubsection{Two types of sharing}
+- Diamond is easy is there are many ways of achieving it, even though it compromises referential transparency. But we guarranty correctness by design. Extensively covered in section \ref{}
+- Problem arises if the diamond does not form before the result is required in one of the branches
+- Illustrate with QuickHull example
+- Would be less of a problem if we were analysing a static tree in the compiler since there are no conditionals so such a computation would always be there
+- However, when it comes to runtime we are limited by the execution order. If a result is required in Node x in Figure, then Node y won't be forced since none of the predeccessors of Node x know about the branch leading up to Node y.
+- This wouldn't be a problem in a language with mutable references, where the parents of the tree could know about its children
+- This has two censequences:
+  - Even though the results of Node x and y can be computed in one loop, Node x will be computed first, thus a fusion opportunity is missed
+  - A bigger problem, however, is that it may lead to duplicated work
+  - Consider Node z when the branching occurs. At the time of computing Node x, the computation in Node and all of its predessessors will be fused into the loop computing result for Node x. Once the result of Node y is finally required, the coputation would have to start from scratch and include Node z and all of its predeccessors.
+  - In this case it would have been beneficial for performance to create an intermediate array at Node z and start the computation of Node y with that.
+
+\subsubsection{One solution for branched sharing}
+- It maybe benefitial to take a step back and think about the problem in terms of the data structures that represent the delayed computations
+- Trees
+- In general in Haskell trees the parents know about the children, but the children do not know about the parents. In the case of LiveFusion with predessessor in the pipeline of combinators is the child, while the root of the tree is the last combinator in the pipeline.
+- If we employ the common sharing recovery techniques, we get a graph in which the shared nodes are not repeated.
+- The important thing to note is that we still have a graph with ONE SINGLE root node. The same node that was the tree before sharing recovery.
+- The problem with branched sharing is that even before the sharing recovery takes place, we have not a tree but a graph. There are multiple tree roots (e.g. x and y) that are held by different parts of the program which happen to share some nodes.
+- Knowing about other such roots from at each one of them presents the essence of the problem we are facing
+- Here we present a sample solution to the problem which is set outside the LiveFusion framework
+- Describe that ugly sharing recovery example I wrote
+
+
+\subsubsection{Delaying computation of scalar results}
+- So far assumed that we have arrays as results
+- However, as discussed we distinguish three types of array combinators:
+  - anamorphic combinators (generators)
+  - hylomorphic combinators (producer/consumers)
+  - catamorphic combinators (pure consumers)
+- A particular example of the pure consumets is a Fold and it produces a single scalar value- 
+- It is important to note the result type of function $fold$. It is just the element type. Compare it to the combinators which have the result type of Array a which is a synonym for DET (Vector a). The latter clearly stately it is a delayed computation. However, in the case of $fold$ nowhere in the type singnature does it say it's a delayed computation.
+- The reason for this is in the way DPH integrates into Haskell
+- Arrays are library defined, while the scalars are Haskell built in.
+- Another way to look at it is if DET was the type of a typical EDSL. All array producing computations in LiveFusion are represented in this DET language. In much the same way Accelerate languare has Acc Array. However, unlike DPH, Acclerate also offers scalar computations and even functions represented as $Acc$: e.g. $Acc Int$ and \_?\_ $(Int -> Int)$ respectively.
+- Thus the type of fold would in Accelerate would look like ...
+- Due to the tighter integration of DPH with Haskell, it by design uses Haskell types directly, hence the type of the fold which uses haskell primitive types
+- This poses a problem that it forces the computation as soon as the reduction is reached as there is no data structure to hold the delayed computation in
+- This is usually the desired result, unless it is an instance of branched sharing discussed previously (outline an example)
+- There is currently no solution for the problem, however, for easier integration into other systems, LiveFusion does delay scalar computations, i.e. the type of Fold combinator is actually $..... -> DET a$. In fact the only thing that the wrapper $fold$ functions does is: $fold f z xs = compute \$ Fold f z xs$
+
+\subsubsection{Code reuse}
+- Most of DPH programs are recursive in one form or the other.
+- E.g. QuickHull, NBody, etc..
+- In QuickHull ...
+- In NBody ...
+- The same graph of combinators are executed over and over again at each recursion step
+- Ammortising the cost of code generation and runtime code compilation and loading over a number of iterations is not a new problem in Computer Science [...refs...]
+- This problem has also been solved by the Accelerate EDSL for GPU programming in Haskell, so can be adapted.
+
+\subsection{Discussion}
+
+\subsubsection{What DPH gives up}
+- Lots of Filtering (common FP approach)
+- Same length zipping
+- No unbounded lengths
+-
+
+\subsubsection{Use patterns}
+- Find them in examples
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Planning}
 
