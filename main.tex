@@ -1001,7 +1001,7 @@ expose compiler functionality to pure library code
 like GHC which heuristically removes superfluous levels of indirection
 in the original code. As a side effect it provides more opportunities
 for term rewriting to happen
-\item Haskell is a purely functional language therefore valid term can be
+\item Haskell is a purely functional language therefore valid term rewriting can be
 done without a sophisticated analysis of side effects. Rewriting would
 generally be unsafe in a non pure context
 \item (In the case with Stream Fusion) it is reasonable to rely on the existence
@@ -1176,7 +1176,7 @@ type ScalarAST a = AST a
 
 data AST t where
   Map      :: (Elt a, Elt b)
-           => Fun (a -> b)
+           => Exp (a -> b)
            -> ArrayAST a
            -> ArrayAST b
 
@@ -1186,7 +1186,7 @@ data AST t where
            -> ArrayAST (a,b)
 
   Fold     :: Elt a
-           => Fun (a -> a -> a)
+           => Exp (a -> a -> a)
            -> ScalarAST a
            -> ArrayAST a
            -> ScalarAST a
@@ -1206,58 +1206,145 @@ data AST t where
            -> ScalarAST a
 \end{lstlisting}
 
-Another notable feature of the interface to note here is the type of functions parametrising the higher-order combinators like $map$ and $fold$. The corresponding functions in Haskell Prelude or array libraries like $Vector$ or $Repa$ accept as arguments simple Haskell functions like $a -> b$ or $a -> a -> a$ as long as the types match. So why cannot LiveFusion be the same? The answer lies in the approach to evaluating the AST. LiveFusion AST is open to interpretation by several backends as discussed in Section (TODO ref), and the first proposed one includes the compilation step. In it, the AST is compiled to one or more loops for which Haskell code is generated and written out to file. If the parametrising functions were simple Haskell functions, they would have be compiled to machine code before the program is run. When the AST is constructed at runtime they would only be available in form of closures which can be called but not inspected (TODO FOOTNOTE: there is a way to explore closures in Haskell, but it will not allow one to easily make use of the code compiled to binary. See discussion in section (TODO ref)) Suppose the user calls $map (+1) xs$. The mentioned array libraries rely on the function $(+1)$ being inlined into the compiled loop code. If this does not happen, calling $(+1)$ for every element in the array will result in the following:
+\subsection{Parametrising higher-order functions}
+
+Another notable feature of the interface to note here is the type of functions parametrising the higher-order combinators like \texttt{map} and \texttt{fold}. They are all of the form \texttt{Exp (a -> b)} or \texttt{Exp (a -> a -> b)}. The corresponding functions in Haskell Prelude or array libraries like \texttt{Vector} or \texttt{Repa} accept as arguments simple Haskell functions like \texttt{a -> b} or \texttt{a -> a -> a} as long as the types match. So why cannot LiveFusion be the same? The answer lies in the approach to evaluating the AST. LiveFusion AST is open to interpretation by several backends as discussed in Section (TODO ref), and the currently supported one includes the compilation step. When using this backend, the AST is compiled to one or more loops for which Haskell code is generated and written out to file. If the parametrising functions were simple Haskell functions, they would have be compiled to machine code before the program is run. When the AST is later constructed at runtime they would only be available in form of closures which can be called but not inspected\footnote{There is a non-portable way to explore closures in Haskell, but it will not allow one to easily make use of the code compiled to binary. See discussion in Section (TODO ref)}. Suppose the user calls \texttt{map (+1) xs}. The mentioned array libraries rely on the function \texttt{(+1)} being inlined into the compiled loop code to produce efficient code. If this does not happen, calling \texttt{(+1)} for every element in the array will result in the following:
 \begin{enumerate}
-\item Boxing the element value by putting it in the heap
+\item Boxing the element value by placing it in the heap
 \item Calling the closure with the pointer to the boxed value
-\item Following the pointer to the function code contained in the closure
+\item Jumping to the address of the \texttt{(+1)} function referenced in the closure
 \item The code will unbox the value, increment it and create a new value on the heap
 \item The loop code will then need to unbox the result and write it into the result array
 \end{enumerate}
 
-This is a very round-about way of incrementing a value in a tight loop and will ruin the performance of the loop. Unfortunately, at the time of generating code for AST, all these haskell functions will have been compiled to machine code and be only available as closures. There is currently no way to inline them or get the original haskell source code from which they were created. We needed to find a way to generate efficient code for user specified functions at runtime
+This is a very round-about way of incrementing a value in a tight loop and will greatly affect the performance of the loop. Unfortunately, at the time of generating code for AST, all these haskell functions will have been compiled to machine code and be only available as closures. There is currently no way to inline them or get the original Haskell source code from which they were created. We needed to find a way to generate efficient code for user specified functions at runtime.
+
+Thus, we need a way to record the user-provided functions in a more high level way than machine code. In summary our representation for functions:
+\begin{enumerate}
+\item Provides backend independent interface offering many common functions
+\item Allows backend-specific implementation for each function
+\item Hides implementation from the user by default
+\item Allows user to compose functions in a way that looks very native
+\item Allows user to provide direct backend-specific implementation for new functions that cannon be composed from functions already provided
+\end{enumerate}
+
+%% Does Accelerate fix the primitive functions as constructors in an ADT?
+
+So what is \texttt{Exp (a -> b)}? It is a term in our scalar expression language $Exp$, representing a function from type $a$ to type $b$:
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+data Exp t where
+  -- Literal or non-function value
+  ConstE :: a -> Exp a
+
+  -- Function implemented in the backend
+  FunE :: Impl t -> Exp t
+
+  -- Lambda abstraction
+  LamE :: (Exp s -> Exp t) -> Exp (s -> t)
+
+  -- Function application
+  AppE :: Term (s -> t) -> Term s -> Term t
+\end{lstlisting}
+
+(TODO discuss HOAS and distinction between function values and non function values)
+
+(TODO discuss Exp and HOAS, for now skipping to Impl)
+
+The notable part of the \texttt{Exp} language is its constructor \texttt{FunE}. The only argument to the constructor is \texttt{Impl t} which is a backend-dependent way of defining a function. \texttt{Impl} gives freedom to the backend to choose the most suitable representation for a function. For instance, in out Haskell backend, we are interested in generating Haskell source code, for which \emph{Template Haskell} (TODO ref) is a natural choice. Thus we choose the following definition of \texttt{Impl}:
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+data Impl t = HsImpl {
+                hs :: t,        -- Native Haskell function
+                th :: Q TH.Exp  -- TemplateHaskell quasiquoted expression
+              }
+\end{lstlisting}
+
+The Template Haskell expression is really the core part of the function representation, but this is what whould later on allow us to produce Haskell source code without much trouble. We also include simple Haskell function with our representation. At present this is just for completeness. However in the future it may be possible to avoid compiling certain parts of AST at runtime and run statically scheduled combinators. In this case this whould be the function to inline in the loop.
+
+We will now show the (rather trivial) implementations for a couple of functions before continuing with our explanation of Impl.
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+plusImpl :: Num a => Impl (a -> a -> a)
+plusImpl = HsImpl { hs = (+); th = [| (+) |] }
+
+absImpl :: Num a => Impl (a -> a)
+absImpl = HsImpl { hs = abs; th = [| abs |] }
+\end{lstlisting}
+
+It is easy to see that TemplateHaskell expressions are trivially created from simple Haskell functions using QuasiQuotation syntax (TODO ref). When the backend is ready to generate Haskell source for these functions, it will be a simple matter of using a pretty printer. The reasons for using TemplateHaskell instead of strings in the first place when the conversion is so trivial are the following:
+\begin{itemize}
+\item The backend does more than trivial code generation as discussed in Section (TODO ref), where the full power of TemplateHaskell is required. Functions defined via TemplateHaskells become very easy to incorporate into the syntax tree being generated
+\item New developments in TemplateHaskell\footnote{Starting with GHC 7.8.} will allow its expressions to be typed. Having \texttt{Q (TExp t)} as opposed to \texttt{Q Exp} will provide an extra layer of safety to our function representation
+\end{itemize}
+
+\subsubsection{Other backends and more backend functionality}
+\begin{itemize}
+\item Currently function representation of only one backend was shown, namely Haskell source backend.
+\item Even that one was trivial: only containing a TH Exp + native HS function
+\item What other functionality may we want in our function representation?
+\item LiveFusion is a fast array processing library. The focus is on performance.
+\item Our two main options for speed on modern CPUs: parallelism + vector instructions.
+\item Parallelism is already exploited by DPH through other means and will split the computations evenly across all cores
+\item Vectorisation on the other hand has not been exploited by DPH yet\footnote{Though new developments in that area have emerged more recently [TODO ref].}
+\item The CPU manufacturers are introducing and announcing more and more vector instruction sets \footnote{TODO Ref: Intel Future Instruction Sets} which will allow many types of vector operations to be performed on each core.
+\item This is very handy for libraries like LiveFusion which are already providing patterns of array computation, some of which map very well to vector instructions of current or future CPUs (TODO find examples, but this will definitely include pointwise arithmetic, reductions and pack).
+\item At some point in the future \texttt{Impl} function representation may be the most natural place to include backend- or even CPU-specific information, on how to generate vector instructions for a particular function, e.g. a reduction using product operator on an Intel CPU.
+\end{itemize}
+
+\subsubsection{User provided backend implementation}
+
+One feature of the given scalar functions representation allows the user to provide implementation of arbitrary functions the way they want the backend to generate them. After all, it only requires creating a new record of type \texttt{Impl t} where \texttt{t} is the type of the desired function. Library user can then provide the internals of function implementation to appear in the generated code.
+
+This functionality may seem unneccessary, since the library already provides all functions from such type classes as \texttt{Num}, \texttt{Ord}, \texttt{Floating}, etc., as well as a powerful mechanisms to compose them into more complex functions. However, in the light of vector instructions discussion in Section (TODO ref), leaving this door open to the user may be valuable and make the library more flexible on more architectures.
+
+%%\begin{itemize}
+%%\item Closest to the API
+%%\item User-facing arrays are internally represented a ASTs.
+%%\item Give example
+%%\item What does AST need to keep track of
+%%\item Show the data structure
+%%\item A deeply embedded EDSL
+%%\item Creates an internal AST of type \texttt{AST a}, which represents a delayed computation returning \texttt{a}.
+%%\item LiveFusion is an array processing system, so our main type is an array, say \texttt{Vector a}. Thus a delayed computation returning a \texttt{Vector} of element of type \texttt{a}s would be represented as \texttt{AST (Vector a)}
+%%\item But vectors are not the only data type we can handle, hence we can also have \texttt{AST (Int, Float)} - a delayed computation, which, when forced, produces a pair of an \texttt{Int} and a \texttt{Float}.
+%%\end{itemize}
 
 
-Besides the user facing array operationsThis is the uppermost layer of LiveFusion system
-- Closest to the API
-- User-facing arrays are internally represented a DETs.
-- Give example
-- What does DET need to keep track of
-- Show the data structure
-- A deeply embedded EDSL
-- Creates an internal AST of type $DET a$, which represents a delayed computation returning $a$.
-- LiveFusion is an array processing system, so our main type is an array, say $Vector a$. Thus a delayed computation returning a $Vector$ of element of type $a$s would be represented as $DET (Vector a)$
-- But vectors are not the only data type we can handle, hence we can also have $DET (Int, Float)$ - a delayed computation, which, when forced, produces a pair of an $Int$ and a $Float$.
-
-
-\subsection{Sharing recovery: Delayed Evaluation Graphs}
-- Find example, should be plenty in QuickHull
-- Talk about ref transparancy of Haskell
-- While can still fuse, it performs unneccessary work
-- Still represented by the same object internally at runtime
-- StableNames, Gill's, but can do other
-- It's is IO, but since we are in a library and can guarranty safety by design we don't care
+\subsection{Sharing recovery: Abstract Sematic Graphs}
+\begin{itemize}
+\item Find example, should be plenty in QuickHull
+\item Talk about ref transparancy of Haskell
+\item While can still fuse, it performs unneccessary work
+\item Still represented by the same object internally at runtime
+\item StableNames, Gill's, but can do other
+\item It's is IO, but since we are in a library and can guarranty safety by design we don't care
+\end{itemize}
 
 \subsection{Retreiving the result}
-- LiveFusion delayed computations live in its own data type.
-- 
+\begin{itemize}
+\item LiveFusion delayed computations live in its own data type.
+\item 
+\end{itemize}
 
 \subsection{Loop representation: Loop Language}
-- inherently procedural
+\begin{itemize}
+\item inherently procedural
+\end{itemize}
 
 \subsubsection{Communication by Convention}
-- Many of the combinators use a similar set of variables, e.g. both Map and Scan produce a value at each iteration which they assign to an intermediate variable in the body of the loop, say elt
-- Thus if there are two maps one after the other, we need to distinguish between the two
-- We give earch such variable a unique identifier which coincides with the identifier of the combinator in the graph (see section), e.g. $elt_3$ is always an intermediate element produced by combinator 3 in each iteration (provided the combinator is a producer)
-- Other examples include $len_1$, $i_1$, $o_5$, $acc_4$
-- Not only this removes any potential name clashes (since ids are unique), but also allows us to refer to any variable in the loop just knowing what function it's performing as well as the combinator id.
-- When is it useful? Can we have a DS passing those variables without stupid conventions?
-- The problem is that the names are generated by convention, so in case of any error, the program would either fail to compile at runtime or produce incorrect results
-- The easiest way 
-- Like global variables
-- Spooky action at a distance
-- Untracked interaction between different parts of loop
-- In many cases a flaw of software design, often discouraged and even semantically prohibited in functional languages like haskell and ml.
+\begin{itemize}
+\item Many of the combinators use a similar set of variables, e.g. both Map and Scan produce a value at each iteration which they assign to an intermediate variable in the body of the loop, say elt
+\item Thus if there are two maps one after the other, we need to distinguish between the two
+\item We give earch such variable a unique identifier which coincides with the identifier of the combinator in the graph (see section), e.g. $elt_3$ is always an intermediate element produced by combinator 3 in each iteration (provided the combinator is a producer)
+\item Other examples include $len_1$, $i_1$, $o_5$, $acc_4$
+\item Not only this removes any potential name clashes (since ids are unique), but also allows us to refer to any variable in the loop just knowing what function it's performing as well as the combinator id.
+\item When is it useful? Can we have a DS passing those variables without stupid conventions?
+\item The problem is that the names are generated by convention, so in case of any error, the program would either fail to compile at runtime or produce incorrect results
+\item The easiest way 
+\item Like global variables
+\item Spooky action at a distance
+\item Untracked interaction between different parts of loop
+\item In many cases a flaw of software design, often discouraged and even semantically prohibited in functional languages like haskell and ml.
+\end{itemize}
 
 
 \subsection{Procedural code: Imperator Language}
@@ -1270,48 +1357,65 @@ Ways (haskell, external (c), llvm)
 \subsubsection{Haskell code generation}
 
 \subsubsection{What do we need to generate}
--
+\begin{itemize}
+\item
+\end{itemize}
+
 \subsubsection{Efficient numeric computations in Haskell}
-- Talk about haskell data structures (lists, arrays)
-- about boxed values
-- Prohibitive performance costs
-- Unboxed values
+\begin{itemize}
+\item Talk about haskell data structures (lists, arrays)
+\item about boxed values
+\item Prohibitive performance costs
+\item Unboxed values
+\end{itemize}
 
 \subsubsection{Mutable vectors}
-- Very low level access
-- Haskell vector or GHC.Prim
-- Largely the same underneath
-- Vector may be more intuitive
-- Offers many types of vectors and levels of access to them
-- Uses ST monad, to make sure...
+\begin{itemize}
+\item Very low level access
+\item Haskell vector or GHC.Prim
+\item Largely the same underneath
+\item Vector may be more intuitive
+\item Offers many types of vectors and levels of access to them
+\item Uses ST monad, to make sure...
+\end{itemize}
 
 \subsubsection{Looping}
-- There are many ways a loop can be represented in code
-- FPrs see it as a recursive function
-- Procedural programmers see it as a while or for C loop
-- Down at the machine level is a chunk of code with a label and jump statement to the beginning of the loop (or alternatively out of the loop)
-- When generating HsCode only rec fun, however want fast machine code in the end
-- Tail rec
-- Give example of what machine code it becomes
-- Thus need to make sure we always have tail rec
+\begin{itemize}
+\item There are many ways a loop can be represented in code
+\item FPrs see it as a recursive function
+\item Procedural programmers see it as a while or for C loop
+\item Down at the machine level is a chunk of code with a label and jump statement to the beginning of the loop (or alternatively out of the loop)
+\item When generating HsCode only rec fun, however want fast machine code in the end
+\item Tail rec
+\item Give example of what machine code it becomes
+\item Thus need to make sure we always have tail rec
+\end{itemize}
 
 \subsubsection{Tail recursion}
-- Perhaps put the points from above here
+\begin{itemize}
+\item Perhaps put the points from above here
+\end{itemize}
 
 \subsubsection{Strictness}
-- What is it and why
-- Strictness analysis example
-- Where in our case it would fail
-- What to do: two things, the easiest is !
+\begin{itemize}
+\item What is it and why
+\item Strictness analysis example
+\item Where in our case it would fail
+\item What to do: two things, the easiest is !
+\end{itemize}
 
 \subsubsection{Inlining}
-- Funcall costs
-- Perhaps give an example with benchmark
-- LLVM helps?
+\begin{itemize}
+\item Funcall costs
+\item Perhaps give an example with benchmark
+\item LLVM helps?
+\end{itemize}
 
 \subsubsection{Unboxing}
-- Give example
-- Rewrite $case i\# of I\# ->$ which rewrites
+\begin{itemize}
+\item Give example
+\item Rewrite \texttt{case i\# of I\# ->} which rewrites
+\end{itemize}
 
 
 \subsubsection{Compilation and loading}
@@ -1323,66 +1427,82 @@ Ways (haskell, external (c), llvm)
 \subsubsection{Performance considerations}
 
 \subsubsection{Two types of sharing}
-- Diamond is easy is there are many ways of achieving it, even though it compromises referential transparency. But we guarranty correctness by design. Extensively covered in section \ref{}
-- Problem arises if the diamond does not form before the result is required in one of the branches
-- Illustrate with QuickHull example
-- Would be less of a problem if we were analysing a static tree in the compiler since there are no conditionals so such a computation would always be there
-- However, when it comes to runtime we are limited by the execution order. If a result is required in Node x in Figure, then Node y won't be forced since none of the predeccessors of Node x know about the branch leading up to Node y.
-- This wouldn't be a problem in a language with mutable references, where the parents of the tree could know about its children
-- This has two censequences:
-  - Even though the results of Node x and y can be computed in one loop, Node x will be computed first, thus a fusion opportunity is missed
-  - A bigger problem, however, is that it may lead to duplicated work
-  - Consider Node z when the branching occurs. At the time of computing Node x, the computation in Node and all of its predessessors will be fused into the loop computing result for Node x. Once the result of Node y is finally required, the coputation would have to start from scratch and include Node z and all of its predeccessors.
-  - In this case it would have been beneficial for performance to create an intermediate array at Node z and start the computation of Node y with that.
+\begin{itemize}
+\item Diamond is easy is there are many ways of achieving it, even though it compromises referential transparency. But we guarranty correctness by design. Extensively covered in section \ref{}
+\item Problem arises if the diamond does not form before the result is required in one of the branches
+\item Illustrate with QuickHull example
+\item Would be less of a problem if we were analysing a static tree in the compiler since there are no conditionals so such a computation would always be there
+\item However, when it comes to runtime we are limited by the execution order. If a result is required in Node x in Figure, then Node y won't be forced since none of the predeccessors of Node x know about the branch leading up to Node y.
+\item This wouldn't be a problem in a language with mutable references, where the parents of the tree could know about its children
+\item This has two censequences:
+\begin{itemize}
+  \item Even though the results of Node x and y can be computed in one loop, Node x will be computed first, thus a fusion opportunity is missed
+  \item A bigger problem, however, is that it may lead to duplicated work
+  \item Consider Node z when the branching occurs. At the time of computing Node x, the computation in Node and all of its predessessors will be fused into the loop computing result for Node x. Once the result of Node y is finally required, the coputation would have to start from scratch and include Node z and all of its predeccessors.
+  \item In this case it would have been beneficial for performance to create an intermediate array at Node z and start the computation of Node y with that.
+\end{itemize}
+\end{itemize}
 
 \subsubsection{One solution for branched sharing}
-- It maybe benefitial to take a step back and think about the problem in terms of the data structures that represent the delayed computations
-- Trees
-- In general in Haskell trees the parents know about the children, but the children do not know about the parents. In the case of LiveFusion with predessessor in the pipeline of combinators is the child, while the root of the tree is the last combinator in the pipeline.
-- If we employ the common sharing recovery techniques, we get a graph in which the shared nodes are not repeated.
-- The important thing to note is that we still have a graph with ONE SINGLE root node. The same node that was the tree before sharing recovery.
-- The problem with branched sharing is that even before the sharing recovery takes place, we have not a tree but a graph. There are multiple tree roots (e.g. x and y) that are held by different parts of the program which happen to share some nodes.
-- Knowing about other such roots from at each one of them presents the essence of the problem we are facing
-- Here we present a sample solution to the problem which is set outside the LiveFusion framework
-- Describe that ugly sharing recovery example I wrote
+\begin{itemize}
+\item It maybe benefitial to take a step back and think about the problem in terms of the data structures that represent the delayed computations
+\item Trees
+\item In general in Haskell trees the parents know about the children, but the children do not know about the parents. In the case of LiveFusion with predessessor in the pipeline of combinators is the child, while the root of the tree is the last combinator in the pipeline.
+\item If we employ the common sharing recovery techniques, we get a graph in which the shared nodes are not repeated.
+\item The important thing to note is that we still have a graph with ONE SINGLE root node. The same node that was the tree before sharing recovery.
+\item The problem with branched sharing is that even before the sharing recovery takes place, we have not a tree but a graph. There are multiple tree roots (e.g. x and y) that are held by different parts of the program which happen to share some nodes.
+\item Knowing about other such roots from at each one of them presents the essence of the problem we are facing
+\item Here we present a sample solution to the problem which is set outside the LiveFusion framework
+\item Describe that ugly sharing recovery example I wrote
+\end{itemize}
 
 
 \subsubsection{Delaying computation of scalar results}
-- So far assumed that we have arrays as results
-- However, as discussed we distinguish three types of array combinators:
-  - anamorphic combinators (generators)
-  - hylomorphic combinators (producer/consumers)
-  - catamorphic combinators (pure consumers)
-- A particular example of the pure consumets is a Fold and it produces a single scalar value- 
-- It is important to note the result type of function $fold$. It is just the element type. Compare it to the combinators which have the result type of Array a which is a synonym for DET (Vector a). The latter clearly stately it is a delayed computation. However, in the case of $fold$ nowhere in the type singnature does it say it's a delayed computation.
-- The reason for this is in the way DPH integrates into Haskell
-- Arrays are library defined, while the scalars are Haskell built in.
-- Another way to look at it is if DET was the type of a typical EDSL. All array producing computations in LiveFusion are represented in this DET language. In much the same way Accelerate languare has Acc Array. However, unlike DPH, Acclerate also offers scalar computations and even functions represented as $Acc$: e.g. $Acc Int$ and \_?\_ $(Int -> Int)$ respectively.
-- Thus the type of fold would in Accelerate would look like ...
-- Due to the tighter integration of DPH with Haskell, it by design uses Haskell types directly, hence the type of the fold which uses haskell primitive types
-- This poses a problem that it forces the computation as soon as the reduction is reached as there is no data structure to hold the delayed computation in
-- This is usually the desired result, unless it is an instance of branched sharing discussed previously (outline an example)
-- There is currently no solution for the problem, however, for easier integration into other systems, LiveFusion does delay scalar computations, i.e. the type of Fold combinator is actually $..... -> DET a$. In fact the only thing that the wrapper $fold$ functions does is: $fold f z xs = compute \$ Fold f z xs$
+\begin{itemize}
+\item So far assumed that we have arrays as results
+\item However, as discussed we distinguish three types of array combinators:
+\begin{itemize}
+  \item anamorphic combinators (generators)
+  \item hylomorphic combinators (producer/consumers)
+  \item catamorphic combinators (pure consumers)
+\end{itemize}
+\item A particular example of the pure consumets is a Fold and it produces a single scalar value- 
+\item It is important to note the result type of function \texttt{fold}. It is just the element type. Compare it to the combinators which have the result type of Array a which is a synonym for \texttt{AST (Vector a)}. The latter clearly stately it is a delayed computation. However, in the case of $fold$ nowhere in the type singnature does it say it's a delayed computation.
+\item The reason for this is in the way DPH integrates into Haskell
+\item Arrays are library defined, while the scalars are Haskell built in.
+\item Another way to look at it is if AST was the type of a typical EDSL. All array producing computations in LiveFusion are represented in this AST language. In much the same way Accelerate languare has Acc Array. However, unlike DPH, Acclerate also offers scalar computations and even functions represented as \texttt{Acc}: e.g. \texttt{Acc Int} and \_?\_ \texttt{(Int -> Int)} respectively.
+\item Thus the type of fold would in Accelerate would look like ...
+\item Due to the tighter integration of DPH with Haskell, it by design uses Haskell types directly, hence the type of the fold which uses haskell primitive types
+\item This poses a problem that it forces the computation as soon as the reduction is reached as there is no data structure to hold the delayed computation in
+\item This is usually the desired result, unless it is an instance of branched sharing discussed previously (outline an example)
+\item There is currently no solution for the problem, however, for easier integration into other systems, LiveFusion does delay scalar computations, i.e. the type of Fold combinator is actually \texttt{..... -> AST a}. In fact the only thing that the wrapper \texttt{fold} functions does is: \texttt{fold f z xs = compute \$ Fold f z xs}
+\end{itemize}
 
 \subsubsection{Code reuse}
-- Most of DPH programs are recursive in one form or the other.
-- E.g. QuickHull, NBody, etc..
-- In QuickHull ...
-- In NBody ...
-- The same graph of combinators are executed over and over again at each recursion step
-- Ammortising the cost of code generation and runtime code compilation and loading over a number of iterations is not a new problem in Computer Science [...refs...]
-- This problem has also been solved by the Accelerate EDSL for GPU programming in Haskell, so can be adapted.
+\begin{itemize}
+\item Most of DPH programs are recursive in one form or the other.
+\item E.g. QuickHull, NBody, etc..
+\item In QuickHull ...
+\item In NBody ...
+\item The same graph of combinators are executed over and over again at each recursion step
+\item Ammortising the cost of code generation and runtime code compilation and loading over a number of iterations is not a new problem in Computer Science [...refs...]
+\item This problem has also been solved by the Accelerate EDSL for GPU programming in Haskell, so can be adapted.
+\end{itemize}
 
 \subsection{Discussion}
 
 \subsubsection{What DPH gives up}
-- Lots of Filtering (common FP approach)
-- Same length zipping
-- No unbounded lengths
--
+\begin{itemize}
+\item Lots of Filtering (common FP approach)
+\item Same length zipping
+\item No unbounded lengths
+\item
+\end{itemize}
 
 \subsubsection{Use patterns}
-- Find them in examples
+\begin{itemize}
+\item Find them in examples
+\end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
