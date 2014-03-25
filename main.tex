@@ -13,6 +13,7 @@
 \usepackage{graphicx}
 \usepackage{babel}
 \usepackage[margin=2cm]{geometry}
+\usepackage[export]{adjustbox}
 \renewcommand{\baselinestretch}{1.5}
 
 \makeatletter
@@ -980,10 +981,9 @@ described above.
 \pagebreak{}
 
 
-\section{Proposal}
+\section{LiveFusion - A Runtime Approach to Fusion}
 
-The current project is carried out completely within the context of
-the Data Parallel Haskell project. Therefore, the fusion frameworks
+The current project was motivated by Data Parallel Haskell project. Even though much of the design of the new fusion system is decoupled from any particualar system targetting it, the fusion frameworks
 designed specifically for Haskell were the first to turn to. The Background
 section discussed three of them: Shortcut Fusion, Stream Fusion and
 Functional Array Fusion. Glasgow Haskell Compiler's rewrite rules
@@ -1010,13 +1010,14 @@ like a natural choice for the Haskell programming language. This is
 especially valid for Stream Fusion where the authors were able to
 achieve, through inlining, rewriting and compiler optimisations, the
 speed of handwritten code. Moreover, the generated code for many examples
-was the same as a human programmer would normally write. However,
+was the same as a human programmer would normally write if top performance was required. However,
 the strong dependence on the optimisation systems of such a complex
 system as GHC makes the fusion frameworks fragile and non-portable.
 
-One of the cases in which fusion breaks is when two array operation
+One of the cases in which equational fusion breaks is when two array operation
 do not end up being adjacent after inlining. This may happen due to
 the so called \emph{let floating }optimisation in GHC \cite{PPS96}.
+%% TODO find a breaking example in DPH and list it here
 This optimisation is designed to avoid duplicating work. When GHC
 finds two identical terms in an expression and considers them large
 enough to benefit from computing them only once, it \emph{floats}
@@ -1027,7 +1028,7 @@ rule, that fusion opportunity is missed.
 
 The other problem with equational fusion is that \emph{sharing }is
 not clearly defined. This is related to the above problem. Sharing
-prevents large amounts of work to be duplicated. Aggressive unconditional
+prevents large amounts of work from being duplicated. Aggressive unconditional
 inlining would have introduced a major inefficiency for programs in
 which the result of a pipeline of costly array operations is independently
 used in more than on place. Recomputing the shared portion may result
@@ -1053,28 +1054,27 @@ The very first design decision to make would be the way to represent
 delayed array operations as nodes in the tree. Haskell's ability to
 delaying function application and effortless function composition
 to create new functions has lead the author to reusing the approach
-of Functional Array Fusion. Thus each node in the tree could be:
-\begin{enumerate}
-\item A handle to a \emph{loop }based computation for which we store an
-appropriate mutator function, the initial accumulator value and the
-parent node in the previous node in the tree
-\item Alternatively, it could be a handle to a delayed replication, i.e.
-an array of a given length which has the same value in each position
-\end{enumerate}
-The tree represented in this manner may be flattened at any time to
-a replication handle, call it \emph{ReplicateH} wrapped in a loop
-handle, \emph{LoopH}. All of the library's interface functions can
-then be implemented in terms of the handles to the delayed tree operations.
-As a special case, the catamorphic functions, not only obtain a new
-delayed array handle but also force the evaluation of the tree.
+of Functional Array Fusion. In our case each node in the tree either represents a delayed array computation or holds a precomputed array in memory. The tree represented in this manner may be optimised and evaluated at any time to produce a manifest array in memory. All of the library's interface functions can
+then be implemented in terms of nodes in the tree.
+%%As a special case, the catamorphic functions, not only obtain a new
+%%delayed array handle but also force the evaluation of the tree.
 
-The next feature of the new framework to be implemented would be the
-support for segmented array operations. Segmented array operations
-are central to DPH. Implementing them would complete the interface
-of the library. Luckily the authors of Functional Array Fusion have
-provided one solution for it. Implementing it would require modifying
-the the type signature of the mutator function and generalising the
-\emph{loop }combinator to support segment boundaries.
+%%The next feature of the new framework to be implemented would be the
+%%support for segmented array operations. Segmented array operations
+%%are central to DPH. Implementing them would complete the interface
+%%of the library. Luckily the authors of Functional Array Fusion have
+%%provided one solution for it. Implementing it would require modifying
+%%the the type signature of the mutator function and generalising the
+%%\emph{loop }combinator to support segment boundaries.
+
+(TODO decide what to do with the following paragraphs, it should probably go in background section) At a minimum give overview of:
+\begin{itemize}
+\item Sharing recovery
+\item New loop representation
+\item Code gen for new loop representation
+\item Code compilation and loading
+\item Finish by saying that these will be discussed in turn in the coming sections
+\end{itemize}
 
 The next major feature required for DPH to be used with the new backend
 as intended would require adding support for distributing computations
@@ -1121,13 +1121,12 @@ possibly implemented:
 \emph{concat }or \emph{concatMap}
 \item Sharing recovery and fusion preserving sharing. Normally, it is not
 possible in the purely functional context to refer to the same tree
-node from two other nodes to share computation between them. Turning
-the tree into a Directed Acyclic Graph (DAG) to enable sharing would
-require extra effort. This problem has been researched in the context
-of Accelerate Domain Specific Language embedded in Haskell \cite{CKL+11}.
+node from two other nodes to share computation between them. However turning
+the tree into a Directed Acyclic Graph (DAG) to enable sharing was found to be detrimental for performance and one of the performance bottlenecks in DPH (TODO ref latest paper). This problem has been researched in the context
+of Accelerate Domain Specific Language embedded in Haskell \cite{CKL+11} (TODO As well as a million other libs, sharing recovery is one of the two biggest problems in EDSL world).
 Fusion preserving sharing is a step up from sharing recovery enabling
-to continue running running multiple computations in a fused manner
-(as opposed to first precomputing the shared portion of the DAG).
+to continue running multiple computations in a fused manner
+(as opposed to first precomputing the shared portion of the DAG). This is unfortunately where Stream Fusion and other equational fusion frameworks fail. (TODO explain better)
 \end{enumerate}
 \pagebreak{}
 
@@ -1161,11 +1160,17 @@ farAndAbove line points
     in  (above, farthest)
 \end{lstlisting}
 
-\begin{comment}INSERT FLAT QH AST FIGURE HERE\end{comment}
+\begin{figure}
+\includegraphics[width=0.4\textwidth,center]{img/QuickHull_flat_but_true}
 
-The above example uses six aray combinators: $map$, $zip$, $indices$, $pack$, $fold$ and the indexing combinator $!!$. The first four of them are $array transducers$ in that they both consume and produce arrays. On the other hand $fold$ and $!!$ consume arrays and return a scalar value, so we call them pure consumers.
+\caption{
+\label{fig:QHFlat}{AST for the core of QuickHull Example}
+}
+\end{figure}
 
-It is now time to show the AST node constructors these combinators correspond to. LiveFusion AST is a Generalised Algebraic Data Type (GADT) (TODO cite) whose individual constuctors correspond to delayed array operations. In principle, given an interpreting function such as $eval :: AST t -> t$ an value of type $t$ encoded in the $AST$ language can be computed. Nowhere does it specify that $t$ is an array. In fact we know not all of the array combinators return an array: it has been discussed that $fold$, $!!$ and several others return a scalar value. To express the dimensionality of the result we introduce $type ArrData a$ which in our implementation is represented by $Vector a$ from $vector$ package (TODO ref). We introduce type synonyms $ArrayAST a$ and $ScalarAST a$ to distinguish between the two.
+The above example uses six aray combinators: \texttt{map}, \texttt{zip}, \texttt{indices}, \texttt{pack}, \texttt{fold} and the indexing combinator \texttt{(!!)}. The first four of them are \emph{array transducers} in that they both consume and produce arrays. On the other hand \texttt{fold} and \texttt{(!!)} consume arrays and return a scalar value, so we call them pure consumers.
+
+It is now time to show the AST node constructors these combinators correspond to. LiveFusion AST is a Generalised Algebraic Data Type (GADT) (TODO cite) whose individual constuctors correspond to delayed array operations. In principle, given an interpreting function such as \texttt{eval :: AST t -> t} an value of type \texttt{t} encoded in the \texttt{AST} language can be computed. Nowhere does it specify that \texttt{t} is an array. In fact we know not all of the array combinators return an array: it has been discussed that \texttt{fold}, \texttt{(!!)} and several others return a scalar value. To express the dimensionality of the result we introduce \texttt{type ArrData a} which in our implementation is represented by \texttt{Vector a} from \texttt{vector} package (TODO ref). We introduce type synonyms \texttt{ArrayAST a} and \texttt{ScalarAST a} to distinguish between the two.
 
 \begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
 type ArrayAST a = AST (ArrData a)
@@ -1503,7 +1508,7 @@ Ways (haskell, external (c), llvm)
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+\begin{comment}
 \section{Planning}
 
 In the previous sections we reviewed several approaches to array fusion.
@@ -1623,6 +1628,8 @@ reduced complexity compared to equational fusion systems.
 Lastly, the research has the potential to benefit the implementors
 of numeric libraries in other languages especially if they follow
 the functional programming paradigm.
+\end{comment}
+
 
 \pagebreak{}
 
