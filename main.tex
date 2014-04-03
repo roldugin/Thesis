@@ -74,15 +74,20 @@ Masters Thesis [Draft]}
 
 \begin{center}
 \begin{tabular}{ll}
-\textbf{Supervisor} & Manuel Chakravarty~~~~~\tabularnewline
+\textbf{Supervisor} & Manuel M. T. Chakravarty~~~~~\tabularnewline
 \textbf{Co-Supervisor} & Gabriele Keller\tabularnewline
-\textbf{External Supervisor} & Ricardo Peña\tabularnewline
 \end{tabular}
 \par\end{center}
 
 \thispagestyle{empty}
 
 \pagebreak{}
+
+
+\tableofcontents
+
+
+\pagebreak
 
 
 \section{Introduction}
@@ -146,9 +151,9 @@ motivation behind fusion, introduce the context of the project as
 well as the previous work in the field. A research proposal and a
 planned list of milestones are provided in the final chapters.
 
-\pagebreak{}
 
 
+\pagebreak
 \section{Motivation}
 
 Suppose we have the following computation to perform:
@@ -364,7 +369,7 @@ that use nested data parallelism to those using flat data parallelism.
 Figure \ref{fig:Lit:Tree} presents the same tree with each of its
 levels placed into a parallel array. At the implementation level it
 is flattened even further by storing a flat data array with all the
-node values and a \emph{segment descriptor }defining the partitioning
+node values and a \emph{segment descriptor} defining the partitioning
 to recreate the original nesting. Thus, a parallel array with elements
 
 \begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
@@ -517,73 +522,12 @@ types is that they rely on the consecutive operations being inlined
 and always following each other with nothing in between. This is a
 necessary condition for the rewrite rules to fire.
 
-\pagebreak{}
 
-
+\pagebreak
 \section{Background}
 
 
-\subsection{DESOLA}
-
-Delayed Evaluation Self Optimising Linear Algebra (DESOLA) \cite{RMKB06}
-is a C++ active library which was designed to explore the benefits
-of runtime code generation and optimisation for scientific computing.
-In contrast to DPH, DESOLA puts portability across compilers as one
-of its priorities, thus it may provide several insights in doing thing
-differently. In particular, most of the interesting code generation
-and optimisation happens at runtime. Quoting the authors of the library,
-they take the following approach:
-\begin{description}
-\item [{Delay~library~call~execution}] Calls made to the library are
-used to build a “recipe” for the delayed computation. When execution
-is finally forced by the need for a result, the recipe will often
-represent a complex composition of primitive calls.
-\item [{Generate~optimised~code~at~runtime}] Code is generated at runtime
-to perform the operations present in the delayed recipe. In order
-to improve performance over a conventional library, it is important
-that the generated code should execute faster than a statically generated
-counterpart in a conventional library. To achieve this, we apply optimisations
-that exploit the structure, semantics and context of each library
-call. Compiled recipes are cached to limit overheads, but need to
-be executed enough times to offset the cost of the initial compilation.
-\end{description}
-\begin{figure}
-\begin{centering}
-\includegraphics{img/DESOLA_running_example}
-\par\end{centering}
-
-\caption{\selectlanguage{english}%
-\label{fig:Lib:DESOLA-DAG}\foreignlanguage{british}{An example DAG.
-The rectangular node denotes a handle held by the library client.
-The expression represents the matrix-vector multiply function y =
-αAx + βy.}\selectlanguage{british}
-}
-\end{figure}
-
-
-Figure \ref{fig:Lib:DESOLA-DAG} shows a tree, or more generally a
-directed acyclic graph (DAG), accumulated during the evaluation of
-a matrix-vector multiply function. The important thing to note is
-that the authors insist on that DAG is a more effective way to record
-computations than a tree as it exposes the sharing of {}``recipes''
-among handles in the client code. This may not always be possible
-in a purely functional context and will have to be explored. The actual
-fusion algorithms employed in DESOLA are not explained in much detail.
-The authors found that their achievements in fusion using the information
-only available at runtime compensated the runtime code generation
-cost for many real sized problems. The authors also believe that the
-benefits of array contraction will be more noticeable once they add
-support for sparse matrices and similar irregular data structures
-to their library. As this is the focus of DPH, array contraction may
-be beneficial to look at in more detail.
-
-Overall, the approach of delaying the evaluation until it it required
-seems promising and aligns well with Haskell's approach to lazy evaluation
-(only from the ideological point of view, since the performance is
-the first priority for DPH).
-
-
-\subsection{Haskell Fusion Systems}
+\subsection{Equational Fusion Systems}
 
 This section will review the previous approaches to fusion in Haskell.
 It will cover Shortcut Fusion and DPH's very own Stream Fusion and
@@ -795,10 +739,10 @@ function produces or consumes array(s).
 \begin{figure}
 \includegraphics[width=1\textwidth]{img/SumPrimes}
 
-\caption{\selectlanguage{english}%
-\label{fig:Prime-Sum-evaluation}\foreignlanguage{british}{Prime Sum
+\caption{
+\label{fig:Prime-Sum-evaluation}{Prime Sum
 evaluation tree. Delayed evaluation tree (left) and values at every
-step (right).}\selectlanguage{british}
+step (right).}
 }
 \end{figure}
 
@@ -822,9 +766,8 @@ at this problem is it considers the computation as a pipeline of array
 combinators, whereby each element is consumed in a lockstep and is
 directly projected to the correct position in the resulting array.
 As the right of Figure \vref{fig:Prime-Sum-evaluation} suggests,
-each element is visualised as being \emph{mutated }in some way to
-produce the final result. Thus, for each new element \emph{enumFromTo
-}generates it is first squared, then incremented by one. It is then
+each element is visualised as being \emph{mutated} in some way to
+produce the final result. Thus, for each new element \emph{enumFromTo} generates it is first squared, then incremented by one. It is then
 run through the predicate of the filter and is taken into account
 when folding to the final value if found to be true.
 
@@ -842,10 +785,10 @@ loop :: (e -> a -> (Maybe e', a)) -- mutator function
 \end{lstlisting}
 
 
-The \emph{loop }combinator traverses the input array \emph{arr}. The
+The \emph{loop} combinator traverses the input array \emph{arr}. The
 mutator function is made generic so as to be able to act as function
 supplied to \emph{map}, \emph{filter} and \emph{fold} combinators.
-Thus, \emph{map f} can be implemented as \emph{loop }with a unit accumulator
+Thus, \emph{map f} can be implemented as \emph{loop} with a unit accumulator
 and the following mutator function:
 
 \begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
@@ -854,8 +797,8 @@ map_mf x acc = (Just (f x), acc)    -- acc unused
 \end{lstlisting}
 
 
-Similarly, \emph{filter p }and \emph{fold f acc }can be implemented
-as \emph{loop}s\emph{ }with the following mutator functions:
+Similarly, \emph{filter p} and \emph{fold f acc} can be implemented
+as \emph{loop}s with the following mutator functions:
 
 \begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
 filt_mf :: (e -> a -> (Maybe e', a))
@@ -869,12 +812,12 @@ fold_mf x acc = (Nothing, f x acc)  -- no elt produced
 \end{lstlisting}
 
 
-It should be noted from the above that the \emph{loop }combinator
+It should be noted from the above that the \emph{loop} combinator
 is able to express both hylomorphisms (\emph{map, filter}) and catamorphisms
-(\emph{fold}). The latter are identified by the \emph{Nothing }value
-unconditionally returned by the \emph{mutator function. }The only
+(\emph{fold}). The latter are identified by the \emph{Nothing} value
+unconditionally returned by the \emph{mutator function.} The only
 function from the original example that is left to be defined in terms
-of the \emph{loop }combinator is the anamorphism \emph{enumFromTo.}
+of the \emph{loop} combinator is the anamorphism \emph{enumFromTo.}
 Its mutator function might%
 \footnote{The library implementation generalises enumerations to \emph{enumFromStepLen},
 which takes a value for the first element, the increment and desired
@@ -887,9 +830,9 @@ enum_mf _ acc = (Just acc, acc+1)   -- acc is next val
 \end{lstlisting}
 
 
-The above implementation of \emph{enum }suggests that it might be
-possible to express generators using the generic \emph{loop }combinator.
-However, a careful reader may have noticed that \emph{loop, }by definition,
+The above implementation of \emph{enum} suggests that it might be
+possible to express generators using the generic \emph{loop} combinator.
+However, a careful reader may have noticed that \emph{loop,} by definition,
 traverses \emph{an array}, even though the value of the element is
 ignored in this particular mutator function. Thus, a cheap but generic
 implementation of generators would have been possible if we had a
@@ -898,7 +841,7 @@ an array of units can be represented by a single value -- its length.
 Indexing the array at any position within the bounds would just return
 a unit value%
 \footnote{In Haskell a Unit type conveniently represented in source code as
-\emph{() }is similar to a \emph{void }in C.%
+\emph{()} is similar to a \emph{void} in C.%
 }. Now, a generator like \emph{enumFromTo} could be easily and cheaply
 implemented as follows:
 
@@ -916,8 +859,8 @@ in a tuple with the desired enumeration in the first position and
 the final accumulator in the second (\emph{end+1} in this case). We
 can safely drop the accumulator as we are only interested in the array.
 
-The true convenience of the \emph{loop }combinator is revealed if
-we try to squash multiple \emph{loop }combinators into a single \emph{loop}.
+The true convenience of the \emph{loop} combinator is revealed if
+we try to squash multiple \emph{loop} combinators into a single \emph{loop}.
 GHC's rewrite rules mechanism is employed to pipeline two adjacent
 \emph{loop}s. For the sake of being concise we will omit here most
 of the infrastructure required for the approach to work. We present
@@ -953,7 +896,7 @@ proceeds in two steps:
 \begin{enumerate}
 \item We first run the given array element through the first mutator function.
 If that does not produce a value (produces a \emph{Nothing}) we do
-not proceed to the second mutator and yield \emph{Nothing }as the
+not proceed to the second mutator and yield \emph{Nothing} as the
 overall result.
 \item In case the first mutator did produce a value (\emph{Just}) we run
 it through the second mutator, returning the final result whatever
@@ -962,6 +905,73 @@ it might be.
 Clearly, some trickery is involved in dropping the first accumulator
 in a (potentially deeply nested) pair, but the above conveys the main
 concepts behind the Functional Array Fusion.
+
+
+\subsection{Runtime Fusion Systems}
+
+\subsbusection{DESOLA - Delayed Evaluation Self Optimising Linear Algebra}
+Delayed Evaluation Self Optimising Linear Algebra (DESOLA) \cite{RMKB06}
+is a C++ active library which was designed to explore the benefits
+of runtime code generation and optimisation for scientific computing.
+In contrast to DPH, DESOLA puts portability across compilers as one
+of its priorities, thus it may provide several insights in doing thing
+differently. In particular, most of the interesting code generation
+and optimisation happens at runtime. Quoting the authors of the library,
+they take the following approach:
+\begin{description}
+\item [{Delay~library~call~execution}] Calls made to the library are
+used to build a “recipe” for the delayed computation. When execution
+is finally forced by the need for a result, the recipe will often
+represent a complex composition of primitive calls.
+\item [{Generate~optimised~code~at~runtime}] Code is generated at runtime
+to perform the operations present in the delayed recipe. In order
+to improve performance over a conventional library, it is important
+that the generated code should execute faster than a statically generated
+counterpart in a conventional library. To achieve this, we apply optimisations
+that exploit the structure, semantics and context of each library
+call. Compiled recipes are cached to limit overheads, but need to
+be executed enough times to offset the cost of the initial compilation.
+\end{description}
+\begin{figure}
+\begin{centering}
+\includegraphics{img/DESOLA_running_example}
+\par\end{centering}
+
+\caption{
+\label{fig:Lib:DESOLA-DAG}{An example DAG.
+The rectangular node denotes a handle held by the library client.
+The expression represents the matrix-vector multiply function y =
+αAx + βy.}
+}
+\end{figure}
+
+
+Figure \ref{fig:Lib:DESOLA-DAG} shows a tree, or more generally a
+directed acyclic graph (DAG), accumulated during the evaluation of
+a matrix-vector multiply function. The important thing to note is
+that the authors insist on that DAG is a more effective way to record
+computations than a tree as it exposes the sharing of {}``recipes''
+among handles in the client code. This may not always be possible
+in a purely functional context and will have to be explored. The actual
+fusion algorithms employed in DESOLA are not explained in much detail.
+The authors found that their achievements in fusion using the information
+only available at runtime compensated the runtime code generation
+cost for many real sized problems. The authors also believe that the
+benefits of array contraction will be more noticeable once they add
+support for sparse matrices and similar irregular data structures
+to their library. As this is the focus of DPH, array contraction may
+be beneficial to look at in more detail.
+
+Overall, the approach of delaying the evaluation until it it required
+seems promising and aligns well with Haskell's approach to lazy evaluation
+(only from the ideological point of view, since the performance is
+the first priority for DPH).
+
+
+
+\subsection{Stream Processing and Data Flow Languages}
+
+
 
 
 \subsection{Summary}
@@ -978,10 +988,9 @@ based on rewrite rules).
 The discussion in the next section will be based on the fusion frameworks
 described above.
 
-\pagebreak{}
 
-
-\section{LiveFusion - A Runtime Approach to Fusion}
+\pagebreak
+\section{LiveFusion - A Runtime Fusion System}
 
 The current project was motivated by Data Parallel Haskell project. Even though much of the design of the new fusion system is decoupled from any particualar system targetting it, the fusion frameworks
 designed specifically for Haskell were the first to turn to. The Background
@@ -1016,17 +1025,17 @@ system as GHC makes the fusion frameworks fragile and non-portable.
 
 One of the cases in which equational fusion breaks is when two array operation
 do not end up being adjacent after inlining. This may happen due to
-the so called \emph{let floating }optimisation in GHC \cite{PPS96}.
+the so called \emph{let floating} optimisation in GHC \cite{PPS96}.
 %% TODO find a breaking example in DPH and list it here
 This optimisation is designed to avoid duplicating work. When GHC
 finds two identical terms in an expression and considers them large
 enough to benefit from computing them only once, it \emph{floats}
-them out to a new \emph{let }binding outside of the expression. This
+them out to a new \emph{let} binding outside of the expression. This
 optimisation is the opposite of inlining. If the term that was forcibly
 floated out would have otherwise completed a pattern for a fusion
 rule, that fusion opportunity is missed.
 
-The other problem with equational fusion is that \emph{sharing }is
+The other problem with equational fusion is that \emph{sharing} is
 not clearly defined. This is related to the above problem. Sharing
 prevents large amounts of work from being duplicated. Aggressive unconditional
 inlining would have introduced a major inefficiency for programs in
@@ -1065,7 +1074,7 @@ then be implemented in terms of nodes in the tree.
 %%of the library. Luckily the authors of Functional Array Fusion have
 %%provided one solution for it. Implementing it would require modifying
 %%the the type signature of the mutator function and generalising the
-%%\emph{loop }combinator to support segment boundaries.
+%%\emph{loop} combinator to support segment boundaries.
 
 (TODO decide what to do with the following paragraphs, it should probably go in background section) At a minimum give overview of:
 \begin{itemize}
@@ -1110,15 +1119,15 @@ function in the library to be classified according to:
 \emph{permute}),
 \item whether or not load unbalancing may happen (\emph{map} vs. \emph{filter})
 \end{itemize}
-While the \emph{loop }operator presumes traversing the array from
+While the \emph{loop} operator presumes traversing the array from
 left to right, the aforementioned work may prove to be useful when
 adjusting the parallel backend.
 
 Lastly, there are two optional features that may be researched and
 possibly implemented:
 \begin{enumerate}
-\item Traversing more than one array\emph{ }one after the other, e.g. using
-\emph{concat }or \emph{concatMap}
+\item Traversing more than one array one after the other, e.g. using
+\emph{concat} or \emph{concatMap}
 \item Sharing recovery and fusion preserving sharing. Normally, it is not
 possible in the purely functional context to refer to the same tree
 node from two other nodes to share computation between them. However turning
@@ -1131,13 +1140,14 @@ to continue running multiple computations in a fused manner
 \pagebreak{}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{LiveFusion}
+\pagebreak
+\section{Delaying computation: LiveFusion AST}
 
-\subsection{Delaying computation: LiveFusion AST}
-
+\subsection{On Embedded Domain Specific Languages}
 In its essence LiveFusion take the approach of deeply embedded domain specific languages (EDSLs). The principle idea of deep embedding is the introduction of its own abstract syntax tree (AST) which is separate from the host language AST but is rather presented as a tree structure in the host language. The difference with the AST found in compilers is that it allows one to analyse, optimise and compile or interpret the EDSL's AST at runtime using the host language in the library code, withought the difficulties of writing a complete standalone optimising compiler. The added benefit of the approach is that the EDSL code can interact with the other code in the language.
 \begin{comment}TODO separate EDSL discussion from deep embedding\end{comment}
 
+\subsection{Array EDSL by example}
 The fundamental concept by which LiveFusion makes fusion possible is constructing an AST of pending array operations at runtime and compiling that AST to fast code when the result in required in the host program. An AST defined in the host language (Haskell in this case) is what makes the delaying of computations possible. It is the topmost layer of LiveFusion system in that most of the library's user-facing combinators discussed in Section \begin{comment}TODO\end{comment} are for the most part just constructing the nodes of the AST. This way an AST representing the core of QuickHull example discussed previously becomes the following (TODO figure ref).
 
 \begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
@@ -1164,7 +1174,7 @@ farAndAbove line points
 \includegraphics[width=0.4\textwidth,center]{img/QuickHull_flat_but_true}
 
 \caption{
-\label{fig:QHFlat}{AST for the core of QuickHull Example}
+\label{fig:QHFlat}{AST for the core of QuickHull example: arrow labels are AST nodes, coloured boxes are potentially manifest arrays.}
 }
 \end{figure}
 
@@ -1207,6 +1217,8 @@ data AST t where
            -> ArrayAST Int
            -> ScalarAST a
 \end{lstlisting}
+
+
 
 \subsection{Parametrising higher-order functions}
 
@@ -1257,7 +1269,7 @@ The notable part of the \texttt{Exp} language is its constructor \texttt{FunE}. 
 data Impl t = HsImpl {
                 hs :: t,        -- Native Haskell function
                 th :: Q TH.Exp  -- TemplateHaskell quasiquoted expression
-              }
+              } 
 \end{lstlisting}
 
 The Template Haskell expression is really the core part of the function representation, but this is what whould later on allow us to produce Haskell source code without much trouble. We also include simple Haskell function with our representation. At present this is just for completeness. However in the future it may be possible to avoid compiling certain parts of AST at runtime and run statically scheduled combinators. In this case this whould be the function to inline in the loop.
@@ -1266,10 +1278,10 @@ We will now show the (rather trivial) implementations for a couple of functions 
 
 \begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
 plusImpl :: Num a => Impl (a -> a -> a)
-plusImpl = HsImpl { hs = (+); th = [| (+) |] }
+plusImpl = HsImpl { hs = (+); th = [| (+) |] } 
 
 absImpl :: Num a => Impl (a -> a)
-absImpl = HsImpl { hs = abs; th = [| abs |] }
+absImpl = HsImpl { hs = abs; th = [| abs |] } 
 \end{lstlisting}
 
 It is easy to see that TemplateHaskell expressions are trivially created from simple Haskell functions using QuasiQuotation syntax (TODO ref). When the backend is ready to generate Haskell source for these functions, it will be a simple matter of using a pretty printer. The reasons for using TemplateHaskell instead of strings in the first place when the conversion is so trivial are the following:
@@ -1278,7 +1290,9 @@ It is easy to see that TemplateHaskell expressions are trivially created from si
 \item New developments in TemplateHaskell\footnote{Starting with GHC 7.8.} will allow its expressions to be typed. Having \texttt{Q (TExp t)} as opposed to \texttt{Q Exp} will provide an extra layer of safety to our function representation
 \end{itemize}
 
-\subsubsection{Other backends and more backend functionality}
+
+\subsection{On the flexibility of parametrising functions}
+
 \begin{itemize}
 \item Currently function representation of only one backend was shown, namely Haskell source backend.
 \item Even that one was trivial: only containing a TH Exp + native HS function
@@ -1292,7 +1306,7 @@ It is easy to see that TemplateHaskell expressions are trivially created from si
 \item At some point in the future \texttt{Impl} function representation may be the most natural place to include backend- or even CPU-specific information, on how to generate vector instructions for a particular function, e.g. a reduction using product operator on an Intel CPU.
 \end{itemize}
 
-\subsubsection{User provided backend implementation}
+\subsection{Userland implementation of parametrising functions}
 
 One feature of the given scalar functions representation allows the user to provide implementation of arbitrary functions the way they want the backend to generate them. After all, it only requires creating a new record of type \texttt{Impl t} where \texttt{t} is the type of the desired function. Library user can then provide the internals of function implementation to appear in the generated code.
 
@@ -1311,28 +1325,47 @@ This functionality may seem unneccessary, since the library already provides all
 %%\end{itemize}
 
 
-\subsection{Sharing recovery: Abstract Sematic Graphs}
+\pagebreak
+\section{Sharing recovery: Abstract Sematic Graphs}
+
 \begin{itemize}
+\item Begin with Oleg's blessing quote. Or two probs.
 \item Find example, should be plenty in QuickHull
 \item Talk about ref transparancy of Haskell
+\item Two types of sharing really, talk shapes
 \item While can still fuse, it performs unneccessary work
+\item Implicit vs explicit sharing (ref email thread)
+\item For implicit:
 \item Still represented by the same object internally at runtime
-\item StableNames, Gill's, but can do other
+\item StableNames, Gill's, but can do other, pointer equality sharing recovery
 \item It's is IO, but since we are in a library and can guarranty safety by design we don't care
 \end{itemize}
 
-\subsection{Retreiving the result}
-\begin{itemize}
-\item LiveFusion delayed computations live in its own data type.
-\item 
-\end{itemize}
 
-\subsection{Loop representation: Loop Language}
+\pagebreak
+\section{Loop representation: The Loop Language}
+
+\subsection{Nature of fast loops}
 \begin{itemize}
 \item inherently procedural
+\item several combinators fuse to a single loop
+\item must generate parts of the same loop
 \end{itemize}
 
-\subsubsection{Communication by Convention}
+\subsection{Parts of a loop}
+\begin{itemize}
+\item Init
+\item Guard
+\item Body
+\item Bottom
+\item Done
+\item Proceed by showing an exaple, slowly populating the loop
+\item Identify problem of identifying common variables
+\item Identify the problem of naming conventions
+\end{itemize}
+
+
+\subsection{Communication by convention}
 \begin{itemize}
 \item Many of the combinators use a similar set of variables, e.g. both Map and Scan produce a value at each iteration which they assign to an intermediate variable in the body of the loop, say elt
 \item Thus if there are two maps one after the other, we need to distinguish between the two
@@ -1346,21 +1379,39 @@ This functionality may seem unneccessary, since the library already provides all
 \item Spooky action at a distance
 \item Untracked interaction between different parts of loop
 \item In many cases a flaw of software design, often discouraged and even semantically prohibited in functional languages like haskell and ml.
+
 \end{itemize}
 
 
 \subsection{Procedural code: Imperator Language}
+\begin{itemize}
+\item Loop still carries the common structure of having a guard, body, etc..
+\item How do we generalise it to a procedural language
+\item Identify relaxed constructs
+\item Introduce simple liveness analysis
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Code generation and loading}
+\pagebreak
+\section{Code generation and loading}
 
-Ways (haskell, external (c), llvm)
+\begin{itemize}
+\item haskell via TH (slow codegen, all native, TH is helpful, easy to gen code and parametrising functions, use the excellent GHC optimiser)
+\item external (c) (slow codegen, fast exec, how to identify function correspondence, must act as compiler)
+\item llvm (fast inmem gen, low level, must act as compiler in many ways)
 
-\subsubsection{Haskell code generation}
+\end {itemize}
+
+
+\subsection{Haskell code generation}
 
 \subsubsection{What do we need to generate}
 \begin{itemize}
-\item
+\item Loop code
+\item A plugin template
+\item Interface glue
+\item Arg passing to and from - variadic functions, can't do without tricks
+\item Lists of args + Unsafe coerce
 \end{itemize}
 
 \subsubsection{Efficient numeric computations in Haskell}
@@ -1386,7 +1437,7 @@ Ways (haskell, external (c), llvm)
 \item There are many ways a loop can be represented in code
 \item FPrs see it as a recursive function
 \item Procedural programmers see it as a while or for C loop
-\item Down at the machine level is a chunk of code with a label and jump statement to the beginning of the loop (or alternatively out of the loop)
+\item Down at the machine level it is a chunk of code with a label and jump statement to the beginning of the loop (or alternatively out of the loop)
 \item When generating HsCode only rec fun, however want fast machine code in the end
 \item Tail rec
 \item Give example of what machine code it becomes
@@ -1417,18 +1468,19 @@ Ways (haskell, external (c), llvm)
 \begin{itemize}
 \item Give example
 \item Rewrite \texttt{case i\# of I\# ->} which rewrites
+\item (Might wanna merge with the section above)
 \end{itemize}
 
 
 \subsubsection{Compilation and loading}
+\begin{itemize}
+\item GHC API
+\end{itemize} 
 
-\subsubsection{Impedance matching}
+\pagebreak
+\section{LiveFusion - Performance considerations}
 
-\subsubsection{Unboxing}
-
-\subsubsection{Performance considerations}
-
-\subsubsection{Two types of sharing}
+\subsection{Two types of sharing}
 \begin{itemize}
 \item Diamond is easy is there are many ways of achieving it, even though it compromises referential transparency. But we guarranty correctness by design. Extensively covered in section \ref{}
 \item Problem arises if the diamond does not form before the result is required in one of the branches
@@ -1445,7 +1497,7 @@ Ways (haskell, external (c), llvm)
 \end{itemize}
 \end{itemize}
 
-\subsubsection{One solution for branched sharing}
+\subsection{One solution for branched sharing}
 \begin{itemize}
 \item It maybe benefitial to take a step back and think about the problem in terms of the data structures that represent the delayed computations
 \item Trees
@@ -1459,7 +1511,7 @@ Ways (haskell, external (c), llvm)
 \end{itemize}
 
 
-\subsubsection{Delaying computation of scalar results}
+\subsection{Delaying computation of scalar results}
 \begin{itemize}
 \item So far assumed that we have arrays as results
 \item However, as discussed we distinguish three types of array combinators:
@@ -1480,7 +1532,7 @@ Ways (haskell, external (c), llvm)
 \item There is currently no solution for the problem, however, for easier integration into other systems, LiveFusion does delay scalar computations, i.e. the type of Fold combinator is actually \texttt{..... -> AST a}. In fact the only thing that the wrapper \texttt{fold} functions does is: \texttt{fold f z xs = compute \$ Fold f z xs}
 \end{itemize}
 
-\subsubsection{Code reuse}
+\subsection{Code reuse}
 \begin{itemize}
 \item Most of DPH programs are recursive in one form or the other.
 \item E.g. QuickHull, NBody, etc..
@@ -1491,20 +1543,26 @@ Ways (haskell, external (c), llvm)
 \item This problem has also been solved by the Accelerate EDSL for GPU programming in Haskell, so can be adapted.
 \end{itemize}
 
-\subsection{Discussion}
+\pagebreak
+\section{Influence of Language and Context}
 
-\subsubsection{What DPH gives up}
+\subsection{Common patterns in DPH}
 \begin{itemize}
 \item Lots of Filtering (common FP approach)
 \item Same length zipping
 \item No unbounded lengths
-\item
-\end{itemize}
-
-\subsubsection{Use patterns}
-\begin{itemize}
 \item Find them in examples
 \end{itemize}
+
+\subsection{Applicability in other languages}
+\begin{itemize}
+\item Non DPH
+\item Non pure FP
+\item Non FP
+\item Non loop
+\end{itemize}
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1547,7 +1605,7 @@ It must provide means for flattening the tree and evaluating it to
 a final result. Primitive library functions that do not use segmentation
 can now be implemented in terms of the delayed tree handles {[}completed{]}
 \item [{2.\ Efficient\ loop\ combinator\ implementation}] will require
-implementing the \emph{loop }combinator in terms of unboxed arrays.
+implementing the \emph{loop} combinator in terms of unboxed arrays.
 Preliminary benchmarking can be done at this stage {[}completed{]}
 \item [{3.\ Performance\ tuning}] will require optimising the new framework
 to reduce the overhead associated with bringing fusion into runtime.
@@ -1567,7 +1625,7 @@ functional context. An appropriate sharing recovery mechanism would
 allow us to surpass the Stream Fusion system in many real world DPH
 programs
 \item [{5.\ Segmented\ sequential\ evaluation}] will require extending
-the tree representation and the \emph{loop }combinator to support
+the tree representation and the \emph{loop} combinator to support
 segmentation. Previous work on Functional Array Fusion is likely to
 be of help. Adding support for segmented evaluation will complete
 a major part of all functions in the primitive library. This would
@@ -1579,7 +1637,7 @@ elements
 \item [{7.\ Traversing\ multiple\ arrays}] would allow the framework
 to cover more of the library's array operations. While this is not
 a task of immediate importance, making operations such as \emph{concat
-}and \emph{concatMap }fusible bringing the overall coverage of the
+}and \emph{concatMap} fusible bringing the overall coverage of the
 proposed system closer to that of Stream Fusion
 \item [{8.\ Thesis\ write\ up\ and\ submission}] would report on the
 work done and conclusions reached. The final benchmark results will
@@ -1602,7 +1660,7 @@ The proposed alternative fusion system would deliver on at least the
 following goals:
 \begin{enumerate}
 \item Simplifier independency
-\item Efficient implementation of \emph{loop }combinator based on unboxed
+\item Efficient implementation of \emph{loop} combinator based on unboxed
 arrays
 \item Flat and segmented fusible implementations for most operations in
 the primitive library
