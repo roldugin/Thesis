@@ -10,7 +10,7 @@ all : $(PDFS)
 # This generic rule accepts PDF targets with corresponding Markdown
 # source, and makes them using pandoc
 %.md.pdf : %.md
-	pandoc -V geometry:margin=2cm $< -o $@
+	pandoc -V geometry:margin=2cm --latex-engine=pdflatex --include-in-header=preamble.tex $< -o $@
 
 # Remove all PDF outputs
 clean :
