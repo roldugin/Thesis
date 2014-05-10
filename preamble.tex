@@ -1,0 +1,83 @@
+%% Conditional preamble inclusion.
+%% \input{preamble.tex} when building when building the complete thesis or its individual chapters.
+
+\ifdefined\PREAMBLE
+%% DEBUG: Preamble skipped
+\else
+
+\newcommand*{\PREAMBLE}{} %% Mark preamble as included
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% The preamble goes here and must end with \begin{document}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[12pt,a4paper,british]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{luainputenc}
+\usepackage{listings}
+\usepackage{verbatim}
+\usepackage{varioref}
+\usepackage{refstyle}
+\usepackage{textcomp}
+\usepackage{amstext}
+\usepackage{graphicx}
+\usepackage{babel}
+\usepackage[margin=2cm]{geometry}
+\usepackage[export]{adjustbox}
+\usepackage{listings}
+%%\usepackage[charter]{mathdesign}  % sets the math font
+%%\usepackage{fontspec}
+%%\setmainfont{Charis SIL}          % sets the document font
+\lstset{language=Haskell, columns=fixed, basewidth=.5em}
+
+\renewcommand{\baselinestretch}{1.5}
+
+\makeatletter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
+
+\AtBeginDocument{\providecommand\subref[1]{\ref{sub:#1}}}
+\DeclareRobustCommand{\greektext}{%
+  \fontencoding{LGR}\selectfont\def\encodingdefault{LGR}}
+\DeclareRobustCommand{\textgreek}[1]{\leavevmode{\greektext #1}}
+\DeclareFontEncoding{LGR}{}{}
+\DeclareTextSymbol{\~}{LGR}{126}
+%% Because html converters don't know tabularnewline
+\providecommand{\tabularnewline}{\\}
+\RS@ifundefined{subref}
+  {\def\RSsubtxt{section~}\newref{sub}{name = \RSsubtxt}}
+  {}
+\RS@ifundefined{thmref}
+  {\def\RSthmtxt{theorem~}\newref{thm}{name = \RSthmtxt}}
+  {}
+\RS@ifundefined{lemref}
+  {\def\RSlemtxt{lemma~}\newref{lem}{name = \RSlemtxt}}
+  {}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% END LyX specific LaTeX commands.
+
+\makeatother
+
+
+%%\gdef$$#1$${\texttt(\detokenize{#1})}
+\catcode`|=\active
+\def|#1|{\texttt{#1}}
+
+\catcode`*=\active
+\def*#1*{\emph{#1}}
+
+\input{itemize_md.tex}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% End of preamble. Don't forget \begin{document} and \fi
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\fi %% Do Not Remove. End of conditional preamble inclusion.
+
+

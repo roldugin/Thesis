@@ -1,49 +1,9 @@
 %!TEX program = lualatex
 %% LyX 2.0.0 created this file.  For more info, see http://www.lyx.org/.
 %% Do not edit unless you really know what you are doing.
-\documentclass[12pt,a4paper,english,british]{article}
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{luainputenc}
-\usepackage{listings}
-\usepackage{verbatim}
-\usepackage{varioref}
-\usepackage{refstyle}
-\usepackage{textcomp}
-\usepackage{amstext}
-\usepackage{graphicx}
-\usepackage{babel}
-\usepackage[margin=2cm]{geometry}
-\usepackage[export]{adjustbox}
-\renewcommand{\baselinestretch}{1.5}
 
-\makeatletter
+\input{preamble.tex}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
-
-\AtBeginDocument{\providecommand\subref[1]{\ref{sub:#1}}}
-\DeclareRobustCommand{\greektext}{%
-  \fontencoding{LGR}\selectfont\def\encodingdefault{LGR}}
-\DeclareRobustCommand{\textgreek}[1]{\leavevmode{\greektext #1}}
-\DeclareFontEncoding{LGR}{}{}
-\DeclareTextSymbol{\~}{LGR}{126}
-%% Because html converters don't know tabularnewline
-\providecommand{\tabularnewline}{\\}
-\RS@ifundefined{subref}
-  {\def\RSsubtxt{section~}\newref{sub}{name = \RSsubtxt}}
-  {}
-\RS@ifundefined{thmref}
-  {\def\RSthmtxt{theorem~}\newref{thm}{name = \RSthmtxt}}
-  {}
-\RS@ifundefined{lemref}
-  {\def\RSlemtxt{lemma~}\newref{lem}{name = \RSlemtxt}}
-  {}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%% END LyX specific LaTeX commands.
-
-\makeatother
-
-
-\begin{document}
 \pagebreak{}
 
 
@@ -1344,10 +1304,10 @@ This functionality may seem unneccessary, since the library already provides all
 
 \pagebreak
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Loop representation: The Loop Language %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% See 06-loops.md
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Chapter 6: Loop representation: The Loop Language %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\include{06-loops.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \pagebreak
