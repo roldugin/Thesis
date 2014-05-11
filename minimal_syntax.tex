@@ -1,0 +1,14 @@
+%% Minimal syntax package for latex supporting Markdown style *italic*, **bold**, |fixed-width|
+
+%% |foo| translates to \texttt{foo}
+\catcode`|=\active
+\def|#1|{\texttt{#1}}
+
+%% **foo** translates to \textbf{foo}
+%% *foo* translates to \emph{foo}
+\catcode`*=\active
+\makeatletter
+\protected\def*{\@ifnextchar*\@doublestar\@singlestar}
+\def\@doublestar*#1**{\textbf{#1}}
+\def\@singlestar#1*{\emph{#1}}
+\makeatother

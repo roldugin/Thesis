@@ -2,6 +2,14 @@
 *.dvi
 *.aux
 *.log
+*.synctex.gz
+*.fdb_latexmk
 
 # Careful with this one
 *.pdf
+
+# Mac and Dropbox stuff
+.DS_Store
+.dropbox
+	
+
