@@ -27,9 +27,12 @@
 \usepackage[margin=2cm]{geometry}
 \usepackage[export]{adjustbox}
 \usepackage{listings}
+\usepackage{subfiles}
+\usepackage{setspace}
 %%\usepackage[charter]{mathdesign}  % sets the math font
 %%\usepackage{fontspec}
 %%\setmainfont{Charis SIL}          % sets the document font
+
 \lstset{language=Haskell, columns=fixed, basewidth=.5em}
 
 \renewcommand{\baselinestretch}{1.5}
@@ -63,6 +66,42 @@
 \input{minimal_syntax.tex}
 
 \input{itemize_md.tex}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Shortcuts.
+
+\def\compose{$\circ$ }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% END Shortcuts.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Environments.
+
+\lstnewenvironment 
+  {ccode}[1]
+  {\singlespacing\lstset{basicstyle={\ttfamily}, language=C, tabsize=4, #1}}
+  {}
+
+\lstnewenvironment 
+  {ccode2}[2]
+  {\singlespacing\lstset{basicstyle={\ttfamily}, language=C, tabsize=4, label=#1, caption=#2}}
+  {}
+
+\lstnewenvironment 
+  {hscode}
+  {\singlespacing\lstset{basicstyle={\ttfamily}, language=C, tabsize=4}}
+  {}
+
+\lstnewenvironment 
+  {hscode2}[2]
+  {\singlespacing\lstset{basicstyle={\ttfamily}, language=C, tabsize=4, label=#1, caption=#2}}
+  {}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% END Environments.
+
+
+
 
 \begin{document}
 

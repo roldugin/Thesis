@@ -272,11 +272,7 @@ combineP	:: [:Bool:] -> [:a:] -> [:a:] -> [:a:]
 splitP		:: [:Bool:] -> [:a:] -> ([:a:], [:a:])
 \end{lstlisting}
 
-
-\caption{\selectlanguage{english}%
-\label{fig:Lit:DPH-interface-functions}\foreignlanguage{british}{Type
-signatures for parallel array operations.}\selectlanguage{british}
-}
+\caption{\label{fig:Lit:DPH-interface-functions}{Type signatures for parallel array operations.}}
 \end{figure}
 
 
@@ -302,11 +298,7 @@ data parallelism.
 \begin{figure}
 \includegraphics[width=1\textwidth]{img/TreeRepr}
 
-\caption{\selectlanguage{english}%
-\label{fig:Lit:Tree}\foreignlanguage{british}{Value of type \texttt{{[}:Tree:{]}}
-and its vectorised representation. Empty subtrees are omitted from
-the conceptual representation.}\selectlanguage{british}
-}
+\caption{\label{fig:Lit:Tree}{Value of type \texttt{{[}:Tree:{]}} and its vectorised representation. Empty subtrees are omitted from the conceptual representation.}}
 \end{figure}
 
 
@@ -699,11 +691,7 @@ function produces or consumes array(s).
 \begin{figure}
 \includegraphics[width=1\textwidth]{img/SumPrimes}
 
-\caption{
-\label{fig:Prime-Sum-evaluation}{Prime Sum
-evaluation tree. Delayed evaluation tree (left) and values at every
-step (right).}
-}
+\caption{\label{fig:Prime-Sum-evaluation}{Prime Sum evaluation tree. Delayed evaluation tree (left) and values at every step (right).}}
 \end{figure}
 
 
@@ -869,7 +857,8 @@ concepts behind the Functional Array Fusion.
 
 \subsection{Runtime Fusion Systems}
 
-\subsbusection{DESOLA - Delayed Evaluation Self Optimising Linear Algebra}
+\subsubsection{DESOLA - Delayed Evaluation Self Optimising Linear Algebra}
+
 Delayed Evaluation Self Optimising Linear Algebra (DESOLA) \cite{RMKB06}
 is a C++ active library which was designed to explore the benefits
 of runtime code generation and optimisation for scientific computing.
@@ -878,6 +867,7 @@ of its priorities, thus it may provide several insights in doing thing
 differently. In particular, most of the interesting code generation
 and optimisation happens at runtime. Quoting the authors of the library,
 they take the following approach:
+
 \begin{description}
 \item [{Delay~library~call~execution}] Calls made to the library are
 used to build a “recipe” for the delayed computation. When execution
@@ -892,17 +882,13 @@ that exploit the structure, semantics and context of each library
 call. Compiled recipes are cached to limit overheads, but need to
 be executed enough times to offset the cost of the initial compilation.
 \end{description}
+
 \begin{figure}
 \begin{centering}
 \includegraphics{img/DESOLA_running_example}
 \par\end{centering}
 
-\caption{
-\label{fig:Lib:DESOLA-DAG}{An example DAG.
-The rectangular node denotes a handle held by the library client.
-The expression represents the matrix-vector multiply function y =
-αAx + βy.}
-}
+\caption{\label{fig:Lib:DESOLA-DAG}{An example DAG. The rectangular node denotes a handle held by the library client. The expression represents the matrix-vector multiply function y = αAx + βy.}}
 \end{figure}
 
 
@@ -1133,9 +1119,7 @@ farAndAbove line points
 \begin{figure}
 \includegraphics[width=0.4\textwidth,center]{img/QuickHull_flat_but_true}
 
-\caption{
-\label{fig:QHFlat}{AST for the core of QuickHull example: arrow labels are AST nodes, coloured boxes are potentially manifest arrays.}
-}
+\caption{\label{fig:QHFlat}{AST for the core of QuickHull example: arrow labels are AST nodes, coloured boxes are potentially manifest arrays.}}
 \end{figure}
 
 The above example uses six aray combinators: \texttt{map}, \texttt{zip}, \texttt{indices}, \texttt{pack}, \texttt{fold} and the indexing combinator \texttt{(!!)}. The first four of them are \emph{array transducers} in that they both consume and produce arrays. On the other hand \texttt{fold} and \texttt{(!!)} consume arrays and return a scalar value, so we call them pure consumers.
@@ -1609,7 +1593,7 @@ the functional programming paradigm.
 
 \pagebreak{}
 
-\bibliographystyle{is-alpha}
-\bibliography{bib}
+%%\bibliographystyle{is-alpha}
+%%\bibliography{bib}
 
 \end{document}

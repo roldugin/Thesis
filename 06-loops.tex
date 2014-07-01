@@ -18,10 +18,55 @@ The focus of this chapter is to establish the requirements for fusible combinato
 
 \subsection{Anatomy of a loop}
 
-Despite the purely functional, combinatorial interface to the library, we have established that looking at a loop in a purely procedural way is the approach we opted for in the middle layer. It is represented by the Loop language. The loops we generate can be viewed as similar to those in the mainsteam procedural languages such as C, however there are two important differences. One positions our Loop language a step above the simple C loops while the other one, sadly, makes it low
+Despite the purely functional, combinatorial interface to the library, looking at a loop in a purely procedural way is the approach we opted for in the middle layer. It is represented by the Loop language. The loops we generate can be viewed as similar to those in the mainsteam procedural languages such as C, however there are two important differences. One positions our Loop language a step above the simple C loops while the other one, sadly, is what C programers are trying to avoid.
 
-However, 
+On the positive side, we offer a language that logically separates sections of a loop such as initialisation, body and update. It makes it more clear which variables carry mutable state of the loop and which are immutable.
 
+The downside, however, is that our loop relies on |goto|-like statements whose use is almost always considered bad practice in modern software engineering.
+
+Without further delaying the discussion of the matter we will now look are the stucture of a typical loop and gradually extend it to what we need.
+
+Let us go back to a very simple example we used in the introductory chapter. The task was to compute the dot product of two vectors $xs$ and $ys$. In Haskell the function would have looked something like the following:
+
+\begin{hscode}
+  dotProduct :: Array Double -> Array Double -> Double
+  dotProduct xs ys
+    = let products = zipWith (*) xs ys
+          result   = fold (+) products
+      in  result
+\end{hscode}
+
+We will now present the C solution yet again and try to pull it apart into its constituent parts.
+
+\begin{ccode}{numbers=left}
+double dotProduct (double xs[], double ys[], int len) {
+  int i;
+
+  double* temp = malloc(sizeof(double)*len);  // Intermediate array
+  for(i=0; i<len; ++i)
+    temp[i] = xs[i]*ys[i];
+
+  double result = 0;                          // Final result accumulator
+  for(i=0; i<len; ++i)
+    result += temp[i];
+
+  return result;
+}
+\end{ccode}
+
+\begin{ccode}{}
+double dotProduct (int len, int[] xs, int[] ys) {
+  double result = 0;
+  int i;
+  for(i=0; i<len; ++i)
+    result += xs[i]*ys[i];
+  return result;
+}
+
+\end{ccode}
+
+
+% section more_on_ (end)
 + Init
 + Guard
 + Body
@@ -31,6 +76,31 @@ However,
 + Identify problem of identifying common variables
 + Identify the problem of naming conventions
 
+\subsubsection{More on \texttt{goto}'s}
+
+While the use of \texttt{goto}'s is considered bad practive in modern software engineering we note several reasons for using them in our intermediate language:
++ It is completely hidden from the library user. Given a well behaving Loop code generator the produced code will always be valid if the user program is valid. This is akin to using |unsafePerformIO| and similar combinators within the guts of the library for performance reasons. They can lead to bad code but with careful use give very noticeable advantages to purely functional programs.
++ The library was designed with pluggable backend in mind. It was assumed that assembly-like Loop language would be easier to connect with any backend. Specifically for Haskell backend, |goto| statements are translated to tail-recursive function calls.
++ The |goto|-based design seemed to be the most flexible and the easiest to implement. None-the-less, the Loop language may be extended to support a safer and more advanced implementation where individual *blocks* become functions.
+
+
+\subsubsection{Block names}
+
+
++ Many of the combinators use a similar set of variables, e.g. both Map and Scan produce a value at each iteration which they assign to an intermediate variable in the body of the loop, say elt
++ Thus if there are two maps one after the other, we need to distinguish between the two
++ We give earch such variable a unique identifier which coincides with the identifier of the combinator in the graph (see section), e.g. $elt_3$ is always an intermediate element produced by combinator 3 in each iteration (provided the combinator is a producer)
++ Other examples include $len_3$, $len_1$, $i_1$, $o_5$, $acc_4$
++ Not only this removes any potential name clashes (since ids are unique), but also allows us to refer to any variable in the loop just knowing what function it's performing as well as the combinator id.
++ When is it useful? Can we have a DS passing those variables without stupid conventions?
++ The problem is that the names are generated by convention, so in case of any error, the program would either fail to compile at runtime or produce incorrect results
++ The easiest way 
++ Like global variables
++ Spooky action at a distance
++ Untracked interaction between different parts of loop
++ In many cases a flaw of software design, often discouraged and even semantically prohibited in functional languages like haskell and ml.
+
+
 
 \subsection{Communication by Convention}
 
@@ -39,7 +109,7 @@ We have discussed that our loop clauses are being populated by combinators that 
 Let's look a simple example of what shared state a pipleline of two combinators |map g \$ map f \$ xs| is.
 
 
-\subsubsection{Intermediate values}
+\subsubsection{\label{sec:Loop:Elts}Intermediate values}
 
 As usual we decompose each combinator into a set of loop clauses. We have done this for the |map| combinator in the previous section. However, the added complication is that there are two |map|s, both of which expect an input value in $elt_i$ and and produce an output value in $elt_o$ at each iteration. This results in variable name clashes. We could give them unique names $elt_{i_1}$, $elt_{o_1}$, $elt_{i_2}$ and $elt_{o_2}$ based on the number of the combinator in the pipeline. We also notice that the output $elt_{o_1}$ of |map f| is fed as input $elt_{i_2}$ to |map g|. A simple solution is to introduce an equation $elt_{i_2} = elt_{o_1}$ for each combinator. This is the first example of interaction between combinators through shared state.
  $elt_{i_2} = elt_{i_1}$ might not be terribly exciting to read about
@@ -107,7 +177,7 @@ done:
 
 \subsubsection{Merging Loops}
 
-Coming back to our example of |map g \$ map f \$ xs| we now have both the code lifting |xs| into the loop computation as well as the code for the |map|s. Since theses are all part of the same loop, we can merge the statements from the same loop clauses into one loop. In this case the |map| combinators really only had statements in the |body| so this is the one clause which actually demonstates the loop merging:
+Coming back to our example of |map g \$ map f \$ xs| we now have both the code lifting |xs| into the loop computation as well as the code for the |map|s. Since theses are all part of the same loop, we can merge the statements from the same loop clauses into one loop. In this case the |map| combinators really only had statements in the |body| so this is the one clause which actually demonstates the loop merging\footnote{Technically, there are three loops which are generated and merged together: one for the manifest array, one for |map f| and one for |map g|. We initially omitted the merging process for |map g \compose map f| expression to avoid introducing too many concepts at a time.}:
 
 \begin{lstlisting}[mathescape]
 init:
@@ -139,38 +209,395 @@ done:
 \end{lstlisting}
 
 
-Technically, the loop for the manifest array is produced first. Then it is merged with the loop produced for |map f|. Then the resulting loop is merged with the loop produced for |map g|. We initially omitted the merging process for |map g . map f| expression to avoid introducing to many concepts at a time.
 
 
 \subsubsection{Writing out the result}
 
+So far we have demonstrated how we can turn a number of consecutive combinators into a single loop. Even though conceptually each of those is producing a new array, we have avoided writing it out to a physical array. However, all we are doing now is just burning CPU cycles producing some new values at each loop iteration and immediately forgetting about them. We need a way to return results from the loop. Thus for the last combinator in the loop we need to introduce some extra code which would:
++ **Allocate** a mutable array of appropriate size to write the result into\\
+  This is done only once in |init| block.
++ **Write** into it at the appropriate index whenever the next element is produced\\
+  We introduce a new loop block for that called |write|. By default it is entered after the |body| loop is finished. The reason for having a separate block for that will become apparent when we dicsuss filters (Section \ref{sec:Loop:Filt})
++ **Resize and freeze** the mutable array to an immutable one when the array is complete\\
+  Again, only done once in the |done| block
 
-\subsubsection{Loop Counters and Filters}
+We introduce one other important convention our combinators follow. We saw in Section \ref{sec:Loop:Elts} on Intermediate Values that each combinator sees its input element in variable $elt_{i_n}$, where $n$ is a unique number of the combinator. The combinator is not concerned with how this variable came to be. The Loop language framework takes care of bringing this variable into the scope of the combinator.
 
-Suppose that we introduce
+Following this approach, if the combinator 2 consumes elements produced by combinator 1 at the same index, then the Loop language automatically updates the index for combinator 2 (i.e. $i_2$ = $i_1$). This way, writing out the result of combinator 2 is as easy as generating a statement `writeArray $arr_2$ $i_2$ $elt_{o_2}$'.
+
+\begin{lstlisting}[mathescape]
+init:
+  -- Manifest xs
+  $len_0$ = length $xs$
+  $i_0$   = 0
+  -- Producing result
+  $arr_2$ = allocateArray $len_0$
+  -- Default control flow
+  goto guard
+
+guard:
+  -- Manifest xs
+  $pred_0$ = $i_0$ < $len_0$
+  guard $pred_0$ done        -- goto done block if the predicate is false
+  -- Default control flow
+  goto body
+
+body:
+  -- Manifest xs
+  $elt_{o_0}$ = read $xs$ $i_0$
+  -- Map f
+  $i_1$ = $i_0$                -- index of `map f' is index of `Manifest xs'
+  $elt_{i_1}$ = $elt_{o_0}$    -- input  of `map f'
+  $elt_{o_1}$ = f $elt_{i_1}$  -- output of `map f'
+  -- Map g
+  $i_2$ = $i_1$                -- index of `map g' is index of `map f'
+  $elt_{i_2}$ = $elt_{o_2}$    -- input  of `map g' is output of `map f'
+  $elt_{o_2}$ = g $elt_{i_1}$  -- output of `map g'
+  -- Default control flow
+  goto write
+
+write:
+  -- Producing result
+  writeArray $arr_2$ $i_2$ $elt_{o_2}$  -- write result of `map g' into array
+  -- Default control flow
+  goto bottom
+
+bottom:
+  -- Manifest xs
+  $i_0$ = $i_0$ + 1
+  -- Default control flow
+  goto guard
+
+done:
+  -- Producing result
+  freezeArray $arr_2$
+\end{lstlisting}
+
+
+\subsubsection{\label{sec:Loop:Filt}More Loop Counters and Filters}
+
+So far we have looked at the piplines of combinators that consume arrays of a particular length at one end and produce arrays of the same length at the other. However, this does not cover the case where the size of the produced array is different. The most obvious combinator that exerts this behaviour is |filter|.
+
+The |filter| combinator, expectedly, iterates over all of the elements of the input array and for each one decides, based on some predicate, whether it should appear in the output array.
+
+The implementation of the |body| block of the combinator is staight-forward. It is a |guard| which short-circuits the iteration by skipping to the next iteration. We note that the |bottom| code block of the iteration is akin to *for* loop's increment/decrement phase in languages like C. This is the code block we go to in an event of a skip.
+
+What is more interesting is that the index at which the filter combinator outputs the elements may be different from the index at which it takes it in. Thus the equality $i_3 = i_2$ from the previous section no longer holds. Filter combinator is responsible for keeping track of its index. We declare a separate index $i_3$ which we only increment if an element in returned from the filter.
+
+\begin{lstlisting}[mathescape]
+init:
+  -- Manifest xs
+  $len_0$ = length $xs$
+  $i_0$   = 0           -- input index
+  $i_3$   = 0           -- declare filter output index
+  -- Producing result
+  $arr_3$ = allocateArray $len_0$
+  -- Default control flow
+  goto guard
+
+guard:
+  ...
+  -- Default control flow
+  goto body
+
+body:
+  -- Previous combinators
+  ...
+  $i_1$ = $i_0$
+  $i_2$ = $i_1$
+  -- Filter p
+  $pred_3$ = p $elt_{i_3}$
+  guard $pred_3$ |bottom|     -- goto |bottom| block if predicate is false
+  $i_3$ := $i_3$ + 1          -- increment filter output index
+  -- Default control flow
+  goto write
+
+write:
+  -- Default control flow
+  goto bottom
+
+bottom:
+  -- Manifest xs
+  $i_0$ = $i_0$ + 1
+  -- Default control flow
+  goto guard
+
+done:
+
+\end{lstlisting}
+
+
+It's worth noting that any combinator following the |filter| remains unaware that the indexing has changed. The Loop language will generate $i_4 = i_3$ equation, which will be consistent with the semantics of the combinator pipeline.
 
 
 
 \subsubsection{Accumulators}
 
+We have already looked at how the indices maintain the state of the loop between iteration. However, indices, although the most obvious state the loop has, are not the only ones. If we think of standard list combinators that pass partial results with the recursive calls as accumulators, |fold|s and |scan|s immediately come to mind. In practice, declaring and using accumulator variables like this in a loop language is straight-forward and is no differect from declaring and using index variables. They both represtent mutable variables in the loop language.
+
+Suppose that out expressing is `scan (*) 1 xs'. We already know how to generate code for iterating the $xs$ array. It may or may not be a manifest array. We trust that the combinator producing $xs$ has already generated the appropriate code in the loop we are trying to construct.
+
+If |scan| gets the id of 6 in the pipeline, then we know that it can access its input elements in $elt_{i_6}$, the index of the iteration in $i_6$. Any local variable will also get postfixed with id 6. As such we will declare $f_6 = (*)$ as the reduction function, $acc_6 = 1$ as the mutable accumulator value containing the initial value. Moreover, we will be placing the output element for the current iteration in $elt_{o_6}$.
+
+\begin{lstlisting}[mathescape]
+init:
+  -- Previous combinators
+  ...
+  $i_0$ = 0
+  ...
+  -- id 6: Scan f
+  $f_6$ = (*)
+  $acc_6$ = 1
+  -- Default control flow
+  goto guard
+
+guard:
+  ...
+  -- Default control flow
+  goto body
+
+body:
+  -- Previous combinators
+  ...
+  -- Scan f
+  $elt_6$ = $acc_6$                     -- yield previous accumulator value
+  -- Following combinators
+  ...
+  -- Default control flow
+  goto write
+
+write:
+  ...
+  -- Default control flow
+  goto bottom
+
+bottom:
+  -- Previous combinators
+  ...
+  $i_0$ = $i_0$ + 1                     -- goto next iteration
+  ...
+  -- Scan f
+  $acc_6$ := $f_6$ $acc_6$ $elt_{i_6}$  -- compute new accumulator
+  -- Default control flow
+  goto guard
+
+done:
+
+\end{lstlisting}
+
+\subsubsection{Zipping}
+
+So far the combinator pipelines we have looked at had a list like structure. Each combinator would consume exactly one array and produce another. However, for many programs this is not sufficient. In many cases a combinator takes multiple arrays as input. In general there is no constraint on how a combinator would consume each of those arrays. Some combinators (e.g. |backpermute|) require that one of the passed arrays is random-access, however, some, like |zipWith| consume two arrays in lock step.
+
+A call to `zipWith (*) xs ys' element-wise multiplies arrays $xs$ and $ys$. Those two arrays may internally be pipelines of combinators. A |zipWith| combinator is such a common occurence in DPH programs that it would be wasteful not to fuse it with the combinators producing $xs$ and $ys$.
+
+%Two difficulties arrising when fusing |zipWith| with its children is:
+%+ the potential difference in lengths between $xs$ and $ys$, and
+%+ the duplicated index counters: one iterating $xs$, and one - $ys$
+
+The loops for $xs$ and $ys$ have been generated independently of each other. They have their own index spaces and their own control flows. Suppose that we get the following tree of combinators to compute:
+
+\begin{lstlisting}[language=haskell]
+let xs = map (+10) [1..10]
+    ys = map (*3)  [100..110]
+in  zipWith (*) xs ys
+\end{lstlisting}
+
+We can easily generate the loops for each of $xs$ and $ys$ the way we described previously. We can then merge all of the blocks together with code multiplying the output elements to form a valid loop computing the desired result:
+
+\begin{lstlisting}[mathescape]
+init:
+  -- xs
+  -- id 0: [1..10]
+  $len_0$ = 10
+  $i_0$ = 0
+  -- id 1: map (+10)
+  $f_1$ = (+10)
+
+  -- ys
+  -- id 2: [100..101]
+  $len_2$ = 10
+  $i_0$ = 0
+  -- id 3: map (*3)
+  $f_3$ = (*3)
+
+  -- id 4: zipWith (*)
+  $f_4$ = (*)
+
+  -- Default control flow
+  goto guard
+
+guard:
+  $pred_0$ = $i_0$ < $len_0$
+  guard $pred_0$ done
+
+  $pred_2$ = $i_2$ < $len_2$
+  guard $pred_2$ done
+
+  -- Default control flow
+  goto body
+
+body:
+  -- xs
+  -- id 0: [1..10]
+  $elt_0$ = 1 + $i_0$
+  -- id 1: map (+10)
+  $elt_1$ = $f_1$ $elt_0$
+
+  -- ys
+  -- id 2: [100..110]
+  $elt_2$ = 100 + $i_2$
+  -- id 3: map (*3)
+  $elt_3$ = $f_3$ $elt_2$
+
+  -- zipWith (*) xs ys
+  $elt_4$ = $f_4$ $elt_1$ $elt_3$
+
+  -- Default control flow
+  goto write
+
+write:
+  ...
+  -- Default control flow
+  goto bottom
+
+bottom:
+  $i_0$ = $i_0$ + 1                     -- goto next iteration
+  -- Default control flow
+  goto guard
+
+done:
+
+\end{lstlisting}
+
+**The Problem**
+
+The code generated in the previous step will produce correct results for the specific problem. However, it will not work in the general case. Suppose we introduce a filter into `xs':
+
+\begin{lstlisting}[language=haskell]
+let xs = filter odd \$ map (+10) [1..10]
+    ys = map (*3)  [100..110]
+in  zipWith (*) xs ys
+\end{lstlisting}
+
+While |zipWith| is supposed to consume elements from $xs$ and $ys$ in a lockstep, producing both those elements will not always happen in the same iteration. $ys$ array does not pose a problem, it is guaranteed to produce one element in each iteration. However, the addition of |filter| into the equation for $xs$ will mean that the loop for $xs$ may need more than one iteration to produce an element. If the |filter| skips an element the loop for $ys$ must wait.
+
+**A Solution**
+
+We solve the above problem by first analysing the loops for $xs$, $ys$ and $zs$. A quick check of how we would write the above program in C tells us that we would probably still be able to only an overall loop for $zs$. However, we will likely declare two separate counters for computing $xs$ and $ys$. In fact we may also create a separate *nested* loop for $xs$. We will break out of that loop as soon as we have produced an element that satisfied the |filter| condition.
+
+We know that the length of $ys$ is fixed and is 10. We also know that the length of $xs$ has the upper bound of 10 but is not known until runtime. Incidentally, |zipWith| will consume as many elements as $xs$ will produce. We say that $xs$ and |zipWith| have the same rate. Since |zipWith| is a direct consumer of $ys$, its loop's body should only ever be exectuted once both have finished.
+
+Let us look at the resulting loops
+
+\begin{lstlisting}[mathescape]
+
+----------------- INIT OF OUTER LOOP --------------------
+init:
+  -- xs
+  -- id 0: [1..10]
+  $len_0$ = 10
+  $i_0$ = 0
+  -- id 1: map (+10)
+  $f_1$ = (+10)
+  -- id 6: filter odd
+  $p_6$ = odd
+  $i_6$ = 0   -- output index of filter
+
+  -- ys
+  -- id 2: [100..101]
+  $len_2$ = 10
+  $i_2$ = 0
+  -- id 3: map (*3)
+  $f_3$ = (*3)
+
+  -- id 4: zipWith (*)
+  $f_4$ = (*)
+
+  -- Default control flow
+  goto guard_0
+
+guard:
+  -- Check that we haven't exhausted $ys$
+  $pred_2$ = $i_2$ < $len_2$
+  guard $pred_2$ done
+
+  -- Go to nested loop
+  goto guard_0
+
+---------------- BEGIN NESTED LOOP ---------------------
+-- Nested loop for $xs$
+guard_0:
+  $pred_0$ = $i_0$ < $len_0$
+  guard $pred_0$ done_0
+
+body_0:
+  -- xs
+  -- id 0: [1..10]
+  $elt_0$ = 1 + $i_0$
+  -- id 1: map (+10)
+  $elt_1$ = $f_1$ $elt_0$
+  -- id 6: filter odd
+  $elt_6$ = $elt_1$
+  $pred_6$ = $p_6$ $elt_1$
+  guard $pred_6$ bottom_0   -- predicate if false, skip
+
+  -- Default control flow
+  goto yield_0
+
+yield_0:
+  -- Exit nested loop
+  goto guard
+
+bottom_0:
+  $i_0$ := $i_0$ + 1
+  -- Move on to next element in $ys$
+
+done_0:
+  -- We have exhausted all elements in $ys$
+----------------- END NESTED LOOP ------------------------
+
+------------------ CONTINUE OUTER LOOP --------------------
 
 
-\subsubsection{Block names}
+body:
+  -- ys
+  -- id 2: [100..110]
+  $elt_2$ = 100 + $i_2$
+  -- id 3: map (*3)
+  $elt_3$ = $f_3$ $elt_2$
+
+  -- zipWith (*) xs ys
+  $elt_4$ = $f_4$ $elt_1$ $elt_3$
+
+  -- Default control flow
+  goto write
+
+write:
+  ...
+  -- Default control flow
+  goto bottom
+
+bottom:
+  $i_0$ = $i_0$ + 1                     -- goto next iteration
+  -- Default control flow
+  goto guard
+
+-------------------- BOTTOM OF NESTED LOOP --------------------------------
+done:
+
+\end{lstlisting}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% OK, this is incomplete. We need to implement basic rate inference for this to work. Everything is figured out on paper but describing it and then rewriting would take double the amount of work.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsubsection{Random access combinators}
 
 
 
-+ Many of the combinators use a similar set of variables, e.g. both Map and Scan produce a value at each iteration which they assign to an intermediate variable in the body of the loop, say elt
-+ Thus if there are two maps one after the other, we need to distinguish between the two
-+ We give earch such variable a unique identifier which coincides with the identifier of the combinator in the graph (see section), e.g. $elt_3$ is always an intermediate element produced by combinator 3 in each iteration (provided the combinator is a producer)
-+ Other examples include $len_3$, $len_1$, $i_1$, $o_5$, $acc_4$
-+ Not only this removes any potential name clashes (since ids are unique), but also allows us to refer to any variable in the loop just knowing what function it's performing as well as the combinator id.
-+ When is it useful? Can we have a DS passing those variables without stupid conventions?
-+ The problem is that the names are generated by convention, so in case of any error, the program would either fail to compile at runtime or produce incorrect results
-+ The easiest way 
-+ Like global variables
-+ Spooky action at a distance
-+ Untracked interaction between different parts of loop
-+ In many cases a flaw of software design, often discouraged and even semantically prohibited in functional languages like haskell and ml.
+\subsubsection{Array generators: Enumeration and Replication}
 
 
 
