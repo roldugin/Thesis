@@ -29,9 +29,14 @@
 \usepackage{listings}
 \usepackage{subfiles}
 \usepackage{setspace}
+\usepackage{caption}
+\usepackage{subcaption}
 %%\usepackage[charter]{mathdesign}  % sets the math font
 %%\usepackage{fontspec}
 %%\setmainfont{Charis SIL}          % sets the document font
+
+%% Packages included in this distribution
+\usepackage{subsections}
 
 \lstset{language=Haskell, columns=fixed, basewidth=.5em}
 
@@ -77,26 +82,45 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% Environments.
 
-\lstnewenvironment 
+%% C code block without a figure box
+\lstnewenvironment
   {ccode}[1]
   {\singlespacing\lstset{basicstyle={\ttfamily}, language=C, tabsize=4, #1}}
   {}
 
-\lstnewenvironment 
+%% C code block with a figure box
+\lstnewenvironment
   {ccode2}[2]
   {\singlespacing\lstset{basicstyle={\ttfamily}, language=C, tabsize=4, label=#1, caption=#2}}
   {}
 
-\lstnewenvironment 
+%% Haskell code block without a figure box
+\lstnewenvironment
   {hscode}
-  {\singlespacing\lstset{basicstyle={\ttfamily}, language=C, tabsize=4}}
+  {\singlespacing\lstset{basicstyle={\ttfamily}, language=Haskell, tabsize=4}}
   {}
 
-\lstnewenvironment 
+%% Haskell code block with a figure box
+\lstnewenvironment
   {hscode2}[2]
-  {\singlespacing\lstset{basicstyle={\ttfamily}, language=C, tabsize=4, label=#1, caption=#2}}
+  {\singlespacing\lstset{basicstyle={\ttfamily}, language=Haskell, tabsize=4, label=#1, caption=#2}}
   {}
 
+%% Loop code block without a figure box
+\lstnewenvironment
+  {loopcode}
+  {\singlespacing\lstset{basicstyle={\ttfamily}, language=Haskell, tabsize=4}}
+  {}
+
+%% Loop code block with a figure box
+\lstnewenvironment
+  {loopcode2}[2]
+  {\singlespacing\lstset{basicstyle={\ttfamily}, language=Haskell, tabsize=4, label=#1, caption=#2}}
+  {}
+
+\newcommand\thesis\emph
+
+\newcommand\inlc\lstinline
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% END Environments.
 

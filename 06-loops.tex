@@ -26,44 +26,229 @@ The downside, however, is that our loop relies on |goto|-like statements whose u
 
 Without further delaying the discussion of the matter we will now look are the stucture of a typical loop and gradually extend it to what we need.
 
-Let us go back to a very simple example we used in the introductory chapter. The task was to compute the dot product of two vectors $xs$ and $ys$. In Haskell the function would have looked something like the following:
+Let us take a simple function which adjusts elements of an array by applying a certain function $f$ and then picks out elements which are above a certain threshold, say 100. In Haskell the function would have looked something like the following:
 
-\begin{hscode}
-  dotProduct :: Array Double -> Array Double -> Double
-  dotProduct xs ys
-    = let products = zipWith (*) xs ys
-          result   = fold (+) products
-      in  result
-\end{hscode}
+\begin{figure}
+\begin{subfigure}{.7\textwidth}
+  \begin{hscode}
+  aboveThreshold :: (Double -> Double)
+                 -> Array Double
+                 -> Array Double
+  aboveThreshold xs f
+    = let adjusted = map f xs
+          above    = filter (> 100) adjusted
+      in  above
+  \end{hscode}
+\end{subfigure}%
+\begin{subfigure}{.3\textwidth}
+  \includegraphics[height=12em]{img/aboveThreshold}
+\end{subfigure}
+\caption{$aboveThreshold$ function (left) and its data flow (right).}
+\label{fig:Loops:aboveThreshold}
+\end{figure}
 
-We will now present the C solution yet again and try to pull it apart into its constituent parts.
+We will now present a corresponding C solution and try to pull it apart into its constituent parts. This is not canonical code most C programmers would write. However, it does, like the Haskell example above, run each combinator in a separate loop and allocates all intermediate arrays\footnote{Function pointer syntax is not one of C's strengths, so we omitted it from the list of arguments}.
 
 \begin{ccode}{numbers=left}
-double dotProduct (double xs[], double ys[], int len) {
-  int i;
+double* aboveThreshold (double xs[], int len, int *result_len ) {
 
-  double* temp = malloc(sizeof(double)*len);  // Intermediate array
-  for(i=0; i<len; ++i)
-    temp[i] = xs[i]*ys[i];
+  /* Adjust all values by mapping function f over each element */
+  double* adjusted = malloc(len * sizeof(double)); // Intermediate array
+  for(int i=0; i<len; i++) {
+      adjusted[i] = f(xs[i]);
+  }
 
-  double result = 0;                          // Final result accumulator
-  for(i=0; i<len; ++i)
-    result += temp[i];
+  double* above = malloc(len * sizeof(double));     // Final result array
+  int o = 0; // result array index
+  for(int i=0; i<len; i++) {
+      double a = adjusted[i];
+      if(a > 100) {
+          above[j] = a;
+          o++;
+      }
+  }
+  above = realloc(above, o * sizeof(double));
+  free(adjusted);
 
-  return result;
+  // return results
+  *result_len = o
+  return above;
 }
 \end{ccode}
 
-\begin{ccode}{}
-double dotProduct (int len, int[] xs, int[] ys) {
-  double result = 0;
-  int i;
-  for(i=0; i<len; ++i)
-    result += xs[i]*ys[i];
-  return result;
-}
 
-\end{ccode}
+\subsubsubsection{Sections of |for|-loop}
+Each |for|-loop in C has four sections: |initialisation| ($i=0$), |guard| ($i<len$), the main |body| and finally, the |update| section ($++i$). Compared to free-formed |while|-loops which only have the |guard| and the |body|, the |for|-loops are already more stuctured. However, as we will now show, futher structural elements could be introduced to assist fusion.
+
+\subsubsubsection{Initialisation}
+The very first observation to make is that the allocation of intermediate and result arrays was done by statements outside the |for|-loops. The same was done for the output index variable $o$ (which is different from input index $i$ because |filter| can skip elements). In our loop language all statements executed *once* before the loop begins are placed in the |init| block of the loop.
+
+The |init|-code for both loops would have looked like the following (we also included |guard| code for clarity):
+\begin{loopcode}
+  init_1:
+    len_1 = arrayLength xs
+    adjusted_1 = newArray len_1
+    i_1 = 0
+    goto guard_1
+
+  guard_1:
+    guard (i_1 < len_1) done_1
+    goto body_1
+
+  init_2:
+    len_2 = arrayLength adjusted_1
+    i_2 = 0
+    o_2 = 0
+    goto guard_2
+
+  guard_2
+    guard (i_2 < len_2) done_2
+    goto body_2
+
+\end{loopcode}
+
+As we will soon see the above code is only illustrative. Even though it is valid, the combinators in the $aboveThreshold$ example do not generate precisely that code.
+
+\subsubsubsection{Finalisation}
+We also note that after the second |for|-loop finishes, the resulting array is reallocated to free the unused memory since the filter results in a shorter array in the general case (in practice the array is unlikely to be copied). This is one of the use cases for what we call a |done| block, which every array has. As we will see later it is not only useful for trimming and returning the final array but also for scheduling other loops such as in $append$ combinator.
+
+The done blocks for the arrays would look like the following:
+
+\begin{loopcode}
+  done_1:
+    <empty>
+
+  done_2:
+    above := freezeArray above o  -- resize to length `o'
+\end{loopcode}
+
+\subsubsubsection{Reading and writing arrays}
+We will now attempt to categorise the types of operations that all belong to the bodies of conventional |for| and |while| loops.
+
+Line 5 of the first |for|-loop (\inlc{adjusted[i] = f(xs[i]);})is actually doing three things: *reading* an element from an array, *producing* a new element and *writing* it into a separate array. Likewise, Lines 12 and 14 of the second |for|-loop are also concerned with *reading* and *writing* arrays.
+
+Consider, however, that when several combinators are fused into a sigle loop and produce no intermediate arrays, such reading and writing only happens at the beginning and at the end of a combinator pipeline. Thus we want to separate the notion of computing a new element from from the fact that it came from an array, a list or just another computation. Likewise we do not need to be concerned with whether the how the new element is going to be consumed. It may or may not be written into a new array. However, it is not up to an individual combinator to decide.
+
+We will now in turn describe how we deal with reading, writing and computing elements.
+
+\subsubsubsubsection{Reading and writing arrays in LiveFusion}
+It is now time to remember the |Manifest| combinator of LiveFusion language that we used to bring a physical array in memory and create a LiveFusion language term out of it. As it turns out, \thesis{all the reading of physical arrays is performed by the code generated by the |Manifest| combinator}. What this means is that, while the reading is still performed in the |body| code block of of the loop, the code for it is only generated once at the beginning of each combinator pipeline.
+
+Applied to the function from our $aboveThreshold$ example, this tells us that since we don't know which combinator produced the $xs$ array, the loop code generated for the $aboveThreshold$ function will *not* inlcude the specifics of where the individual elements of $xs$ came from.
+
+\begin{loopcode}
+  -- Loop: $adjusted$ = |map| $f$ $xs$
+  init_adj:
+    goto guard_adj
+
+  guard_adj:
+    goto body_adj
+
+  body_adj:
+    elt_adj = f elt_xs
+    goto yield_adj
+
+  yield_adj:
+    goto bottom_adj
+
+  bottom_adj:
+    goto guard_adj
+
+  done_adj:
+
+
+  -- Loop: $above$ = |filter| $(>100)$ $adjusted$
+  init_abv:
+    o_abv = 0
+    goto guard_abv
+
+  guard_abv:
+    goto body_abv
+
+  body_abv:
+    elt_abv = elt_adj
+    guard (elt_above > 100) bottom_abv
+    goto yield_abv
+
+  yield_abv:
+    o_abv := o_abv + 1
+    goto bottom_abv
+
+  bottom_abv:
+    goto guard_abv
+\end{loopcode}
+
+One will immediately notice the absence of loop counters $i$, array read/writes or allocations. Instead we only see some references to undeclared variables $elt_xs$, $elt_adj$, $elt_abv$. These represent the values of elements of $xs$, $adjusted$ and $above$ arrays at each iteration\footnote{In our implementation all variables, block labels and AST/ASG nodes are given a unique label, an integer. For readability we replaced those with meaningful subscripts.}
+
+It is clear that these two loops are incomplete and cannot be run by themselves. Now suppose that the function $aboveThreshold$ is actually applied to some manifest array $xs$ (where $xs$ is a Vector in current implementation) and that the result of this application is forced to a manifest array, for example:
+% Perhaps the manifest array should be stored with the node in an IORef/M
+\begin{hscode}
+let accepted = aboveThreshold abs (Manifest xs)
+in  ...random access $accepted$...
+\end{hscode}
+
+What happens is that two new loops are generated: one for |Manifest| $xs$ and one for the physical array creation:
+
+\begin{loopcode}
+  -- Loop: |Manifest| $xs$
+  init_xs:
+    len_xs = arrayLength xs
+    i_xs = 0
+    goto guard_xs
+
+  guard_xs:
+    guard (i_xs < len_xs) done_xs
+    goto body_xs
+
+  body_xs:
+    elt_xs = readArray xs i_xs
+    goto yield_xs
+
+  yield_xs:
+    goto bottom_xs
+
+  bottom_xs:
+    i_xs := i_xs
+    goto guard_xs
+
+  done_xs:
+
+
+  -- Loop: forcing $aboveThreshold f xs$
+  init_force:
+    result = newArray len_xs
+    goto guard_force
+
+  guard_force:
+    goto body_force
+
+  body_force:
+    goto yield_force
+
+  yield_force:
+    writeArray result o_abv elt_abv
+    goto bottom_force
+
+  bottom_force:
+    goto guard_force
+\end{loopcode}
+
+The |Manifest| loop is the only one of the four ``loops'' presented so far that actually resembles a runnable loop. Out of the four it is the only one that introduces a source array counter $i_{xs}$ in the |init| block which it compares against the length of $xs$ in the |guard|. It also increments it in the |bottom| block.
+
+All in all the |init|, |guard| and |bottom| blocks of the |Manifest| $xs$ loop resemble very closely the |initialisation|, |guard| and |update| section of the |for| loops we presented earlier in our C version of the function. We will revisit this comparison very soon.
+
+We have essentially presented the complete Loop representation for |Manifest|, |map| and |filter| combinators together with the code that actually deals with writing out physical arrays. However, it all came in separate loops none of which was very useful by itself. We will now show how these loops can be turned into a runnable loop.
+
+\subsubsubsubsection{Merging loops}
+
+
+
+In the previous section
+
+Talk about loop merging........
+
+An important difference however, is that while in the C version there were two separate loops with separate counters ...
+
 
 
 % section more_on_ (end)

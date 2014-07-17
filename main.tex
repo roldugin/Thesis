@@ -155,7 +155,7 @@ The same algorithm could be expressed by the following function in
 C:
 
 \begin{lstlisting}[basicstyle={\ttfamily},language=C,tabsize=4]
-double dotProduct (int len, double xs[], double ys[]) {
+double dotProduct (double xs[], double ys[], int len) {
 	int i;
 
 	double* temp = malloc(sizeof(double)*len);
@@ -176,7 +176,7 @@ a single loop computing the final result incrementally without allocating
 a temporary array as in the following:
 
 \begin{lstlisting}[basicstyle={\ttfamily},language=C,tabsize=4]
-double dotProduct (int len, int[] xs, int[] ys) {
+double dotProduct (int[] xs, int[] ys, int len) {
 	double result = 0;
 	int i;
 	for(i=0; i<len; ++i)
