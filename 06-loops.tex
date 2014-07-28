@@ -167,7 +167,7 @@ Applied to the function from our $aboveThreshold$ example, this tells us that si
 
   body_abv:
     elt_abv = elt_adj
-    guard (elt_above > 100) bottom_abv
+    guard (elt_abv > 100) bottom_abv
     goto yield_abv
 
   yield_abv:
@@ -231,19 +231,54 @@ What happens is that two new loops are generated: one for |Manifest| $xs$ and on
 
   bottom_force:
     goto guard_force
+
+  done_force:
+    result := freezeArray result o
 \end{loopcode}
 
 The |Manifest| loop is the only one of the four ``loops'' presented so far that actually resembles a runnable loop. Out of the four it is the only one that introduces a source array counter $i_{xs}$ in the |init| block which it compares against the length of $xs$ in the |guard|. It also increments it in the |bottom| block.
 
 All in all the |init|, |guard| and |bottom| blocks of the |Manifest| $xs$ loop resemble very closely the |initialisation|, |guard| and |update| section of the |for| loops we presented earlier in our C version of the function. We will revisit this comparison very soon.
 
-We have essentially presented the complete Loop representation for |Manifest|, |map| and |filter| combinators together with the code that actually deals with writing out physical arrays. However, it all came in separate loops none of which was very useful by itself. We will now show how these loops can be turned into a runnable loop.
+We have essentially given the complete Loop representation for |Manifest|, |map| and |filter| combinators together with the code that actually deals with writing out physical arrays. However, it all came in separate loops none of which was very useful by itself. We will now show how these loops can be turned into a runnable loop.
 
 \subsubsubsubsection{Merging loops}
 
+In the previous section we have established how each of the combinators of the $aboveThreshold$ function contribute to each loop. Each of those loops has |init|, |guard|, |body|, |yield|, |bottom| and |done| code blocks which are connected by |goto|s. We can now simpy merge the respective sections of all loops to give a loop in Figure . The statements of |Manifest| array itteration preceed those of the |map|, which in turn preceed those of the |filter|. The statements of physical array creation come last.
 
+\begin{loopcode2}{Final loop for a call of $aboveThreshold$ Function}{Fig:Loop:aboveThreshold-final-loop}
+  -- Loop: force \$ filter (> 100) \$ map f \$ Manifest xs
+  init:
+    len_xs = arrayLength xs          -- From |Manifest|
+    i_xs = 0                         -- From |Manifest|
+    o_abv = 0                        -- From |filter|
+    result = newArray len_xs         -- From forcing result
+    goto guard
 
-In the previous section
+  guard:
+    guard (i_xs < len_xs) done       -- From |Manifest|
+    goto body
+
+  body:
+    elt_xs = readArray xs i_xs       -- From |Manifest|
+    elt_adj = f elt_xs               -- From |map|
+    elt_abv = elt_adj                -- From |filter|     
+    guard (elt_abv > 100) bottom     -- From |filter|
+    goto yield
+
+  yield:
+    o_abv := o_abv + 1               -- From |filter|
+    writeArray result o_abv elt_abv  -- From forcing the result
+    goto bottom
+
+  bottom:
+    i_xs := i_xs                     -- From |Manifest|
+    goto guard
+
+  done:
+    result := freezeArray result o   -- From forcing result
+
+\end{loopcode2}
 
 Talk about loop merging........
 

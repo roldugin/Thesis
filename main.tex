@@ -81,7 +81,7 @@ programmer's intervention to get the algorithm running fast. %
 It is not uncommon for the initial parallel implementation to run
 only slightly faster than the sequential version.
 \end{comment}
-{} The resulting application is a mixture of the actual algorithm and
+The resulting application is a mixture of the actual algorithm and
 the implementation specific code, dealing with concurrency and parallelism.
 This obscures code clarity and may generally be error-prone.
 
@@ -917,8 +917,16 @@ the first priority for DPH).
 
 \subsection{Stream Processing and Data Flow Languages}
 
+\subsection{Darte}
 
+Done in Fortran. While more lowlever, the first thing it does is to do dep analysis and separate into several loop. All the fusion is done after that. In this way we actually start one level below. We already have independet loops with most combinators introducing at least one loop into the graph.
 
+\subsection{On clustering}
+
+Most clustering problems are expressed in compile time and in general take NP to complete. For a medium sized DPH program you have (N) combinators at a time. This shoots the problem outside reasonable compilation times. With a good set of ILP heuristics and without looking for a perfect solution a performat ILP solver can bring this down to reasonable amount of time. It is worth noting two things: at compile time you can indeed see the complete graph at once which is unlikely at runtime. Certain things will be forced and reduced to manifest arrays before time (give an example). Thus there may not be such a high number of things to solve. Also, any time a simple linear pipeline of combinators is encountered and their rate and access pattern (i.e. type) are the same, they can all be reduced to one combinator for the purposes of clustering. This way, it may well be possible that the graphs to analyse for clustering may become very small.
+
+Two other techniques which may drammatically reduce the graph to be analysed is simple runtime forcasting:
+- At compile time you may not always see the sizes of arrays to be computed. You have to assume you will need to fuse everything to our best abilities. However, as the author found in his work on Parallelisation avoidance, only a handful of combinators in an average DPH program are actually majour contributors to the runtime. As such, we may often be able to skip clustering and subsequent compilation altogether. Performing a cheap array computation may just suffice. Working with the resulting manifest arrays for fusion where it is truely beneficial is much easier than with a set of combinators which only introduce ``noise'' into the actual runtime of the program.
 
 \subsection{Summary}
 
