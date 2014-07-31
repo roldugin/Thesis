@@ -4,15 +4,15 @@
 
 LiveFusion at the top level presents a library of high level array combinators, with each one representing a particualar array operation. Many of them conceptually represent a loop. However, we would like to be able to perform several such operations in one loop, whenever possible. Such fusible loops arise in the case where the result of one combinator is consumed as input by another. In the LiveFusion AST constructed at runtime this would correspond to a child producer node and its parent consumer node. How do we know whether two combinators can be fused? We discussed in Section (TODO ref) that just it is impractical for libraries with a large number of combinators to define rewrite rules for how each potential pair of combinators is fused together. We need to be more general than that. In principle, two combinators can be fused whenever you can write a loop by hand which would give the same result for the same input. We need a way to programmatically determine whether a given pair of combinators can be replace with a semantically equivalent loop.
 
-The focus of this chapter is to establish the requirements for fusible combinators and define a loop sepresentation to which such fusible combinators can be mapped.
+The focus of this chapter is to establish the requirements for fusible combinators and define a loop representation to which such fusible combinators can be mapped.
 
 
 
-\subsection{Nature of fast loops}
+%% \subsection{Nature of fast loops}
 
-+ inherently procedural
-+ several combinators fuse to a single loop
-+ must generate parts of the same loop
+%% + inherently procedural
+%% + several combinators fuse to a single loop
+%% + must generate parts of the same loop
 
 
 
@@ -22,7 +22,7 @@ Despite the purely functional, combinatorial interface to the library, looking a
 
 On the positive side, we offer a language that logically separates sections of a loop such as initialisation, body and update. It makes it more clear which variables carry mutable state of the loop and which are immutable.
 
-The downside, however, is that our loop relies on |goto|-like statements whose use is almost always considered bad practice in modern software engineering.
+The downside, however, is that our loop relies on \|goto|-like statements whose use is almost always considered bad practice in modern software engineering.
 
 Without further delaying the discussion of the matter we will now look are the stucture of a typical loop and gradually extend it to what we need.
 
@@ -77,13 +77,13 @@ double* aboveThreshold (double xs[], int len, int *result_len ) {
 \end{ccode}
 
 
-\subsubsubsection{Sections of |for|-loop}
-Each |for|-loop in C has four sections: |initialisation| ($i=0$), |guard| ($i<len$), the main |body| and finally, the |update| section ($++i$). Compared to free-formed |while|-loops which only have the |guard| and the |body|, the |for|-loops are already more stuctured. However, as we will now show, futher structural elements could be introduced to assist fusion.
+\subsubsubsection{Sections of \|for|-loop}
+Each \|for|-loop in C has four sections: \|initialisation| ($i=0$), \|guard| ($i<len$), the main \|body| and finally, the \|update| section ($++i$). Compared to free-formed \|while|-loops which only have the \|guard| and the \|body|, the \|for|-loops are already more stuctured. However, as we will now show, futher structural elements could be introduced to assist fusion.
 
 \subsubsubsection{Initialisation}
-The very first observation to make is that the allocation of intermediate and result arrays was done by statements outside the |for|-loops. The same was done for the output index variable $o$ (which is different from input index $i$ because |filter| can skip elements). In our loop language all statements executed *once* before the loop begins are placed in the |init| block of the loop.
+The very first observation to make is that the allocation of intermediate and result arrays was done by statements outside the \|for|-loops. The same was done for the output index variable $o$ (which is different from input index $i$ because \|filter| can skip elements). In our loop language all statements executed *once* before the loop begins are placed in the \|init| block of the loop.
 
-The |init|-code for both loops would have looked like the following (we also included |guard| code for clarity):
+The \|init|-code for both loops would have looked like the following (we also included \|guard| code for clarity):
 \begin{loopcode}
   init_1:
     len_1 = arrayLength xs
@@ -110,7 +110,7 @@ The |init|-code for both loops would have looked like the following (we also inc
 As we will soon see the above code is only illustrative. Even though it is valid, the combinators in the $aboveThreshold$ example do not generate precisely that code.
 
 \subsubsubsection{Finalisation}
-We also note that after the second |for|-loop finishes, the resulting array is reallocated to free the unused memory since the filter results in a shorter array in the general case (in practice the array is unlikely to be copied). This is one of the use cases for what we call a |done| block, which every array has. As we will see later it is not only useful for trimming and returning the final array but also for scheduling other loops such as in $append$ combinator.
+We also note that after the second \|for|-loop finishes, the resulting array is reallocated to free the unused memory since the filter results in a shorter array in the general case (in practice the array is unlikely to be copied). This is one of the use cases for what we call a \|done| block, which every array has. As we will see later it is not only useful for trimming and returning the final array but also for scheduling other loops such as in $append$ combinator.
 
 The done blocks for the arrays would look like the following:
 
@@ -123,21 +123,21 @@ The done blocks for the arrays would look like the following:
 \end{loopcode}
 
 \subsubsubsection{Reading and writing arrays}
-We will now attempt to categorise the types of operations that all belong to the bodies of conventional |for| and |while| loops.
+We will now attempt to categorise the types of operations that all belong to the bodies of conventional \|for| and \|while| loops.
 
-Line 5 of the first |for|-loop (\inlc{adjusted[i] = f(xs[i]);})is actually doing three things: *reading* an element from an array, *producing* a new element and *writing* it into a separate array. Likewise, Lines 12 and 14 of the second |for|-loop are also concerned with *reading* and *writing* arrays.
+Line 5 of the first \|for|-loop (\inlc{adjusted[i] = f(xs[i]);})is actually doing three things: *reading* an element from an array, *producing* a new element and *writing* it into a separate array. Likewise, Lines 12 and 14 of the second \|for|-loop are also concerned with *reading* and *writing* arrays.
 
 Consider, however, that when several combinators are fused into a sigle loop and produce no intermediate arrays, such reading and writing only happens at the beginning and at the end of a combinator pipeline. Thus we want to separate the notion of computing a new element from from the fact that it came from an array, a list or just another computation. Likewise we do not need to be concerned with whether the how the new element is going to be consumed. It may or may not be written into a new array. However, it is not up to an individual combinator to decide.
 
 We will now in turn describe how we deal with reading, writing and computing elements.
 
 \subsubsubsubsection{Reading and writing arrays in LiveFusion}
-It is now time to remember the |Manifest| combinator of LiveFusion language that we used to bring a physical array in memory and create a LiveFusion language term out of it. As it turns out, \thesis{all the reading of physical arrays is performed by the code generated by the |Manifest| combinator}. What this means is that, while the reading is still performed in the |body| code block of of the loop, the code for it is only generated once at the beginning of each combinator pipeline.
+It is now time to remember the \|Manifest| combinator of LiveFusion language that we used to bring a physical array in memory and create a LiveFusion language term out of it. As it turns out, \thesis{all the reading of physical arrays is performed by the code generated by the \|Manifest| combinator}. What this means is that, while the reading is still performed in the \|body| code block of of the loop, the code for it is only generated once at the beginning of each combinator pipeline.
 
 Applied to the function from our $aboveThreshold$ example, this tells us that since we don't know which combinator produced the $xs$ array, the loop code generated for the $aboveThreshold$ function will *not* inlcude the specifics of where the individual elements of $xs$ came from.
 
 \begin{loopcode}
-  -- Loop: $adjusted$ = |map| $f$ $xs$
+  -- Loop: $adjusted$ = \|map| $f$ $xs$
   init_adj:
     goto guard_adj
 
@@ -157,7 +157,7 @@ Applied to the function from our $aboveThreshold$ example, this tells us that si
   done_adj:
 
 
-  -- Loop: $above$ = |filter| $(>100)$ $adjusted$
+  -- Loop: $above$ = \|filter| $(>100)$ $adjusted$
   init_abv:
     o_abv = 0
     goto guard_abv
@@ -187,10 +187,10 @@ let accepted = aboveThreshold abs (Manifest xs)
 in  ...random access $accepted$...
 \end{hscode}
 
-What happens is that two new loops are generated: one for |Manifest| $xs$ and one for the physical array creation:
+What happens is that two new loops are generated: one for \|Manifest| $xs$ and one for the physical array creation:
 
 \begin{loopcode}
-  -- Loop: |Manifest| $xs$
+  -- Loop: \|Manifest| $xs$
   init_xs:
     len_xs = arrayLength xs
     i_xs = 0
@@ -236,43 +236,43 @@ What happens is that two new loops are generated: one for |Manifest| $xs$ and on
     result := freezeArray result o
 \end{loopcode}
 
-The |Manifest| loop is the only one of the four ``loops'' presented so far that actually resembles a runnable loop. Out of the four it is the only one that introduces a source array counter $i_{xs}$ in the |init| block which it compares against the length of $xs$ in the |guard|. It also increments it in the |bottom| block.
+The \|Manifest| loop is the only one of the four ``loops'' presented so far that actually resembles a runnable loop. Out of the four it is the only one that introduces a source array counter $i_{xs}$ in the \|init| block which it compares against the length of $xs$ in the \|guard|. It also increments it in the \|bottom| block.
 
-All in all the |init|, |guard| and |bottom| blocks of the |Manifest| $xs$ loop resemble very closely the |initialisation|, |guard| and |update| section of the |for| loops we presented earlier in our C version of the function. We will revisit this comparison very soon.
+All in all the \|init|, \|guard| and \|bottom| blocks of the \|Manifest| $xs$ loop resemble very closely the \|initialisation|, \|guard| and \|update| section of the \|for| loops we presented earlier in our C version of the function. We will revisit this comparison very soon.
 
-We have essentially given the complete Loop representation for |Manifest|, |map| and |filter| combinators together with the code that actually deals with writing out physical arrays. However, it all came in separate loops none of which was very useful by itself. We will now show how these loops can be turned into a runnable loop.
+We have essentially given the complete Loop representation for \|Manifest|, \|map| and \|filter| combinators together with the code that actually deals with writing out physical arrays. However, it all came in separate loops none of which was very useful by itself. We will now show how these loops can be turned into a runnable loop.
 
 \subsubsubsubsection{Merging loops}
 
-In the previous section we have established how each of the combinators of the $aboveThreshold$ function contribute to each loop. Each of those loops has |init|, |guard|, |body|, |yield|, |bottom| and |done| code blocks which are connected by |goto|s. We can now simpy merge the respective sections of all loops to give a loop in Figure . The statements of |Manifest| array itteration preceed those of the |map|, which in turn preceed those of the |filter|. The statements of physical array creation come last.
+In the previous section we have established how each of the combinators of the $aboveThreshold$ function contribute to each loop. Each of those loops has \|init|, \|guard|, \|body|, \|yield|, \|bottom| and \|done| code blocks which are connected by \|goto|s. We can now simpy merge the respective sections of all loops to give a loop in Figure . The statements of \|Manifest| array itteration preceed those of the \|map|, which in turn preceed those of the \|filter|. The statements of physical array creation come last.
 
 \begin{loopcode2}{Final loop for a call of $aboveThreshold$ Function}{Fig:Loop:aboveThreshold-final-loop}
   -- Loop: force \$ filter (> 100) \$ map f \$ Manifest xs
   init:
-    len_xs = arrayLength xs          -- From |Manifest|
-    i_xs = 0                         -- From |Manifest|
-    o_abv = 0                        -- From |filter|
+    len_xs = arrayLength xs          -- From \|Manifest|
+    i_xs = 0                         -- From \|Manifest|
+    o_abv = 0                        -- From \|filter|
     result = newArray len_xs         -- From forcing result
     goto guard
 
   guard:
-    guard (i_xs < len_xs) done       -- From |Manifest|
+    guard (i_xs < len_xs) done       -- From \|Manifest|
     goto body
 
   body:
-    elt_xs = readArray xs i_xs       -- From |Manifest|
-    elt_adj = f elt_xs               -- From |map|
-    elt_abv = elt_adj                -- From |filter|     
-    guard (elt_abv > 100) bottom     -- From |filter|
+    elt_xs = readArray xs i_xs       -- From \|Manifest|
+    elt_adj = f elt_xs               -- From \|map|
+    elt_abv = elt_adj                -- From \|filter|     
+    guard (elt_abv > 100) bottom     -- From \|filter|
     goto yield
 
   yield:
-    o_abv := o_abv + 1               -- From |filter|
+    o_abv := o_abv + 1               -- From \|filter|
     writeArray result o_abv elt_abv  -- From forcing the result
     goto bottom
 
   bottom:
-    i_xs := i_xs                     -- From |Manifest|
+    i_xs := i_xs                     -- From \|Manifest|
     goto guard
 
   done:
@@ -299,9 +299,9 @@ An important difference however, is that while in the C version there were two s
 \subsubsection{More on \texttt{goto}'s}
 
 While the use of \texttt{goto}'s is considered bad practive in modern software engineering we note several reasons for using them in our intermediate language:
-+ It is completely hidden from the library user. Given a well behaving Loop code generator the produced code will always be valid if the user program is valid. This is akin to using |unsafePerformIO| and similar combinators within the guts of the library for performance reasons. They can lead to bad code but with careful use give very noticeable advantages to purely functional programs.
-+ The library was designed with pluggable backend in mind. It was assumed that assembly-like Loop language would be easier to connect with any backend. Specifically for Haskell backend, |goto| statements are translated to tail-recursive function calls.
-+ The |goto|-based design seemed to be the most flexible and the easiest to implement. None-the-less, the Loop language may be extended to support a safer and more advanced implementation where individual *blocks* become functions.
++ It is completely hidden from the library user. Given a well behaving Loop code generator the produced code will always be valid if the user program is valid. This is akin to using \|unsafePerformIO| and similar combinators within the guts of the library for performance reasons. They can lead to bad code but with careful use give very noticeable advantages to purely functional programs.
++ The library was designed with pluggable backend in mind. It was assumed that assembly-like Loop language would be easier to connect with any backend. Specifically for Haskell backend, \|goto| statements are translated to tail-recursive function calls.
++ The \|goto|-based design seemed to be the most flexible and the easiest to implement. None-the-less, the Loop language may be extended to support a safer and more advanced implementation where individual *blocks* become functions.
 
 
 \subsubsection{Block names}
@@ -331,10 +331,10 @@ Let's look a simple example of what shared state a pipleline of two combinators 
 
 \subsubsection{\label{sec:Loop:Elts}Intermediate values}
 
-As usual we decompose each combinator into a set of loop clauses. We have done this for the |map| combinator in the previous section. However, the added complication is that there are two |map|s, both of which expect an input value in $elt_i$ and and produce an output value in $elt_o$ at each iteration. This results in variable name clashes. We could give them unique names $elt_{i_1}$, $elt_{o_1}$, $elt_{i_2}$ and $elt_{o_2}$ based on the number of the combinator in the pipeline. We also notice that the output $elt_{o_1}$ of |map f| is fed as input $elt_{i_2}$ to |map g|. A simple solution is to introduce an equation $elt_{i_2} = elt_{o_1}$ for each combinator. This is the first example of interaction between combinators through shared state.
+As usual we decompose each combinator into a set of loop clauses. We have done this for the \|map| combinator in the previous section. However, the added complication is that there are two \|map|s, both of which expect an input value in $elt_i$ and and produce an output value in $elt_o$ at each iteration. This results in variable name clashes. We could give them unique names $elt_{i_1}$, $elt_{o_1}$, $elt_{i_2}$ and $elt_{o_2}$ based on the number of the combinator in the pipeline. We also notice that the output $elt_{o_1}$ of |map f| is fed as input $elt_{i_2}$ to |map g|. A simple solution is to introduce an equation $elt_{i_2} = elt_{o_1}$ for each combinator. This is the first example of interaction between combinators through shared state.
  $elt_{i_2} = elt_{i_1}$ might not be terribly exciting to read about
 
-In the above example, we have established that for combinators that consume one element in each iteration, such as |map|, |fold| or |filter|, that element would be stored in variable $elt_{o_n}$ where *n* is the the unique number of the previous combinator in the pipleline. The prefix $elt_o$ is its generic form and designates the intermediate output value in an iteration. This is the first *convention* that we use in our *Loop* language to tie together the code generated by different combinators.
+In the above example, we have established that for combinators that consume one element in each iteration, such as \|map|, \|fold| or \|filter|, that element would be stored in variable $elt_{o_n}$ where *n* is the the unique number of the previous combinator in the pipleline. The prefix $elt_o$ is its generic form and designates the intermediate output value in an iteration. This is the first *convention* that we use in our *Loop* language to tie together the code generated by different combinators.
 
 The two combinators |map g . map f| give us code similar to the following:
 
@@ -353,27 +353,27 @@ Another important *convention* that the Loop language uses in every loop it gene
 
 The variables holding the *elements* of intermediate arrays we saw in the previous section are used in each cycle of the loop but do not represent the state that is carried over to the next iteration. The *loop counters* on the other hand are *mutable* variables that are destructively updated on each iteration and for part of the loop's state.
 
-The most obvious place to introduce the counter variable is the |Manifest| combinator which lifts a physical array into the *LiveFusion* EDSL. It is required to produce an element in each iteration of the loop by indexing the physical array that it wraps. Therefore, the index is not simply the loop's overall state, but the state of the |Manifest| combinator.
+The most obvious place to introduce the counter variable is the \|Manifest| combinator which lifts a physical array into the *LiveFusion* EDSL. It is required to produce an element in each iteration of the loop by indexing the physical array that it wraps. Therefore, the index is not simply the loop's overall state, but the state of the \|Manifest| combinator.
 
 To introduce this loop counter state we need to do the following:
 
-In the |init|ialisation clause of the loop:
+In the \|init|ialisation clause of the loop:
 + declare the counter variable
 + assign it the initial value of 0
 + declare length variable
 + assign it the length of the array
 
-In the |guard|:
+In the \|guard|:
 + check if we have reached the end of the array
 + exit the the loop if we have
 
-In the |bottom| clause of loop which deals with updating the state:
+In the \|bottom| clause of loop which deals with updating the state:
 + increment the variable using destructive update
 
-Following the above steps introduces the loop counter into the loop. The remaining implementation of |Manifest| combinator resides in the main |body| of the loop:
+Following the above steps introduces the loop counter into the loop. The remaining implementation of \|Manifest| combinator resides in the main \|body| of the loop:
 + declare an intermediate value $elt_o$ and read the physical array at the appropriate index into it
 
-The complete loop definition resulting from lifting a physical array into LiveFusion EDSL using |Manifest| combinator is shown in Figure (TODO ref).
+The complete loop definition resulting from lifting a physical array into LiveFusion EDSL using \|Manifest| combinator is shown in Figure (TODO ref).
 
 \begin{lstlisting}[mathescape]
 init:
@@ -397,7 +397,7 @@ done:
 
 \subsubsection{Merging Loops}
 
-Coming back to our example of |map g \$ map f \$ xs| we now have both the code lifting |xs| into the loop computation as well as the code for the |map|s. Since theses are all part of the same loop, we can merge the statements from the same loop clauses into one loop. In this case the |map| combinators really only had statements in the |body| so this is the one clause which actually demonstates the loop merging\footnote{Technically, there are three loops which are generated and merged together: one for the manifest array, one for |map f| and one for |map g|. We initially omitted the merging process for |map g \compose map f| expression to avoid introducing too many concepts at a time.}:
+Coming back to our example of |map g \$ map f \$ xs| we now have both the code lifting \|xs| into the loop computation as well as the code for the \|map|s. Since theses are all part of the same loop, we can merge the statements from the same loop clauses into one loop. In this case the \|map| combinators really only had statements in the \|body| so this is the one clause which actually demonstates the loop merging\footnote{Technically, there are three loops which are generated and merged together: one for the manifest array, one for |map f| and one for |map g|. We initially omitted the merging process for |map g \compose map f| expression to avoid introducing too many concepts at a time.}:
 
 \begin{lstlisting}[mathescape]
 init:
@@ -435,11 +435,11 @@ done:
 
 So far we have demonstrated how we can turn a number of consecutive combinators into a single loop. Even though conceptually each of those is producing a new array, we have avoided writing it out to a physical array. However, all we are doing now is just burning CPU cycles producing some new values at each loop iteration and immediately forgetting about them. We need a way to return results from the loop. Thus for the last combinator in the loop we need to introduce some extra code which would:
 + **Allocate** a mutable array of appropriate size to write the result into\\
-  This is done only once in |init| block.
+  This is done only once in \|init| block.
 + **Write** into it at the appropriate index whenever the next element is produced\\
-  We introduce a new loop block for that called |write|. By default it is entered after the |body| loop is finished. The reason for having a separate block for that will become apparent when we dicsuss filters (Section \ref{sec:Loop:Filt})
+  We introduce a new loop block for that called \|write|. By default it is entered after the \|body| loop is finished. The reason for having a separate block for that will become apparent when we dicsuss filters (Section \ref{sec:Loop:Filt})
 + **Resize and freeze** the mutable array to an immutable one when the array is complete\\
-  Again, only done once in the |done| block
+  Again, only done once in the \|done| block
 
 We introduce one other important convention our combinators follow. We saw in Section \ref{sec:Loop:Elts} on Intermediate Values that each combinator sees its input element in variable $elt_{i_n}$, where $n$ is a unique number of the combinator. The combinator is not concerned with how this variable came to be. The Loop language framework takes care of bringing this variable into the scope of the combinator.
 
@@ -496,11 +496,11 @@ done:
 
 \subsubsection{\label{sec:Loop:Filt}More Loop Counters and Filters}
 
-So far we have looked at the piplines of combinators that consume arrays of a particular length at one end and produce arrays of the same length at the other. However, this does not cover the case where the size of the produced array is different. The most obvious combinator that exerts this behaviour is |filter|.
+So far we have looked at the piplines of combinators that consume arrays of a particular length at one end and produce arrays of the same length at the other. However, this does not cover the case where the size of the produced array is different. The most obvious combinator that exerts this behaviour is \|filter|.
 
-The |filter| combinator, expectedly, iterates over all of the elements of the input array and for each one decides, based on some predicate, whether it should appear in the output array.
+The \|filter| combinator, expectedly, iterates over all of the elements of the input array and for each one decides, based on some predicate, whether it should appear in the output array.
 
-The implementation of the |body| block of the combinator is staight-forward. It is a |guard| which short-circuits the iteration by skipping to the next iteration. We note that the |bottom| code block of the iteration is akin to *for* loop's increment/decrement phase in languages like C. This is the code block we go to in an event of a skip.
+The implementation of the \|body| block of the combinator is staight-forward. It is a \|guard| which short-circuits the iteration by skipping to the next iteration. We note that the \|bottom| code block of the iteration is akin to *for* loop's increment/decrement phase in languages like C. This is the code block we go to in an event of a skip.
 
 What is more interesting is that the index at which the filter combinator outputs the elements may be different from the index at which it takes it in. Thus the equality $i_3 = i_2$ from the previous section no longer holds. Filter combinator is responsible for keeping track of its index. We declare a separate index $i_3$ which we only increment if an element in returned from the filter.
 
@@ -527,7 +527,7 @@ body:
   $i_2$ = $i_1$
   -- Filter p
   $pred_3$ = p $elt_{i_3}$
-  guard $pred_3$ |bottom|     -- goto |bottom| block if predicate is false
+  guard $pred_3$ \|bottom|     -- goto \|bottom| block if predicate is false
   $i_3$ := $i_3$ + 1          -- increment filter output index
   -- Default control flow
   goto write
@@ -547,17 +547,17 @@ done:
 \end{lstlisting}
 
 
-It's worth noting that any combinator following the |filter| remains unaware that the indexing has changed. The Loop language will generate $i_4 = i_3$ equation, which will be consistent with the semantics of the combinator pipeline.
+It's worth noting that any combinator following the \|filter| remains unaware that the indexing has changed. The Loop language will generate $i_4 = i_3$ equation, which will be consistent with the semantics of the combinator pipeline.
 
 
 
 \subsubsection{Accumulators}
 
-We have already looked at how the indices maintain the state of the loop between iteration. However, indices, although the most obvious state the loop has, are not the only ones. If we think of standard list combinators that pass partial results with the recursive calls as accumulators, |fold|s and |scan|s immediately come to mind. In practice, declaring and using accumulator variables like this in a loop language is straight-forward and is no differect from declaring and using index variables. They both represtent mutable variables in the loop language.
+We have already looked at how the indices maintain the state of the loop between iteration. However, indices, although the most obvious state the loop has, are not the only ones. If we think of standard list combinators that pass partial results with the recursive calls as accumulators, \|fold|s and \|scan|s immediately come to mind. In practice, declaring and using accumulator variables like this in a loop language is straight-forward and is no differect from declaring and using index variables. They both represtent mutable variables in the loop language.
 
 Suppose that out expressing is `scan (*) 1 xs'. We already know how to generate code for iterating the $xs$ array. It may or may not be a manifest array. We trust that the combinator producing $xs$ has already generated the appropriate code in the loop we are trying to construct.
 
-If |scan| gets the id of 6 in the pipeline, then we know that it can access its input elements in $elt_{i_6}$, the index of the iteration in $i_6$. Any local variable will also get postfixed with id 6. As such we will declare $f_6 = (*)$ as the reduction function, $acc_6 = 1$ as the mutable accumulator value containing the initial value. Moreover, we will be placing the output element for the current iteration in $elt_{o_6}$.
+If \|scan| gets the id of 6 in the pipeline, then we know that it can access its input elements in $elt_{i_6}$, the index of the iteration in $i_6$. Any local variable will also get postfixed with id 6. As such we will declare $f_6 = (*)$ as the reduction function, $acc_6 = 1$ as the mutable accumulator value containing the initial value. Moreover, we will be placing the output element for the current iteration in $elt_{o_6}$.
 
 \begin{lstlisting}[mathescape]
 init:
@@ -607,11 +607,11 @@ done:
 
 \subsubsection{Zipping}
 
-So far the combinator pipelines we have looked at had a list like structure. Each combinator would consume exactly one array and produce another. However, for many programs this is not sufficient. In many cases a combinator takes multiple arrays as input. In general there is no constraint on how a combinator would consume each of those arrays. Some combinators (e.g. |backpermute|) require that one of the passed arrays is random-access, however, some, like |zipWith| consume two arrays in lock step.
+So far the combinator pipelines we have looked at had a list like structure. Each combinator would consume exactly one array and produce another. However, for many programs this is not sufficient. In many cases a combinator takes multiple arrays as input. In general there is no constraint on how a combinator would consume each of those arrays. Some combinators (e.g. \|backpermute|) require that one of the passed arrays is random-access, however, some, like \|zipWith| consume two arrays in lock step.
 
-A call to `zipWith (*) xs ys' element-wise multiplies arrays $xs$ and $ys$. Those two arrays may internally be pipelines of combinators. A |zipWith| combinator is such a common occurence in DPH programs that it would be wasteful not to fuse it with the combinators producing $xs$ and $ys$.
+A call to `zipWith (*) xs ys' element-wise multiplies arrays $xs$ and $ys$. Those two arrays may internally be pipelines of combinators. A \|zipWith| combinator is such a common occurence in DPH programs that it would be wasteful not to fuse it with the combinators producing $xs$ and $ys$.
 
-%Two difficulties arrising when fusing |zipWith| with its children is:
+%Two difficulties arrising when fusing \|zipWith| with its children is:
 %+ the potential difference in lengths between $xs$ and $ys$, and
 %+ the duplicated index counters: one iterating $xs$, and one - $ys$
 
@@ -700,13 +700,13 @@ let xs = filter odd \$ map (+10) [1..10]
 in  zipWith (*) xs ys
 \end{lstlisting}
 
-While |zipWith| is supposed to consume elements from $xs$ and $ys$ in a lockstep, producing both those elements will not always happen in the same iteration. $ys$ array does not pose a problem, it is guaranteed to produce one element in each iteration. However, the addition of |filter| into the equation for $xs$ will mean that the loop for $xs$ may need more than one iteration to produce an element. If the |filter| skips an element the loop for $ys$ must wait.
+While \|zipWith| is supposed to consume elements from $xs$ and $ys$ in a lockstep, producing both those elements will not always happen in the same iteration. $ys$ array does not pose a problem, it is guaranteed to produce one element in each iteration. However, the addition of \|filter| into the equation for $xs$ will mean that the loop for $xs$ may need more than one iteration to produce an element. If the \|filter| skips an element the loop for $ys$ must wait.
 
 **A Solution**
 
-We solve the above problem by first analysing the loops for $xs$, $ys$ and $zs$. A quick check of how we would write the above program in C tells us that we would probably still be able to only an overall loop for $zs$. However, we will likely declare two separate counters for computing $xs$ and $ys$. In fact we may also create a separate *nested* loop for $xs$. We will break out of that loop as soon as we have produced an element that satisfied the |filter| condition.
+We solve the above problem by first analysing the loops for $xs$, $ys$ and $zs$. A quick check of how we would write the above program in C tells us that we would probably still be able to only an overall loop for $zs$. However, we will likely declare two separate counters for computing $xs$ and $ys$. In fact we may also create a separate *nested* loop for $xs$. We will break out of that loop as soon as we have produced an element that satisfied the \|filter| condition.
 
-We know that the length of $ys$ is fixed and is 10. We also know that the length of $xs$ has the upper bound of 10 but is not known until runtime. Incidentally, |zipWith| will consume as many elements as $xs$ will produce. We say that $xs$ and |zipWith| have the same rate. Since |zipWith| is a direct consumer of $ys$, its loop's body should only ever be exectuted once both have finished.
+We know that the length of $ys$ is fixed and is 10. We also know that the length of $xs$ has the upper bound of 10 but is not known until runtime. Incidentally, \|zipWith| will consume as many elements as $xs$ will produce. We say that $xs$ and \|zipWith| have the same rate. Since \|zipWith| is a direct consumer of $ys$, its loop's body should only ever be exectuted once both have finished.
 
 Let us look at the resulting loops
 
