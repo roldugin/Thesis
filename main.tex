@@ -595,9 +595,9 @@ One of the cases in which equational fusion breaks is when two array operation d
 
 %% TODO find a breaking example in DPH and list it here This optimisation is designed to avoid duplicating work. When GHC finds two identical terms in an expression and considers them large enough to benefit from computing them only once, it \emph{floats} them out to a new \emph{let} binding outside of the expression. This optimisation is the opposite of inlining. If the term that was forcibly floated out would have otherwise completed a pattern for a fusion rule, that fusion opportunity is missed.
 
-The other problem with equational fusion is that \emph{sharing} is not clearly defined. This is related to the above problem. Sharing prevents large amounts of work from being duplicated. Aggressive unconditional inlining would have introduced a major inefficiency for programs in which the result of a pipeline of costly array operations is independently used in more than on place. Recomputing the shared portion may result in a noticeable performance hit.
+The other problem with equational fusion is that \emph{sharing} is not clearly defined. This is related to the above problem. Sharing prevents large amounts of work from being duplicated. Aggressive unconditional inlining would have introduced a major inefficiency for programs in which the result of a pipeline of costly array operations is independently used in more than one place. Recomputing the shared portion may result in a noticeable performance hit.
 
-Both of the above two problems suggests that correct inlining plays a major part in the process of fusion. It also suggest that the decisions taken by the inliner do not always result in the optimal code for exploiting fusion. 
+Both of the above two problems suggest that correct inlining plays a major part in the process of fusion. It also suggests that the decisions taken by the inliner do not always result in the optimal code for exploiting fusion. 
 
 One of the goals of the current work is to reduce the dependency of successfully exploited fusion opportunities on the behaviour of the inliner. It was decided to explore the possibility of performing fusion at runtime of the program. That would eliminate the need for the inliner at least for the part of decision making when fusing array operations together. The DESOLA library, while designed for C++, serves as a starting point for performing fusion at runtime. The new framework would reuse its approach of constructing a dependence tree. When an array computation is later forced by a catamorphism, the tree can be optimised yielding an equivalent computation in a fused form.
 
@@ -736,7 +736,7 @@ Another notable feature of the interface to note here is the type of functions p
 \item The loop code will then need to unbox the result and write it into the result array
 \end{enumerate}
 
-This is a very round-about way of incrementing a value in a tight loop and will greatly affect the performance of the loop. Unfortunately, at the time of generating code for AST, all these haskell functions will have been compiled to machine code and be only available as closures. There is currently no way to inline them or get the original Haskell source code from which they were created. We needed to find a way to generate efficient code for user specified functions at runtime.
+This is a very round-about way of incrementing a value in a tight loop and will greatly affect the performance of the loop. Unfortunately, at the time of generating code for AST, all these Haskell functions will have been compiled to machine code and are only available as closures. There is currently no way to inline them or get the original Haskell source code from which they were created. We needed to find a way to generate efficient code for user specified functions at runtime.
 
 Thus, we need a way to record the user-provided functions in a more high level way than machine code. In summary our representation for functions:
 \begin{enumerate}
@@ -856,90 +856,7 @@ This functionality may seem unneccessary, since the library already provides all
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \pagebreak
-\section{Code generation and loading}
-
-\begin{itemize}
-\item haskell via TH (slow codegen, all native, TH is helpful, easy to gen code and parametrising functions, use the excellent GHC optimiser)
-\item external (c) (slow codegen, fast exec, how to identify function correspondence, must act as compiler)
-\item llvm (fast inmem gen, low level, must act as compiler in many ways)
-
-\end {itemize}
-
-
-\subsection{Haskell code generation}
-
-\subsubsection{What do we need to generate}
-\begin{itemize}
-\item Loop code
-\item A plugin template
-\item Interface glue
-\item Arg passing to and from - variadic functions, can't do without tricks
-\item Lists of args + Unsafe coerce
-\end{itemize}
-
-\subsubsection{Efficient numeric computations in Haskell}
-\begin{itemize}
-\item Talk about haskell data structures (lists, arrays)
-\item about boxed values
-\item Prohibitive performance costs
-\item Unboxed values
-\end{itemize}
-
-\subsubsection{Mutable vectors}
-\begin{itemize}
-\item Very low level access
-\item Haskell vector or GHC.Prim
-\item Largely the same underneath
-\item Vector may be more intuitive
-\item Offers many types of vectors and levels of access to them
-\item Uses ST monad, to make sure...
-\end{itemize}
-
-\subsubsection{Looping}
-\begin{itemize}
-\item There are many ways a loop can be represented in code
-\item FPrs see it as a recursive function
-\item Procedural programmers see it as a while or for C loop
-\item Down at the machine level it is a chunk of code with a label and jump statement to the beginning of the loop (or alternatively out of the loop)
-\item When generating HsCode only rec fun, however want fast machine code in the end
-\item Tail rec
-\item Give example of what machine code it becomes
-\item Thus need to make sure we always have tail rec
-\end{itemize}
-
-\subsubsection{Tail recursion}
-\begin{itemize}
-\item Perhaps put the points from above here
-\end{itemize}
-
-\subsubsection{Strictness}
-\begin{itemize}
-\item What is it and why
-\item Strictness analysis example
-\item Where in our case it would fail
-\item What to do: two things, the easiest is !
-\end{itemize}
-
-\subsubsection{Inlining}
-\begin{itemize}
-\item Funcall costs
-\item Perhaps give an example with benchmark
-\item LLVM helps?
-\end{itemize}
-
-\subsubsection{Unboxing}
-\begin{itemize}
-\item Give example
-\item Rewrite \texttt{case i\# of I\# ->} which rewrites
-\item (Might wanna merge with the section above)
-\end{itemize}
-
-
-\subsubsection{Compilation and loading}
-\begin{itemize}
-\item GHC API
-\end{itemize} 
-
+\include{07-backend.tex}
 \pagebreak
 \section{LiveFusion - Performance considerations}
 
@@ -984,11 +901,11 @@ This functionality may seem unneccessary, since the library already provides all
   \item catamorphic combinators (pure consumers)
 \end{itemize}
 \item A particular example of the pure consumets is a Fold and it produces a single scalar value- 
-\item It is important to note the result type of function \texttt{fold}. It is just the element type. Compare it to the combinators which have the result type of Array a which is a synonym for \texttt{AST (Vector a)}. The latter clearly stately it is a delayed computation. However, in the case of $fold$ nowhere in the type singnature does it say it's a delayed computation.
+\item It is important to note the result type of function \texttt{fold}. It is just the element type. Compare it to the combinators which have the result type of Array a which is a synonym for \texttt{AST (Vector a)}. The latter clearly states it is a delayed computation. However, in the case of $fold$ nowhere in the type singnature does it say it's a delayed computation.
 \item The reason for this is in the way DPH integrates into Haskell
 \item Arrays are library defined, while the scalars are Haskell built in.
 \item Another way to look at it is if AST was the type of a typical EDSL. All array producing computations in LiveFusion are represented in this AST language. In much the same way Accelerate languare has Acc Array. However, unlike DPH, Acclerate also offers scalar computations and even functions represented as \texttt{Acc}: e.g. \texttt{Acc Int} and \_?\_ \texttt{(Int -> Int)} respectively.
-\item Thus the type of fold would in Accelerate would look like ...
+\item Thus the type of fold in Accelerate would look like ...
 \item Due to the tighter integration of DPH with Haskell, it by design uses Haskell types directly, hence the type of the fold which uses haskell primitive types
 \item This poses a problem that it forces the computation as soon as the reduction is reached as there is no data structure to hold the delayed computation in
 \item This is usually the desired result, unless it is an instance of branched sharing discussed previously (outline an example)

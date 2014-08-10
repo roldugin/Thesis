@@ -1,0 +1,135 @@
+\input{preamble.tex}
+
+\section{Imperative Code Generation}
+
+In the previous chapter we discussed how a graph of array combinators is turned into imprative loops. We first showed a generic loop structure consisting of \[init], \[guard], \[body], \[yield], \[bottom] and \[done] blocks. These loop sections represented a skeleton which every combinator would populate with relevant statements that would eventually be merged into a single loop.
+
+We then looked at the translation of several of such combinators into loop language and showed how the populated loop skeletons would be merged together into ``runnable'' loops. While the sections of the loops did resemble imperative style code with some assembly-style labels attached to them, it was never mentioned just what makes a loop ``runnable''. After all, the presented code did not look like anything one would or could write in Haskell.
+
+In this chapter we will see how the \Loop language is used to generate runnable code. We will also give its translation to one of the possible backends (and the only one currently available). This backend is targeting (perhaps unexcitingly) Haskell source language, which means that the code generated is Haskell.
+
+
+\subsection{Approaches to looping}
+
+There are many ways a loop can be represented in code. In the surface \LiveFusion language the loops are note explicit. However, most of the array combinators eventually form part of loops expressed in the internal \Loop language. We have discussed this language at length in the previous chapter. We present its grammar once again in Figure \ref{fig:7-loop-grammar} as it will be referenced throughout this chapter.
+
+\begin{cfigure}{\label{fig:7-loop-grammar}\Loop language grammar.}
+\input{loop-grammar.tex}
+\end{cfigure}
+
+When it comes to expressing loops there is a fundamental difference between the vast majourity of general purpose languages (even functional ones) and Haskell. In procedural languages the loop statements are usually built onto the language. Down at the machine level when the program is compiled to \name{Assembly} code, these loops become a collection of instructions with a \*label* and \*jump* instructions to go to either the top of the loop body or break out of the loop.
+
+The situation is very different in Haskell however. Haskell does not have an explicit constuct for loops. All looping is expressed in the form of recursion. Haskell functions are pure so any state has to be passed as arguments to the recursive function. \todo{Perhaps elaborate on this if you have time}
+
+If we are to generate \Haskell code that loops over arrays we need a way to express the conceptual loops we outlined in the previous chapter as recursive functions in our generated code.
+
+
+\subsection{High performance looping in Haskell}
+
+The main data structure \LiveFusion is ultimately working with is an array. To achieve high performance we must be able to generate code that loops effectively over arrays in memory.
+
+We have just established that the looping in Haskell is done through recursive functions with the loop state being passed around as arguments to the function. We will now look at how this can be applied to array computation.
+
+In our language perhaps the most elemental array combinator is $map$. Its list counterpart definition is given below:
+
+\begin{hscode}
+map :: (a -> b) -> [a] -> [b]
+map _ []     = []
+map f (x:xs) = f x : map f xs
+\end{hscode}
+
+We will use the \name{vector}\footnote{http://hackage.haskell.org/package/vector} package to provide use with Arrays though
+cons :: a -> Vector a -> Vector a
+
+
+\subsubsection{Looping}
+\begin{itemize}
+\item There are many ways a loop can be represented in code
+\item FPrs see it as a recursive function
+\item Procedural programmers see it as a while or for C loop
+\item Down at the machine level it is a chunk of code with a label and jump statement to the beginning of the loop (or alternatively out of the loop)
+\item GPGPU
+\item Vectorised instructions
+\item When generating HsCode only rec fun, however want fast machine code in the end
+\item Tail rec
+\item Give example of what machine code it becomes
+\item Thus need to make sure we always have tail rec
+\end{itemize}
+
+\subsection{Hell}
+
+\begin{itemize}
+\item haskell via TH (slow codegen, all native, TH is helpful, easy to gen code and parametrising functions, use the excellent GHC optimiser)
+\item external (c) (slow codegen, fast exec, how to identify function correspondence, must act as compiler)
+\item llvm (fast inmem gen, low level, must act as compiler in many ways)
+
+\end {itemize}
+
+
+\subsection{Haskell code generation}
+
+\subsubsection{What do we need to generate}
+\begin{itemize}
+\item Loop code
+\item A plugin template
+\item Interface glue
+\item Arg passing to and from - variadic functions, can't do without tricks
+\item Lists of args + Unsafe coerce
+\end{itemize}
+
+\subsubsection{Efficient numeric computations in Haskell}
+\begin{itemize}
+\item Talk about haskell data structures (lists, arrays)
+\item about boxed values
+\item Prohibitive performance costs
+\item Unboxed values
+\end{itemize}
+
+\subsubsection{Mutable vectors}
+\begin{itemize}
+\item Very low level access
+\item Haskell vector or GHC.Prim
+\item Largely the same underneath
+\item Vector may be more intuitive
+\item Offers many types of vectors and levels of access to them
+\item Uses ST monad, to make sure...
+\end{itemize}
+
+
+
+\subsubsection{Tail recursion}
+\begin{itemize}
+\item Perhaps put the points from above here
+\end{itemize}
+
+\subsubsection{Strictness}
+\begin{itemize}
+\item What is it and why
+\item Strictness analysis example
+\item Where in our case it would fail
+\item What to do: two things, the easiest is !
+\end{itemize}
+
+\subsubsection{Inlining}
+\begin{itemize}
+\item Funcall costs
+\item Perhaps give an example with benchmark
+\item LLVM helps?
+\end{itemize}
+
+\subsubsection{Unboxing}
+\begin{itemize}
+\item Give example
+\item Rewrite \texttt{case i\# of I\# ->} which rewrites
+\item (Might wanna merge with the section above)
+\end{itemize}
+
+
+\subsubsection{Compilation and loading}
+\begin{itemize}
+\item GHC API
+\end{itemize} 
+
+
+
+\end{document}

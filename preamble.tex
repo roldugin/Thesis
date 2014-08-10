@@ -31,6 +31,9 @@
 \usepackage{setspace}
 \usepackage{caption}
 \usepackage{subcaption}
+\usepackage{syntax}
+\usepackage{xspace}
+\usepackage[disable]{todonotes}
 %%\usepackage[charter]{mathdesign}  % sets the math font
 %%\usepackage{fontspec}
 %%\setmainfont{Charis SIL}          % sets the document font
@@ -76,6 +79,26 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% Shortcuts.
 
 \def\compose{$\circ$ }
+
+\newcommand\LiveFusion{\name{LiveFusion}}
+\newcommand\Loop{\name{Loop}}
+\newcommand\C{\name{C}}
+\newcommand\Haskell{\name{Haskell}}
+\newcommand\name[1]{\textsl{#1}\xspace}
+
+
+%% The following shortcut does not work with caption for some reason
+\newenvironment
+  {cfigure}[1]
+  {
+    \def\TEMPCAPTION{#1}
+    \begin{figure}
+  }
+  {
+    \caption{\TEMPCAPTION}
+    \end{figure}
+  }
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% END Shortcuts.
 

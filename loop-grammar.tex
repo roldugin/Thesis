@@ -1,0 +1,48 @@
+
+\setlength{\grammarindent}{5em} % LHS/RHS separation
+\renewcommand{\syntleft}{\normalfont\itshape} %% <stmt>
+\renewcommand{\syntright}{}
+\renewcommand{\litleft}{\ttfamily} %% `for'
+\renewcommand{\litright}{}
+
+\setlength{\grammarparsep}{0pt} % tight rule separation
+\begin{grammar}
+<name> $\rightarrow$ (`arr', `elt', `f', `acc', `init', `body', etc.)
+
+<id>   $\rightarrow$ (unique integer)
+
+<impl> $\rightarrow$ (backend specific code, e.g. TemplateHaskell Expression)
+
+<var>  ::= $name$ $id$
+
+<label> ::= $name$ $id$
+\end{grammar}
+
+\setlength{\grammarparsep}{10pt plus 1pt minus 1pt} % large rule separation
+\begin{grammar}
+<loop> ::= [$block$] $label_{entry}$
+
+<block> ::= $label$ [$stmt$] $stmt_{final}$
+
+<stmt> ::= $var$ `=' $expr$
+      \alt $var$ `:=' $expr$
+      \alt `case' $var_{predicate}$ $label_{true}$ $label_{false}$
+      \alt `guard' $var_{predicate}$ $label_{false}$
+      \alt `goto' $label$
+      \alt `return' $var$
+      \alt $var$ `=' `newArray' $var_{length}$
+      \alt `writeArray' $var_{arr}$ $var_{index}$ $var_{element}$
+      \alt $var$ `=' `sliceArray' $var_{arr}$ $var_{new\_length}$
+
+<expr> ::= $var$
+      \alt $var_{\mathit{function}}$ $var_{arg}$
+      \alt $var_{\mathit{function}}$ $var_{arg_1}$ $var_{arg_2}$
+      \alt \ldots
+      \alt $term$
+
+<term> ::= $impl$
+      \alt $t$
+      \alt $term_{s} \rightarrow term_{t}$
+      \alt $term_{s->t}\ term_{s}$
+
+\end{grammar}
