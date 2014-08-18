@@ -11,15 +11,11 @@ In this chapter we will see how the \Loop language is used to generate runnable 
 
 \subsection{Approaches to looping}
 
-There are many ways a loop can be represented in code. In the surface \LiveFusion language the loops are note explicit. However, most of the array combinators eventually form part of loops expressed in the internal \Loop language. We have discussed this language at length in the previous chapter. We present its grammar once again in Figure \ref{fig:7-loop-grammar} as it will be referenced throughout this chapter.
-
-\begin{cfigure}{\label{fig:7-loop-grammar}\Loop language grammar.}
-\input{loop-grammar.tex}
-\end{cfigure}
+There are many ways a loop can be represented in code. In the surface \LiveFusion language the loops are note explicit. However, most of the array combinators eventually form part of loops expressed in the internal \Loop language. We have discussed this language at length in the previous chapter.
 
 When it comes to expressing loops there is a fundamental difference between the vast majourity of general purpose languages (even functional ones) and Haskell. In procedural languages the loop statements are usually built onto the language. Down at the machine level when the program is compiled to \name{Assembly} code, these loops become a collection of instructions with a \*label* and \*jump* instructions to go to either the top of the loop body or break out of the loop.
 
-The situation is very different in Haskell however. Haskell does not have an explicit constuct for loops. All looping is expressed in the form of recursion. Haskell functions are pure so any state has to be passed as arguments to the recursive function. \todo{Perhaps elaborate on this if you have time}
+The situation is very different in Haskell however. Haskell does not have an explicit constuct for loops. All looping is expressed in the form of recursion. \todo{Perhaps elaborate on this if you have time}
 
 If we are to generate \Haskell code that loops over arrays we need a way to express the conceptual loops we outlined in the previous chapter as recursive functions in our generated code.
 
@@ -28,18 +24,72 @@ If we are to generate \Haskell code that loops over arrays we need a way to expr
 
 The main data structure \LiveFusion is ultimately working with is an array. To achieve high performance we must be able to generate code that loops effectively over arrays in memory.
 
-We have just established that the looping in Haskell is done through recursive functions with the loop state being passed around as arguments to the function. We will now look at how this can be applied to array computation.
+We have just established that the looping in Haskell is done through recursive functions. We will now look at how this can be applied to array computation.
 
-In our language perhaps the most elemental array combinator is $map$. Its list counterpart definition is given below:
+The internal \Loop language has \|writeArray| statement which hints the need for \*mutable* arrays. The use of mutable values is not typical in \Haskell and is discouraged. However, for performance reasons there are mechanisms by which this can be done.
 
-\begin{hscode}
-map :: (a -> b) -> [a] -> [b]
-map _ []     = []
-map f (x:xs) = f x : map f xs
-\end{hscode}
+In \Haskell all variable are immutable by default. To achieve mutability one must leave the pure context and use one that supports mutable state. In Haskell this usually amounts to using \|IO| or \|ST| monads.
 
-We will use the \name{vector}\footnote{http://hackage.haskell.org/package/vector} package to provide use with Arrays though
-cons :: a -> Vector a -> Vector a
+The \|IO| monad lets the programmer alter the global state of the program and perform any desired side-effecting computations. On the other hand, \|ST| monad only allows to work with mutable memory. The memory is thread-local and must be allocated inside the monad in order to be used. The return value from the \|ST| monad is the pure \Haskell value. Stateful computations performed inside the monad are not visible outside the monadic context. The compiler ensures that no mutable state escapes the \|ST| computation. This means that for all intents and puposes an \|ST| computation can be considered pure, despite the fact that it may use side-effects internally (usually for efficiency reasons).
+
+Mutable arrays in \Haskell can be used from both inside \|IO| and \|ST| monads. There are several implementations that provide similar interfaces to fast mutable arrays. I used the \name{vector}\footnote{http://hackage.haskell.org/package/vector} package in my development, and its use in the examples in this chapter should be quite self-explanatory.\footnote{The choice of \name{vector} library is mostly due to historical reasons. It has been first implemented by Roman Leshchinskiy in the research group I belong to and is currently providing array functionality to \name{Data Parallel Haskell}, \name{Repa} and \name{Accelerate}, all of which originate from this group.\todo{Accelerate uses Vector?}}
+
+\todo{Perhaps give a simple example of looping using vector. Or else rename the section to something else}
+
+\begin{cfigure}{\label{fig:7-loop-grammar}\Loop language grammar.}
+\input{loop-grammar.tex}
+\end{cfigure}
+
+\subsection{Th}
+
+\begin{minipage}{\linewidth}
+\begin{hscode2}%
+      {07-toPercentile-hs}%
+      {Generated Haskell code for $toPercentile$ function}
+entry :: [Dynamic] -> Dynamic
+entry [!arr_xs] = toDyn (run (fd arr_xs))
+
+run :: Vector Int -> Vector Int
+run !arr_xs = runST (init_ys arr_xs)
+
+init_ys !arr_xs
+  = do let !ix_xs = 0;
+       let !len_xs = lengthArray arr_xs;
+       let !len_ys = len_xs;
+       !arr_ys <- newArray len_ys;
+       guard_ys arr_xs arr_ys len_xs ix_xs
+
+guard_ys !arr_xs !arr_ys !len_xs !ix_xs
+  = do let !pred_xs = (<) ix_xs len_xs;
+       let !ix_ys = ix_xs;
+       if pred_xs
+        then do body_ys arr_xs arr_ys len_xs ix_xs ix_ys
+        else done_ys arr_xs arr_ys len_xs ix_xs ix_ys
+
+body_ys !arr_xs !arr_ys !len_xs !ix_xs !ix_ys
+  = do let !elt_xs = readArray ix_xs arr_xs;
+       let !f_ys = \a -> (*) a (fromInteger 100);
+       let !elt_ys = f_ys elt_xs;
+       write_ys arr_xs arr_ys len_xs ix_xs ix_ys elt_ys
+
+write_ys !arr_xs !arr_ys !len_xs !ix_xs !ix_ys !elt_ys
+  = do writeArray arr_ys ix_ys elt_ys;
+       bottom_ys arr_xs arr_ys len_xs ix_xs ix_ys elt_ys
+
+bottom_ys !arr_xs !arr_ys !len_xs !ix_xs !ix_ys !elt_ys
+  = do let !one_xs = 1;
+       let !ix_xs' = (+) ix_xs one_xs;
+       guard_ys arr_xs arr_ys len_xs ix_xs'
+
+done_ys !arr_xs !arr_ys !len_xs !ix_xs !ix_ys
+  = do !result <- sliceArray arr_ys ix_ys;
+       return result
+\end{hscode2}
+\end{minipage}
+
+\subsection{Internal optimisations}
+\subsubsection{Liveness analysis}
+\subsubsection{Generating}
 
 
 \subsubsection{Looping}
@@ -96,7 +146,7 @@ cons :: a -> Vector a -> Vector a
 \end{itemize}
 
 
-
+\subsection{GHC provided optimisations}
 \subsubsection{Tail recursion}
 \begin{itemize}
 \item Perhaps put the points from above here
@@ -125,11 +175,24 @@ cons :: a -> Vector a -> Vector a
 \end{itemize}
 
 
+
+
 \subsubsection{Compilation and loading}
 \begin{itemize}
 \item GHC API
 \end{itemize} 
 
 
+\subsection{Background}
+
+\subsubsection{Passing loop state}
+
+\begin{itemize}
+\item We were passing explicit args
+\item fast, GHC knows how to optimise away unused/dup variables (of which we have a lot)
+\item STRef/IORefs - convenient but they are boxed and are not inlined even though are programs are strict
+\item State monad. Build State monad on top of ST, use tuples for multiple state variables. It inlines and unboxes everything alright, but for some reason there remain lazy lets and continuation.
+\item Arguably the cleanest approach to unboxed mutable state. Removes the limitation outlined in () whereby the updated value of the assigned variable won't be available in the same block it's assigned. It would also make the internal compilation process cleaner. Right now it needs to generate a fresh variable name for the updated variable and keep track of the variables updated in the current block.
+\end{itemize}
 
 \end{document}

@@ -13,9 +13,12 @@
 
 <impl> $\rightarrow$ (backend specific code, e.g. TemplateHaskell Expression)
 
+<lit>  $\rightarrow$ (Haskell value supported by language (Int, Float, Bool, Tuple, etc..)
+
 <var>  ::= $name$ $id$
 
 <label> ::= $name$ $id$
+
 \end{grammar}
 
 \setlength{\grammarparsep}{10pt plus 1pt minus 1pt} % large rule separation
@@ -31,14 +34,14 @@
       \alt `goto' $label$
       \alt `return' $var$
       \alt $var$ `=' `newArray' $var_{length}$
+      \alt $var$ `=' `readArray' $var_{array}$ $var_{index}$
       \alt `writeArray' $var_{arr}$ $var_{index}$ $var_{element}$
       \alt $var$ `=' `sliceArray' $var_{arr}$ $var_{new\_length}$
 
 <expr> ::= $var$
-      \alt $var_{\mathit{function}}$ $var_{arg}$
-      \alt $var_{\mathit{function}}$ $var_{arg_1}$ $var_{arg_2}$
-      \alt \ldots
+      \alt $expr_{\mathit{f}}$ $exp_{arg}$
       \alt $term$
+      \alt $lit$
 
 <term> ::= $impl$
       \alt $t$
