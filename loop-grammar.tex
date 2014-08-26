@@ -1,3 +1,6 @@
+%% IMPORTANT
+%% Put the following footnote after the figure on the same page where the figure ends up:
+%% \footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings instead.}
 
 \setlength{\grammarindent}{5em} % LHS/RHS separation
 \renewcommand{\syntleft}{\normalfont\itshape} %% <stmt>
@@ -6,14 +9,15 @@
 \renewcommand{\litright}{}
 
 \setlength{\grammarparsep}{0pt} % tight rule separation
+
 \begin{grammar}
 <name> $\rightarrow$ (`arr', `elt', `f', `acc', `init', `body', etc.)
 
-<id>   $\rightarrow$ (unique integer)
+<id>   $\rightarrow$ (unique integer\footnotemark)
 
 <impl> $\rightarrow$ (backend specific code, e.g. TemplateHaskell Expression)
 
-<lit>  $\rightarrow$ (Haskell value supported by language (Int, Float, Bool, Tuple, etc..)
+<lit>  $\rightarrow$ (Haskell value supported by the language (Int, Float, Bool, Tuple, etc..)
 
 <var>  ::= $name$ $id$
 
@@ -29,14 +33,15 @@
 
 <stmt> ::= $var$ `=' $expr$
       \alt $var$ `:=' $expr$
-      \alt `case' $var_{predicate}$ $label_{true}$ $label_{false}$
-      \alt `guard' $var_{predicate}$ $label_{false}$
+      \alt `case' $expr_{bool}$ $label_{true}$ $label_{false}$
+      \alt `guard' $expr_{bool}$ $label_{false}$
       \alt `goto' $label$
       \alt `return' $var$
-      \alt $var$ `=' `newArray' $var_{length}$
-      \alt $var$ `=' `readArray' $var_{array}$ $var_{index}$
-      \alt `writeArray' $var_{arr}$ $var_{index}$ $var_{element}$
-      \alt $var$ `=' `sliceArray' $var_{arr}$ $var_{new\_length}$
+      \alt $var$ `=' `newArray' $expr_{length}$
+      \alt $var$ `=' `readArray' $var_{array}$ $expr_{index}$
+      \alt `writeArray' $var_{arr}$ $expr_{index}$ $expr_{element}$
+      \alt $var$ `=' `sliceArray' $var_{arr}$ $expr_{new\_length}$
+      \alt $var$ `=' `lengthArray' $var_{arr}$
 
 <expr> ::= $var$
       \alt $expr_{\mathit{f}}$ $exp_{arg}$
@@ -44,8 +49,8 @@
       \alt $lit$
 
 <term> ::= $impl$
-      \alt $t$
+      \alt $lit$
       \alt $term_{s} \rightarrow term_{t}$
-      \alt $term_{s->t}\ term_{s}$
+      \alt $term_{s \rightarrow t}\ term_{s}$
 
 \end{grammar}

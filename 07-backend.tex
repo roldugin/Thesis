@@ -1,4 +1,8 @@
-\input{preamble.tex}
+%% We use `subfiles' package
+\documentclass[preamble.tex]{subfiles}
+\begin{document}
+
+\pagebreak{}
 
 \section{Imperative Code Generation}
 
@@ -13,14 +17,14 @@ In this chapter we will see how the \Loop language is used to generate runnable 
 
 There are many ways a loop can be represented in code. In the surface \LiveFusion language the loops are note explicit. However, most of the array combinators eventually form part of loops expressed in the internal \Loop language. We have discussed this language at length in the previous chapter.
 
-When it comes to expressing loops there is a fundamental difference between the vast majourity of general purpose languages (even functional ones) and Haskell. In procedural languages the loop statements are usually built onto the language. Down at the machine level when the program is compiled to \name{Assembly} code, these loops become a collection of instructions with a \*label* and \*jump* instructions to go to either the top of the loop body or break out of the loop.
+When it comes to expressing loops there is a fundamental difference between the vast majourity of general purpose languages (even functional ones) and Haskell. In procedural languages the loop statements are usually built onto the language. Down at the machine level when the program is compiled to \name{Assembly} code, these loops become a collection of instructions with a $label$ and $jump$ instructions to go to either the top of the loop body or break out of the loop.
 
 The situation is very different in Haskell however. Haskell does not have an explicit constuct for loops. All looping is expressed in the form of recursion. \todo{Perhaps elaborate on this if you have time}
 
 If we are to generate \Haskell code that loops over arrays we need a way to express the conceptual loops we outlined in the previous chapter as recursive functions in our generated code.
 
 
-\subsection{High performance looping in Haskell}
+\subsection{Fast mutable arrays in Haskell}
 
 The main data structure \LiveFusion is ultimately working with is an array. To achieve high performance we must be able to generate code that loops effectively over arrays in memory.
 
@@ -32,20 +36,25 @@ In \Haskell all variable are immutable by default. To achieve mutability one mus
 
 The \|IO| monad lets the programmer alter the global state of the program and perform any desired side-effecting computations. On the other hand, \|ST| monad only allows to work with mutable memory. The memory is thread-local and must be allocated inside the monad in order to be used. The return value from the \|ST| monad is the pure \Haskell value. Stateful computations performed inside the monad are not visible outside the monadic context. The compiler ensures that no mutable state escapes the \|ST| computation. This means that for all intents and puposes an \|ST| computation can be considered pure, despite the fact that it may use side-effects internally (usually for efficiency reasons).
 
-Mutable arrays in \Haskell can be used from both inside \|IO| and \|ST| monads. There are several implementations that provide similar interfaces to fast mutable arrays. I used the \name{vector}\footnote{http://hackage.haskell.org/package/vector} package in my development, and its use in the examples in this chapter should be quite self-explanatory.\footnote{The choice of \name{vector} library is mostly due to historical reasons. It has been first implemented by Roman Leshchinskiy in the research group I belong to and is currently providing array functionality to \name{Data Parallel Haskell}, \name{Repa} and \name{Accelerate}, all of which originate from this group.\todo{Accelerate uses Vector?}}
+Mutable arrays in \Haskell can be used from both inside \|IO| and \|ST| monads. There are several implementations that provide similar interfaces to fast mutable arrays. I used the \name{vector}\footnote{http://hackage.haskell.org/package/vector} package in my development, and its use in the examples in this chapter should be quite self-explanatory.\footnote{The choice of \name{vector} library is mostly due to historical reasons. It has been first implemented by Roman Leshchinskiy in the research group I belong to and is currently providing array functionality to \name{Data Parallel Haskell}, \name{Repa} and \name{Accelerate}, all of which originate from this group.\todo{Accelerate uses Vector?}} Since we do not require to do any side-effecting computations in our loops except allocating and working with memory, arrays in \|ST| monad will suffice for us.
 
-\todo{Perhaps give a simple example of looping using vector. Or else rename the section to something else}
+\todo{Perhaps give a simple example of looping using vector if the translation code from Loop to Haskell is hard to understand.}
+
+
+\subsection{Compiling \Loop language to \Haskell loops}
+
+I will now present the translation of the \Loop EDSL to Haskell. The definition of \Loop language is given once again in Figure \ref{fig:7-loop-grammar}. We will go over the code generation for this language using a simple example. \todo{Describe example}
+
 
 \begin{cfigure}{\label{fig:7-loop-grammar}\Loop language grammar.}
 \input{loop-grammar.tex}
 \end{cfigure}
+\todo{Put the footnotetext on the same page where the grammar ends up}\footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings instead.}
 
-\subsection{Th}
 
 \begin{minipage}{\linewidth}
 \begin{hscode2}%
-      {07-toPercentile-hs}%
-      {Generated Haskell code for $toPercentile$ function}
+      {\label{lst:7-toPercentile-hs}Generated Haskell code for $toPercentile$ function}
 entry :: [Dynamic] -> Dynamic
 entry [!arr_xs] = toDyn (run (fd arr_xs))
 
@@ -87,6 +96,58 @@ done_ys !arr_xs !arr_ys !len_xs !ix_xs !ix_ys
 \end{hscode2}
 \end{minipage}
 
+
+To demonstrate the workings of the code generator we will use the source program given in Figure \todo{ref}, it's internal representation in \Loop language in Figure \todo{ref} as well as the resulting \Haskell code in Figure \ref{lst:7-toPercentile-hs}.
+
+\begin{description}
+
+\item[Blocks and Gotos] \hfill \\
+A \Loop is essentially a group of labelled code blocks with a predefined entry block. Every code block becomes its own function in the generated code. We see in the example that each code block like \[body] became $body$ function. Each code block has a unique identifier associated with it (in our case $ys$), which distinguishes it from similarly named blocks of any nested loops which may be present.
+
+A \*block* becomes a \*function* in the generated code. Consequently, the \|goto| statements become *function calls*. Each \|goto| statement specifies which block to transfer the control to.
+
+Blocks of the internal \Loop language do not explicitely specify what loop state they require or declare. A loop's state is implicit and global. As will be discussed later in Section \todo{ref} the state of the loop is passed as function arguments in the generated code. This is the reason for a large number of aguments to functions generated from blocks. The process for generating the arguments from loop variables will be outlined in Section \todo{ref}.
+
+
+\item[Guards and Cases] \hfill \\
+The \Loop language offers two conditional statements: \|guard| and \|case|. Given a boolean expression the \|case| statement tranfers control to one of the two specified blocks. A \|guard| is a simplified \|case| statement which only transfers control to a different block if the predicate is \*false*, but stays in the same block otherwise. The \|guard| is used to preemt execution of a block if a condition is not met.
+
+Both \|case| and \|guard| are translated to \Haskell's \|if| expression in the generated code. It can be seen in the provided example, that the \[guard] block as well as the \[body] contain a \|guard|. The former performs the bounds check of the loop index while the latter is the guard of the \|filter| combinator.
+
+% One important thing to note is that the \|case| and the \|guard| must come after all variable bindings and updates. Maybe give an example of (map . filter). But then it is unclear what to do with (map (1/) . filter (/= 0)) The eager evaluation will not short circuit the filter and the division will be performed.
+
+\item[Variable initialisation and update] \hfill \\
+In the \Loop language every local variable must be initialised before use. Since the language is currently untyped and relies on subsequent type inference and type checking in the generated code compiler, there are no explicit declarations. However, the \Loop code generator checks that every variable has exacly one binding spot inside the loop and that the control goes through that binding before the first use of the vaiable.
+
+The bound variables can be mutable as well as immutable. In fact the \Loop language does not make a distinction between the two in the way they are initialised and used.
+
+A variable \*binding* appears as a \*strict* \|let| binding in the generated \Haskell code. The exclamation marks, called \*bang patterns*, ensure that every bound variable is evaluated to WHNF and no thunks are created when evaluating the code. In most cases this is not neccessary since the subsequent strictness analysis determines most variables to be strict anyway. However there are cases, especially in the presence of \|filter| combinators, where forcing strict evaluation is required for maintaining high performance of the generated code.
+
+A mutable variable which has been \*assigned to* is given a fresh name in the generated code. This is due to \Haskell being ways in which mutable variables can be presented in the 
+
+\item[Array manipulation] \hfill \\
+...
+
+\item[Returning the result] \hfill \\
+...
+
+
+\end{description}
+
+
+
+
+
+\todo{The translation is presented formally in Figure}
+
+
+
+
+\subsubsection{Unboxing}
+\subsubsection{Passing arrays to the generated code}
+\subsubsection{Generating Haskell code}
+
+\subsubsection{Loop state}
 \subsection{Internal optimisations}
 \subsubsection{Liveness analysis}
 \subsubsection{Generating}

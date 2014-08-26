@@ -1,19 +1,17 @@
-%% Conditional preamble inclusion.
-%% \input{preamble.tex} when building when building the complete thesis or its individual chapters.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Compiling this file will compile the entire document
+%% from individual chapter files using `subfiles' package
 
-\ifdefined\PREAMBLE
-%% DEBUG: Preamble skipped
-\else
-
-\newcommand*{\PREAMBLE}{} %% Mark preamble as included
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
-%% The preamble goes here and must end with \begin{document}
+%% PREAMBLE
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \documentclass[12pt,a4paper,british]{article}
+
+\usepackage[british]{babel}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{luainputenc}
 \usepackage{listings}
@@ -22,8 +20,7 @@
 \usepackage{refstyle}
 \usepackage{textcomp}
 \usepackage{amstext}
-\usepackage{graphicx}
-\usepackage{babel}
+%\usepackage{graphicx}
 \usepackage[margin=2cm]{geometry}
 \usepackage[export]{adjustbox}
 \usepackage{listings}
@@ -34,6 +31,7 @@
 \usepackage{syntax}
 \usepackage{xspace}
 \usepackage[disable]{todonotes}
+
 %%\usepackage[charter]{mathdesign}  % sets the math font
 %%\usepackage{fontspec}
 %%\setmainfont{Charis SIL}          % sets the document font
@@ -126,8 +124,8 @@
 
 %% Haskell code block with a figure box
 \lstnewenvironment
-  {hscode2}[2]
-  {\singlespacing\lstset{basicstyle={\ttfamily}, language=Haskell, tabsize=4, label=#1, caption=#2}}
+  {hscode2}[1]
+  {\singlespacing\lstset{basicstyle={\ttfamily}, language=Haskell, tabsize=4, caption=#1}}
   {}
 
 %% Loop code block without a figure box
@@ -149,16 +147,20 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% END Environments.
 
 
-
-
 \begin{document}
 
+\subfile{main}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%
-%% End of preamble. Don't forget \begin{document} and \fi
-%%
+%% Chapter 6: Loop representation: The Loop Language                         %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\fi %% Do Not Remove. End of conditional preamble inclusion.
+\subfile{06-loops.tex}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Chapter 7: Code Generation and Haskell Backend                            %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\subfile{07-backend.tex}
+
+\end{document}

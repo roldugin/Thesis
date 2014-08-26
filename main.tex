@@ -1,8 +1,6 @@
-%!TEX program = lualatex
-%% LyX 2.0.0 created this file.  For more info, see http://www.lyx.org/.
-%% Do not edit unless you really know what you are doing.
-
-\input{preamble.tex}
+%% We use `subfiles' package
+\documentclass[preamble.tex]{subfiles}
+\begin{document}
 
 \pagebreak{}
 
@@ -21,7 +19,7 @@ Masters Thesis [Draft]}
 
 
 \begin{center}
-\includegraphics{img/UNSW_PortraitGreyscale_Black}
+\includegraphics{img/UNSW-PortraitGreyscale-Black}
 \par\end{center}
 
 ~\\
@@ -315,7 +313,7 @@ map f xs = build (\c n -> foldr (c . f) n xs)
 
 In the above code the list is being folded into another list. With the help of a rewrite rule
 
-$\text{⟨}foldr/build\, fusion\text{⟩\,}\forall g\, k\, z.foldr\, k\, z\,(build\, g)\mapsto g\, k\, z$
+$\langle foldr/build\, fusion \rangle\forall g\, k\, z.foldr\, k\, z\,(build\, g)\mapsto g\, k\, z$
 
 the two consecutive $map$s could be reduced to as in the following:
 
@@ -411,7 +409,7 @@ map f xs = unstream (mapS f (stream xs))
 
 The fusion opportunity such as $(map\, f\cdot filter\, p)$ may now be exploited with the following rewrite rule
 
-$\text{⟨}stream/unstream\, fusion\text{⟩}\,\forall stream(unstream\, s)\mapsto s$
+$\langle stream/unstream\, fusion\rangle\,\forall stream(unstream\, s)\mapsto s$
 
 In order to completely remove all traces of the helper data structures Stream Fusion relies on general purpose compiler optimisations. This makes this approach highly depended on GHC. However, due to the non-portability of DPH this does not pose a problem. The major problem with this approach is that the two primitive operations must be adjacent to each other when inlined. This is not always possible. However, the approach is very solid otherwise and it might turn out to be yet more effective when combined with a runtime fusion system.
 
@@ -541,10 +539,10 @@ Delayed Evaluation Self Optimising Linear Algebra (DESOLA) \cite{RMKB06} is a C+
 
 \begin{figure}
 \begin{centering}
-\includegraphics{img/DESOLA_running_example}
+\includegraphics{img/DESOLA-running-example}
 \par\end{centering}
 
-\caption{\label{fig:Lib:DESOLA-DAG}{An example DAG. The rectangular node denotes a handle held by the library client. The expression represents the matrix-vector multiply function y = αAx + βy.}}
+\caption{\label{fig:Lib:DESOLA-DAG}{An example DAG. The rectangular node denotes a handle held by the library client. The expression represents the matrix-vector multiply function $y = \alpha Ax + \beta y$.}}
 \end{figure}
 
 
@@ -678,7 +676,7 @@ farAndAbove line points
 \end{lstlisting}
 
 \begin{figure}
-\includegraphics[width=0.4\textwidth,center]{img/QuickHull_flat_but_true}
+\includegraphics[width=0.4\textwidth,center]{img/QuickHull-flat-but-true}
 
 \caption{\label{fig:QHFlat}{AST for the core of QuickHull example: arrow labels are AST nodes, coloured boxes are potentially manifest arrays.}}
 \end{figure}
@@ -849,15 +847,7 @@ This functionality may seem unneccessary, since the library already provides all
 
 \pagebreak
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Chapter 6: Loop representation: The Loop Language %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\include{06-loops.tex}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\pagebreak
-\include{07-backend.tex}
-\pagebreak
 \section{LiveFusion - Performance considerations}
 
 \subsection{Two types of sharing}
@@ -909,7 +899,7 @@ This functionality may seem unneccessary, since the library already provides all
 \item Due to the tighter integration of DPH with Haskell, it by design uses Haskell types directly, hence the type of the fold which uses haskell primitive types
 \item This poses a problem that it forces the computation as soon as the reduction is reached as there is no data structure to hold the delayed computation in
 \item This is usually the desired result, unless it is an instance of branched sharing discussed previously (outline an example)
-\item There is currently no solution for the problem, however, for easier integration into other systems, LiveFusion does delay scalar computations, i.e. the type of Fold combinator is actually \texttt{..... -> AST a}. In fact the only thing that the wrapper \texttt{fold} functions does is: \texttt{fold f z xs = compute \$ Fold f z xs}
+\item There is currently no solution for the problem, however, for easier integration into other systems, LiveFusion does delay scalar computations, i.e. the type of Fold combinator is actually \texttt{..... -> AST a}. In fact the only thing that the wrapper \texttt{fold} functions does is: \inlc{fold f z xs = compute \$ Fold f z xs}
 \end{itemize}
 
 \subsection{Code reuse}
