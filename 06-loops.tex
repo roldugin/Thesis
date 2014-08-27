@@ -251,7 +251,7 @@ We have essentially given the complete Loop representation for \|Manifest|, \|ma
 In the previous section we have established how each of the combinators of the $aboveThreshold$ function contribute to each loop. Each of those loops has \|init|, \|guard|, \|body|, \|yield|, \|bottom| and \|done| code blocks which are connected by \|goto|s. We can now simpy merge the respective sections of all loops to give a loop in Figure . The statements of \|Manifest| array itteration preceed those of the \|map|, which in turn preceed those of the \|filter|. The statements of physical array creation come last.
 
 \begin{loopcode2}{Final loop for a call of $aboveThreshold$ Function}{Fig:Loop:aboveThreshold-final-loop}
-  -- Loop: force \$ filter (> 100) \$ map f \$ Manifest xs
+  -- Loop: force !!!dol!!! filter (> 100) !!!dol!!! map f !!!dol!!! Manifest xs
   init:
     len_xs = arrayLength xs          -- From \|Manifest|
     i_xs = 0                         -- From \|Manifest|

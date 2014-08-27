@@ -121,7 +121,7 @@ In the \Loop language every local variable must be initialised before use. Since
 
 The bound variables can be mutable as well as immutable. In fact the \Loop language does not make a distinction between the two in the way they are initialised and used.
 
-A variable \*binding* appears as a \*strict* \|let| binding in the generated \Haskell code. The exclamation marks, called \*bang patterns*, ensure that every bound variable is evaluated to WHNF and no thunks are created when evaluating the code. In most cases this is not neccessary since the subsequent strictness analysis determines most variables to be strict anyway. However there are cases, especially in the presence of \|filter| combinators, where forcing strict evaluation is required for maintaining high performance of the generated code.
+A variable \*binding* appears as a \*strict* \|let| binding in the generated \Haskell code. The exclamation marks, called \*bang patterns*, ensure that every bound variable is evaluated to WHNF and no thunks are created when evaluating the code. In most cases this is not neccessary since the subsequent strictness analysis determines most variables to be strict anyway. However there are cases, especially in the presence of @filter@ combinators, where forcing strict evaluation is required for maintaining high performance of the generated code.
 
 A mutable variable which has been \*assigned to* is given a fresh name in the generated code. This is due to \Haskell being ways in which mutable variables can be presented in the 
 
