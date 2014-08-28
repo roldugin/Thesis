@@ -4,7 +4,7 @@
 
 \pagebreak{}
 
-\section{Imperative Code Generation}
+\chapter{Imperative Code Generation}
 
 In the previous chapter we discussed how a graph of array combinators is turned into imprative loops. We first showed a generic loop structure consisting of \[init], \[guard], \[body], \[yield], \[bottom] and \[done] blocks. These loop sections represented a skeleton which every combinator would populate with relevant statements that would eventually be merged into a single loop.
 
@@ -13,7 +13,7 @@ We then looked at the translation of several of such combinators into loop langu
 In this chapter we will see how the \Loop language is used to generate runnable code. We will also give its translation to one of the possible backends (and the only one currently available). This backend is targeting (perhaps unexcitingly) Haskell source language, which means that the code generated is Haskell.
 
 
-\subsection{Approaches to looping}
+\section{Approaches to looping}
 
 There are many ways a loop can be represented in code. In the surface \LiveFusion language the loops are note explicit. However, most of the array combinators eventually form part of loops expressed in the internal \Loop language. We have discussed this language at length in the previous chapter.
 
@@ -24,7 +24,7 @@ The situation is very different in Haskell however. Haskell does not have an exp
 If we are to generate \Haskell code that loops over arrays we need a way to express the conceptual loops we outlined in the previous chapter as recursive functions in our generated code.
 
 
-\subsection{Fast mutable arrays in Haskell}
+\section{Fast mutable arrays in Haskell}
 
 The main data structure \LiveFusion is ultimately working with is an array. To achieve high performance we must be able to generate code that loops effectively over arrays in memory.
 
@@ -41,7 +41,7 @@ Mutable arrays in \Haskell can be used from both inside \|IO| and \|ST| monads. 
 \todo{Perhaps give a simple example of looping using vector if the translation code from Loop to Haskell is hard to understand.}
 
 
-\subsection{Compiling \Loop language to \Haskell loops}
+\section{Compiling \Loop language to \Haskell loops}
 
 I will now present the translation of the \Loop EDSL to Haskell. The definition of \Loop language is given once again in Figure \ref{fig:7-loop-grammar}. We will go over the code generation for this language using a simple example. \todo{Describe example}
 
@@ -171,14 +171,14 @@ sliceArray vec len = V.unsafeFreeze $ MV.unsafeTake len vec
 
 
 
-\subsubsection{Unboxing}
-\subsubsection{Passing arrays to the generated code}
-\subsubsection{Generating Haskell code}
+\subsection{Unboxing}
+\subsection{Passing arrays to the generated code}
+\subsection{Generating Haskell code}
 
-\subsubsection{Loop state}
-\subsection{Internal optimisations}
+\subsection{Loop state}
+\section{Internal optimisations}
 
-\subsubsection{Liveness analysis}
+\subsection{Liveness analysis}
 
 There are two caveats of the \Haskell code generator in its current state:
 \begin{itemize}
@@ -191,10 +191,10 @@ Both of the above are not fundamental limitations of either \Loop EDSL or the \H
 So far neither of these limitations posed a problem since the loop structure itself is so modular. There is no apparent benefit of investing in a more granular per-statement liveness analysis. The generated \Haskell code is run through \GHC which itself has excellent liveness analysis and many other efficient compilation tactics. The proposed \LLVM backend is also likely to be able to optimise the code in its current form.
 
 
-\subsubsection{Generating}
+\subsection{Generating}
 
 
-\subsubsection{Looping}
+\subsection{Looping}
 \begin{itemize}
 \item There are many ways a loop can be represented in code
 \item FPrs see it as a recursive function
@@ -208,7 +208,7 @@ So far neither of these limitations posed a problem since the loop structure its
 \item Thus need to make sure we always have tail rec
 \end{itemize}
 
-\subsection{Hell}
+\section{Hell}
 
 \begin{itemize}
 \item haskell via TH (slow codegen, all native, TH is helpful, easy to gen code and parametrising functions, use the excellent GHC optimiser)
@@ -218,9 +218,9 @@ So far neither of these limitations posed a problem since the loop structure its
 \end {itemize}
 
 
-\subsection{Haskell code generation}
+\section{Haskell code generation}
 
-\subsubsection{What do we need to generate}
+\subsection{What do we need to generate}
 \begin{itemize}
 \item Loop code
 \item A plugin template
@@ -229,7 +229,7 @@ So far neither of these limitations posed a problem since the loop structure its
 \item Lists of args + Unsafe coerce
 \end{itemize}
 
-\subsubsection{Efficient numeric computations in Haskell}
+\subsection{Efficient numeric computations in Haskell}
 \begin{itemize}
 \item Talk about haskell data structures (lists, arrays)
 \item about boxed values
@@ -237,7 +237,7 @@ So far neither of these limitations posed a problem since the loop structure its
 \item Unboxed values
 \end{itemize}
 
-\subsubsection{Mutable vectors}
+\subsection{Mutable vectors}
 \begin{itemize}
 \item Very low level access
 \item Haskell vector or GHC.Prim
@@ -248,13 +248,13 @@ So far neither of these limitations posed a problem since the loop structure its
 \end{itemize}
 
 
-\subsection{GHC provided optimisations}
-\subsubsection{Tail recursion}
+\section{GHC provided optimisations}
+\subsection{Tail recursion}
 \begin{itemize}
 \item Perhaps put the points from above here
 \end{itemize}
 
-\subsubsection{Strictness}
+\subsection{Strictness}
 \begin{itemize}
 \item What is it and why
 \item Strictness analysis example
@@ -262,14 +262,14 @@ So far neither of these limitations posed a problem since the loop structure its
 \item What to do: two things, the easiest is !
 \end{itemize}
 
-\subsubsection{Inlining}
+\subsection{Inlining}
 \begin{itemize}
 \item Funcall costs
 \item Perhaps give an example with benchmark
 \item LLVM helps?
 \end{itemize}
 
-\subsubsection{Unboxing}
+\subsection{Unboxing}
 \begin{itemize}
 \item Give example
 \item Rewrite \texttt{case i\# of I\# ->} which rewrites
@@ -279,15 +279,15 @@ So far neither of these limitations posed a problem since the loop structure its
 
 
 
-\subsubsection{Compilation and loading}
+\subsection{Compilation and loading}
 \begin{itemize}
 \item GHC API
 \end{itemize} 
 
 
-\subsection{Background}
+\section{Background}
 
-\subsubsection{Passing loop state}
+\subsection{Passing loop state}
 
 \begin{itemize}
 \item We were passing explicit args

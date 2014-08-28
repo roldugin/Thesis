@@ -9,7 +9,7 @@
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\documentclass[12pt,a4paper,british]{article}
+\documentclass[12pt,a4paper,twoside,final,british]{book}
 
 \PassOptionsToPackage{usenames,dvipsnames}{xcolor}
 
@@ -72,17 +72,26 @@
 %\input{itemize_md.tex}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%% Shortcuts.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% Shorthand macros, environments, etc..
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 \def\compose{$\circ$ }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Names and abbreviations
+
+\newcommand\name[1]{\textsl{#1}\xspace}
 
 \newcommand\LiveFusion{\name{LiveFusion}}
 \newcommand\Loop{\name{Loop}}
 \newcommand\C{\name{C}}
 \newcommand\Haskell{\name{Haskell}}
 \newcommand\GHC{\name{GHC}}
-\newcommand\name[1]{\textsl{#1}\xspace}
-
+\newcommand\LLVM{\name{LLVM}}
 
 %% The following shortcut does not work with caption for some reason
 \newenvironment
@@ -102,41 +111,6 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% Environments.
 
-%% C code block without a figure box
-\lstnewenvironment
-  {ccode}[1]
-  {\singlespacing\lstset{basicstyle={\ttfamily}, language=C, tabsize=4, #1}}
-  {}
-
-%% C code block with a figure box
-\lstnewenvironment
-  {ccode2}[2]
-  {\singlespacing\lstset{basicstyle={\ttfamily}, language=C, tabsize=4, label=#1, caption=#2}}
-  {}
-
-%% Haskell code block without a figure box
-\lstnewenvironment
-  {hscode}
-  {\singlespacing\lstset{basicstyle={\ttfamily}, language=Haskell, tabsize=4}}
-  {}
-
-%% Haskell code block with a figure box
-\lstnewenvironment
-  {hscode2}[1]
-  {\singlespacing\lstset{basicstyle={\ttfamily}, language=Haskell, tabsize=4, caption=#1}}
-  {}
-
-%% Loop code block without a figure box
-\lstnewenvironment
-  {loopcode}
-  {\singlespacing\lstset{basicstyle={\ttfamily}, language=Haskell, tabsize=4}}
-  {}
-
-%% Loop code block with a figure box
-\lstnewenvironment
-  {loopcode2}[2]
-  {\singlespacing\lstset{basicstyle={\ttfamily}, float=htpb, language=Haskell, tabsize=4, label=#1, caption=#2}}
-  {}
 
 
 
@@ -235,10 +209,12 @@
 }
 
 
-% Shorthand for inline code fragments
-%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Shorthand for inline code fragments
+
 \newcommand{\code}[1]{\lstinline[style=haskell-inline];#1;}
 \newcommand{\footcode}[1]{\lstinline[style=haskell-inline];#1;}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Inline code typeset as @map f [1,2,3]@ or \inlc{map f [1,2,3]}
@@ -255,9 +231,48 @@
 
 \newcommand\inlc\lstinline
 
-
-%% @ character must be made active to after \begin{document} for some reason
+%% @ character must be made active *after* \begin{document} for some reason
 \AtBeginDocument{\catcode`\@=\active}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% lstlisting environments for floating and fixed Haskell, C and Loop code
+
+%% C code block without a figure box
+\lstnewenvironment
+  {ccode}[1]
+  {\singlespacing\lstset{basicstyle={\ttfamily}, language=C, tabsize=4, #1}}
+  {}
+
+%% C code block with a figure box
+\lstnewenvironment
+  {ccode2}[2]
+  {\singlespacing\lstset{style=basicstyle={\ttfamily}, language=C, tabsize=4, label=#1, caption=#2}}
+  {}
+
+%% Haskell code block without a figure box
+\lstnewenvironment
+  {hscode}
+  {\singlespacing\lstset{style=haskell}}
+  {}
+
+%% Haskell code block with a figure box
+\lstnewenvironment
+  {hscode2}[1]
+  {\singlespacing\lstset{style=haskell, caption=#1}}
+  {}
+
+%% Loop code block without a figure box
+\lstnewenvironment
+  {loopcode}
+  {\singlespacing\lstset{style=haskell}}
+  {}
+
+%% Loop code block with a figure box
+\lstnewenvironment
+  {loopcode2}[2]
+  {\singlespacing\lstset{style=haskell, float=htpb, label=#1, caption=#2}}
+  {}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -4,7 +4,7 @@
 
 \pagebreak{}
 
-\section{Loop representation: The Loop Language}
+\chapter{Loop representation: The Loop Language}
 
 LiveFusion at the top level presents a library of high level array combinators, with each one representing a particualar array operation. Many of them conceptually represent a loop. However, we would like to be able to perform several such operations in one loop, whenever possible. Such fusible loops arise in the case where the result of one combinator is consumed as input by another. In the LiveFusion AST constructed at runtime this would correspond to a child producer node and its parent consumer node. How do we know whether two combinators can be fused? We discussed in Section (TODO ref) that just it is impractical for libraries with a large number of combinators to define rewrite rules for how each potential pair of combinators is fused together. We need to be more general than that. In principle, two combinators can be fused whenever you can write a loop by hand which would give the same result for the same input. We need a way to programmatically determine whether a given pair of combinators can be replace with a semantically equivalent loop.
 
@@ -12,7 +12,7 @@ The focus of this chapter is to establish the requirements for fusible combinato
 
 
 
-%% \subsection{Nature of fast loops}
+%% \section{Nature of fast loops}
 
 %% + inherently procedural
 %% + several combinators fuse to a single loop
@@ -20,7 +20,7 @@ The focus of this chapter is to establish the requirements for fusible combinato
 
 
 
-\subsection{Anatomy of a loop}
+\section{Anatomy of a loop}
 
 Despite the purely functional, combinatorial interface to the library, looking at a loop in a purely procedural way is the approach we opted for in the middle layer. It is represented by the Loop language. The loops we generate can be viewed as similar to those in the mainsteam procedural languages such as C, however there are two important differences. One positions our Loop language a step above the simple C loops while the other one, sadly, is what C programers are trying to avoid.
 
@@ -81,10 +81,10 @@ double* aboveThreshold (double xs[], int len, int *result_len ) {
 \end{ccode}
 
 
-\subsubsubsection{Sections of \|for|-loop}
+\subsubsection{Sections of \|for|-loop}
 Each \|for|-loop in C has four sections: \|initialisation| ($i=0$), \|guard| ($i<len$), the main \|body| and finally, the \|update| section ($++i$). Compared to free-formed \|while|-loops which only have the \|guard| and the \|body|, the \|for|-loops are already more stuctured. However, as we will now show, futher structural elements could be introduced to assist fusion.
 
-\subsubsubsection{Initialisation}
+\subsubsection{Initialisation}
 The very first observation to make is that the allocation of intermediate and result arrays was done by statements outside the \|for|-loops. The same was done for the output index variable $o$ (which is different from input index $i$ because \|filter| can skip elements). In our loop language all statements executed *once* before the loop begins are placed in the \|init| block of the loop.
 
 The \|init|-code for both loops would have looked like the following (we also included \|guard| code for clarity):
@@ -113,7 +113,7 @@ The \|init|-code for both loops would have looked like the following (we also in
 
 As we will soon see the above code is only illustrative. Even though it is valid, the combinators in the $aboveThreshold$ example do not generate precisely that code.
 
-\subsubsubsection{Finalisation}
+\subsubsection{Finalisation}
 We also note that after the second \|for|-loop finishes, the resulting array is reallocated to free the unused memory since the filter results in a shorter array in the general case (in practice the array is unlikely to be copied). This is one of the use cases for what we call a \|done| block, which every array has. As we will see later it is not only useful for trimming and returning the final array but also for scheduling other loops such as in $append$ combinator.
 
 The done blocks for the arrays would look like the following:
@@ -126,7 +126,7 @@ The done blocks for the arrays would look like the following:
     above := freezeArray above o  -- resize to length `o'
 \end{loopcode}
 
-\subsubsubsection{Reading and writing arrays}
+\subsubsection{Reading and writing arrays}
 We will now attempt to categorise the types of operations that all belong to the bodies of conventional \|for| and \|while| loops.
 
 Line 5 of the first \|for|-loop (\inlc{adjusted[i] = f(xs[i]);})is actually doing three things: *reading* an element from an array, *producing* a new element and *writing* it into a separate array. Likewise, Lines 12 and 14 of the second \|for|-loop are also concerned with *reading* and *writing* arrays.
@@ -135,7 +135,7 @@ Consider, however, that when several combinators are fused into a sigle loop and
 
 We will now in turn describe how we deal with reading, writing and computing elements.
 
-\subsubsubsubsection{Reading and writing arrays in LiveFusion}
+\subsubsubsection{Reading and writing arrays in LiveFusion}
 It is now time to remember the \|Manifest| combinator of LiveFusion language that we used to bring a physical array in memory and create a LiveFusion language term out of it. As it turns out, \thesis{all the reading of physical arrays is performed by the code generated by the \|Manifest| combinator}. What this means is that, while the reading is still performed in the \|body| code block of of the loop, the code for it is only generated once at the beginning of each combinator pipeline.
 
 Applied to the function from our $aboveThreshold$ example, this tells us that since we don't know which combinator produced the $xs$ array, the loop code generated for the $aboveThreshold$ function will *not* inlcude the specifics of where the individual elements of $xs$ came from.
@@ -246,7 +246,7 @@ All in all the \|init|, \|guard| and \|bottom| blocks of the \|Manifest| $xs$ lo
 
 We have essentially given the complete Loop representation for \|Manifest|, \|map| and \|filter| combinators together with the code that actually deals with writing out physical arrays. However, it all came in separate loops none of which was very useful by itself. We will now show how these loops can be turned into a runnable loop.
 
-\subsubsubsubsection{Merging loops}
+\subsubsubsection{Merging loops}
 
 In the previous section we have established how each of the combinators of the $aboveThreshold$ function contribute to each loop. Each of those loops has \|init|, \|guard|, \|body|, \|yield|, \|bottom| and \|done| code blocks which are connected by \|goto|s. We can now simpy merge the respective sections of all loops to give a loop in Figure . The statements of \|Manifest| array itteration preceed those of the \|map|, which in turn preceed those of the \|filter|. The statements of physical array creation come last.
 
@@ -300,7 +300,7 @@ An important difference however, is that while in the C version there were two s
 + Identify problem of identifying common variables
 + Identify the problem of naming conventions
 
-\subsubsection{More on \texttt{goto}'s}
+\subsection{More on \texttt{goto}'s}
 
 While the use of \texttt{goto}'s is considered bad practive in modern software engineering we note several reasons for using them in our intermediate language:
 + It is completely hidden from the library user. Given a well behaving Loop code generator the produced code will always be valid if the user program is valid. This is akin to using \|unsafePerformIO| and similar combinators within the guts of the library for performance reasons. They can lead to bad code but with careful use give very noticeable advantages to purely functional programs.
@@ -308,7 +308,7 @@ While the use of \texttt{goto}'s is considered bad practive in modern software e
 + The \|goto|-based design seemed to be the most flexible and the easiest to implement. None-the-less, the Loop language may be extended to support a safer and more advanced implementation where individual *blocks* become functions.
 
 
-\subsubsection{Block names}
+\subsection{Block names}
 
 
 + Many of the combinators use a similar set of variables, e.g. both Map and Scan produce a value at each iteration which they assign to an intermediate variable in the body of the loop, say elt
@@ -326,14 +326,14 @@ While the use of \texttt{goto}'s is considered bad practive in modern software e
 
 
 
-\subsection{Communication by Convention}
+\section{Communication by Convention}
 
 We have discussed that our loop clauses are being populated by combinators that do not know how many other combinators are in the pipeline or what these combinators are. And yet, once all of the combinators have filled in their parts, we end up with just one loop in which those combinators operate on the shared state. We will now discuss the approach by which those combinators cooperate with each other inside a single loop and how the state produced by one combinator is passed on to the combinators in the subsequent parts of the pipeline.
 
 Let's look a simple example of what shared state a pipleline of two combinators \inlc{map g \$ map f \$ xs} is.
 
 
-\subsubsection{\label{sec:Loop:Elts}Intermediate values}
+\subsection{\label{sec:Loop:Elts}Intermediate values}
 
 As usual we decompose each combinator into a set of loop clauses. We have done this for the \|map| combinator in the previous section. However, the added complication is that there are two \|map|s, both of which expect an input value in $elt_i$ and and produce an output value in $elt_o$ at each iteration. This results in variable name clashes. We could give them unique names $elt_{i_1}$, $elt_{o_1}$, $elt_{i_2}$ and $elt_{o_2}$ based on the number of the combinator in the pipeline. We also notice that the output $elt_{o_1}$ of \|map f| is fed as input $elt_{i_2}$ to \|map g|. A simple solution is to introduce an equation $elt_{i_2} = elt_{o_1}$ for each combinator. This is the first example of interaction between combinators through shared state.
  $elt_{i_2} = elt_{i_1}$ might not be terribly exciting to read about
@@ -350,7 +350,7 @@ body:
   $elt_{o_2}$ = g $elt_{i_1}$  -- output of `map g'
 \end{lstlisting}
 
-\subsubsection{Loop counters}
+\subsection{Loop counters}
 
 Another important *convention* that the Loop language uses in every loop it generates are the loop counter variables.
 %% As we will see later the naming convention is not only used to tie the code together but also gives rise to an optimisation and provides a solution to duplicated loop counters identified in Section (TODO ref).
@@ -399,7 +399,7 @@ done:
 \end{lstlisting}
 
 
-\subsubsection{Merging Loops}
+\subsection{Merging Loops}
 
 Coming back to our example of \inlc{map g \$ map f \$ xs} we now have both the code lifting \|xs| into the loop computation as well as the code for the \|map|s. Since theses are all part of the same loop, we can merge the statements from the same loop clauses into one loop. In this case the \|map| combinators really only had statements in the \|body| so this is the one clause which actually demonstates the loop merging\footnote{Technically, there are three loops which are generated and merged together: one for the manifest array, one for |map f| and one for |map g|. We initially omitted the merging process for |map g \compose map f| expression to avoid introducing too many concepts at a time.}:
 
@@ -435,7 +435,7 @@ done:
 
 
 
-\subsubsection{Writing out the result}
+\subsection{Writing out the result}
 
 So far we have demonstrated how we can turn a number of consecutive combinators into a single loop. Even though conceptually each of those is producing a new array, we have avoided writing it out to a physical array. However, all we are doing now is just burning CPU cycles producing some new values at each loop iteration and immediately forgetting about them. We need a way to return results from the loop. Thus for the last combinator in the loop we need to introduce some extra code which would:
 + **Allocate** a mutable array of appropriate size to write the result into\\
@@ -498,7 +498,7 @@ done:
 \end{lstlisting}
 
 
-\subsubsection{\label{sec:Loop:Filt}More Loop Counters and Filters}
+\subsection{\label{sec:Loop:Filt}More Loop Counters and Filters}
 
 So far we have looked at the piplines of combinators that consume arrays of a particular length at one end and produce arrays of the same length at the other. However, this does not cover the case where the size of the produced array is different. The most obvious combinator that exerts this behaviour is \|filter|.
 
@@ -555,7 +555,7 @@ It's worth noting that any combinator following the \|filter| remains unaware th
 
 
 
-\subsubsection{Accumulators}
+\subsection{Accumulators}
 
 We have already looked at how the indices maintain the state of the loop between iteration. However, indices, although the most obvious state the loop has, are not the only ones. If we think of standard list combinators that pass partial results with the recursive calls as accumulators, \|fold|s and \|scan|s immediately come to mind. In practice, declaring and using accumulator variables like this in a loop language is straight-forward and is no differect from declaring and using index variables. They both represtent mutable variables in the loop language.
 
@@ -609,7 +609,7 @@ done:
 
 \end{lstlisting}
 
-\subsubsection{Zipping}
+\subsection{Zipping}
 
 So far the combinator pipelines we have looked at had a list like structure. Each combinator would consume exactly one array and produce another. However, for many programs this is not sufficient. In many cases a combinator takes multiple arrays as input. In general there is no constraint on how a combinator would consume each of those arrays. Some combinators (e.g. \|backpermute|) require that one of the passed arrays is random-access, however, some, like \|zipWith| consume two arrays in lock step.
 
@@ -817,15 +817,15 @@ done:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-\subsubsection{Random access combinators}
+\subsection{Random access combinators}
 
 
 
-\subsubsection{Array generators: Enumeration and Replication}
+\subsection{Array generators: Enumeration and Replication}
 
 
 
-\subsection{Procedural code: Imperator Language}
+\section{Procedural code: Imperator Language}
 
 + Loop still carries the common structure of having a guard, body, etc..
 + How do we generalise it to a procedural language

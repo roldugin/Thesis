@@ -49,7 +49,7 @@ Masters Thesis [Draft]}
 
 
 
-\section{Introduction}
+\chapter{Introduction}
 
 \begin{comment}
 The need for the research (aims, problem statement and justification)
@@ -74,7 +74,7 @@ One alternative to this practice of explicit parallelisation is to provide a com
 
 
 \pagebreak
-\section{Motivation}
+\chapter{Motivation}
 
 Suppose we have the following computation to perform:
 
@@ -136,7 +136,7 @@ The work described in this thesis is oriented towards complementing the fusion m
 \pagebreak{}
 
 
-\section{\label{sec:Lit:DPH}Context}
+\chapter{\label{sec:Lit:DPH}Context}
 
 Data Parallel Haskell is an active library for the Haskell programming language, providing high level access to nested data parallelism. The above definition may seem complicated at first and should probably be backed up by a set of explanations:
 \begin{itemize}
@@ -174,7 +174,7 @@ splitP		:: [:Bool:] -> [:a:] -> ([:a:], [:a:])
 Collective operations on parallel arrays are executed in parallel when hardware supports it. Currently, a backend supporting Haskell threads \cite{Jones08atutorial} exists. Due to the flexible design of the library, support for other parallel architectures may be added in the future. By design the computation is split evenly across processing elements even for highly irregular parallel programs. The remainder of the section will outline the library structure, cover the basics of vectorisation and describe the current stages of fusion in DPH.
 
 
-\subsection{Vectorisation}
+\section{Vectorisation}
 
 The main goal behind DPH was to allow the programmer to write parallel programs without worrying about scheduling, load balancing and low level optimisations. The work on DPH was originally inspired by Blelloch's pioneering work on NESL \cite{BCH+}, a research language designed specifically to explore the potential of the new approach to nested data parallelism.
 
@@ -215,7 +215,7 @@ together with the segment descriptor containing the lengths and the starting ind
 
 
 
-\subsection{\label{sub:DPH-Data-Repr}Data Representation}
+\section{\label{sub:DPH-Data-Repr}Data Representation}
 
 Together with flattening, the vectoriser chooses the best representation for the data, e.g. for sum types and product types. Haskell's product types, or the tuples of two of more heterogeneous elements, are allocated as boxed values on the heap. Storing an array of pointers to heap allocated values would have been a major hit on performance due to the costs of unboxing as well as loading the individual values from memory instead of fetching multiple at a time. Instead, an array of pairs \texttt{{[}:(a,b):{]}} is stored as a pair of arrays \texttt{({[}:a:{]},{[}:b:{]})}.
 
@@ -257,7 +257,7 @@ Recalling that we use a flat data array together with a segment descriptor to re
 Vectorisation is more thoroughly covered in the tutorial-style paper \cite{PLKC08}.
 
 
-\subsection{Backend and Fusion}
+\section{Backend and Fusion}
 
 By the time the backend is reached the nesting in the original user program is only defined in terms of segment descriptors where required. As discussed in the previous section the vectoriser has also stripped out the product and sum types including those defined by the user and conveniently arranged them in flat data arrays. Thus, the backend, or the library of primitive operations, needs only support the arrays of primitive types. Since some of the operations on nested arrays need to respect the boundaries of the inner arrays (e.g. reductions), the segmentation information is still present.
 
@@ -276,15 +276,15 @@ Unfortunately, the common point of failure of all of the above fusion types is t
 
 
 \pagebreak
-\section{Background}
+\chapter{Background}
 
 
-\subsection{Equational Fusion Systems}
+\section{Equational Fusion Systems}
 
 This section will review the previous approaches to fusion in Haskell. It will cover Shortcut Fusion and DPH's very own Stream Fusion and Functional Array Fusion.
 
 
-\subsubsection{Shortcut Fusion}
+\subsection{Shortcut Fusion}
 
 Shortcut Fusion \cite{GLP93} is one of the most referenced techniques for fusion in Haskell. It has been developed to be used in GHC to fuse pipelined list operations. It employs two combinators, $foldr$ and $build$, and a single rewrite rule to eliminate adjacent occurrences of the combinators. It is suitable for use in the cases when the functions to be fused can be defined in terms of these combinators. $ $The definition of $foldr$ is reused from Prelude, Haskell's standard library:
 
@@ -334,7 +334,7 @@ While this leads to the desired results in many cases, it requires the programme
 Some of the other limitations of the Shortcut Fusion include the inability to effectively fuse left folds and zips. These shortcomings make this approach less attractive for DPH.
 
 
-\subsubsection{Stream Fusion}
+\subsection{Stream Fusion}
 
 Stream Fusion \cite{CLS07,CSL06} is currently employed in the DPH primitive library at one of the three levels of fusion discussed in Section \vref{Lit:DPH-fusion-levels}.
 
@@ -414,7 +414,7 @@ $\langle stream/unstream\, fusion\rangle\,\forall stream(unstream\, s)\mapsto s$
 In order to completely remove all traces of the helper data structures Stream Fusion relies on general purpose compiler optimisations. This makes this approach highly depended on GHC. However, due to the non-portability of DPH this does not pose a problem. The major problem with this approach is that the two primitive operations must be adjacent to each other when inlined. This is not always possible. However, the approach is very solid otherwise and it might turn out to be yet more effective when combined with a runtime fusion system.
 
 
-\subsubsection{Functional Array Fusion}
+\subsection{Functional Array Fusion}
 
 This last approach will be described by first developing an intuition that would lead to the solution more thoroughly described in \cite{CK01,CK03}. We will go to a greater depth describing this approach since it lays down the basis for the work presented.
 
@@ -526,9 +526,9 @@ Since the mutator function may not always return a value (e.g. in the case with 
 Clearly, some trickery is involved in dropping the first accumulator in a (potentially deeply nested) pair, but the above conveys the main concepts behind the Functional Array Fusion.
 
 
-\subsection{Runtime Fusion Systems}
+\section{Runtime Fusion Systems}
 
-\subsubsection{DESOLA - Delayed Evaluation Self Optimising Linear Algebra}
+\subsection{DESOLA - Delayed Evaluation Self Optimising Linear Algebra}
 
 Delayed Evaluation Self Optimising Linear Algebra (DESOLA) \cite{RMKB06} is a C++ active library which was designed to explore the benefits of runtime code generation and optimisation for scientific computing. In contrast to DPH, DESOLA puts portability across compilers as one of its priorities, thus it may provide several insights in doing thing differently. In particular, most of the interesting code generation and optimisation happens at runtime. Quoting the authors of the library, they take the following approach:
 
@@ -552,20 +552,20 @@ Overall, the approach of delaying the evaluation until it it required seems prom
 
 
 
-\subsection{Stream Processing and Data Flow Languages}
+\section{Stream Processing and Data Flow Languages}
 
-\subsection{Darte}
+\section{Darte}
 
 Done in Fortran. While more lowlever, the first thing it does is to do dep analysis and separate into several loop. All the fusion is done after that. In this way we actually start one level below. We already have independet loops with most combinators introducing at least one loop into the graph.
 
-\subsection{On clustering}
+\section{On clustering}
 
 Most clustering problems are expressed in compile time and in general take NP to complete. For a medium sized DPH program you have (N) combinators at a time. This shoots the problem outside reasonable compilation times. With a good set of ILP heuristics and without looking for a perfect solution a performat ILP solver can bring this down to reasonable amount of time. It is worth noting two things: at compile time you can indeed see the complete graph at once which is unlikely at runtime. Certain things will be forced and reduced to manifest arrays before time (give an example). Thus there may not be such a high number of things to solve. Also, any time a simple linear pipeline of combinators is encountered and their rate and access pattern (i.e. type) are the same, they can all be reduced to one combinator for the purposes of clustering. This way, it may well be possible that the graphs to analyse for clustering may become very small.
 
 Two other techniques which may drammatically reduce the graph to be analysed is simple runtime forcasting:
 - At compile time you may not always see the sizes of arrays to be computed. You have to assume you will need to fuse everything to our best abilities. However, as the author found in his work on Parallelisation avoidance, only a handful of combinators in an average DPH program are actually majour contributors to the runtime. As such, we may often be able to skip clustering and subsequent compilation altogether. Performing a cheap array computation may just suffice. Working with the resulting manifest arrays for fusion where it is truely beneficial is much easier than with a set of combinators which only introduce ``noise'' into the actual runtime of the program.
 
-\subsection{Summary}
+\section{Summary}
 
 This section has reviewed some of the array fusion frameworks covering
 a number of:
@@ -578,7 +578,7 @@ The discussion in the next section will be based on the fusion frameworks descri
 
 
 \pagebreak
-\section{LiveFusion - A Runtime Fusion System}
+\chapter{LiveFusion - A Runtime Fusion System}
 
 The current project was motivated by Data Parallel Haskell project. Even though much of the design of the new fusion system is decoupled from any particualar system targetting it, the fusion frameworks designed specifically for Haskell were the first to turn to. The Background section discussed three of them: Shortcut Fusion, Stream Fusion and Functional Array Fusion. Glasgow Haskell Compiler's rewrite rules functionality plays crucial rule in all three of them. This is not coincidental:
 \begin{itemize}
@@ -647,12 +647,12 @@ Lastly, there are two optional features that may be researched and possibly impl
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \pagebreak
-\section{Delaying computation: LiveFusion AST}
+\chapter{Delaying computation: LiveFusion AST}
 
-\subsection{On Embedded Domain Specific Languages}
+\section{On Embedded Domain Specific Languages}
 In its essence LiveFusion take the approach of deeply embedded domain specific languages (EDSLs). The principle idea of deep embedding is the introduction of its own abstract syntax tree (AST) which is separate from the host language AST but is rather presented as a tree structure in the host language. The difference with the AST found in compilers is that it allows one to analyse, optimise and compile or interpret the EDSL's AST at runtime using the host language in the library code, withought the difficulties of writing a complete standalone optimising compiler. The added benefit of the approach is that the EDSL code can interact with the other code in the language. \begin{comment}TODO separate EDSL discussion from deep embedding\end{comment}
 
-\subsection{Array EDSL by example}
+\section{Array EDSL by example}
 The fundamental concept by which LiveFusion makes fusion possible is constructing an AST of pending array operations at runtime and compiling that AST to fast code when the result in required in the host program. An AST defined in the host language (Haskell in this case) is what makes the delaying of computations possible. It is the topmost layer of LiveFusion system in that most of the library's user-facing combinators discussed in Section \begin{comment}TODO\end{comment} are for the most part just constructing the nodes of the AST. This way an AST representing the core of QuickHull example discussed previously becomes the following (TODO figure ref).
 
 \begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
@@ -723,7 +723,7 @@ data AST t where
 
 
 
-\subsection{Parametrising higher-order functions}
+\section{Parametrising higher-order functions}
 
 Another notable feature of the interface to note here is the type of functions parametrising the higher-order combinators like \texttt{map} and \texttt{fold}. They are all of the form \texttt{Exp (a -> b)} or \texttt{Exp (a -> a -> b)}. The corresponding functions in Haskell Prelude or array libraries like \texttt{Vector} or \texttt{Repa} accept as arguments simple Haskell functions like \texttt{a -> b} or \texttt{a -> a -> a} as long as the types match. So why cannot LiveFusion be the same? The answer lies in the approach to evaluating the AST. LiveFusion AST is open to interpretation by several backends as discussed in Section (TODO ref), and the currently supported one includes the compilation step. When using this backend, the AST is compiled to one or more loops for which Haskell code is generated and written out to file. If the parametrising functions were simple Haskell functions, they would have be compiled to machine code before the program is run. When the AST is later constructed at runtime they would only be available in form of closures which can be called but not inspected\footnote{There is a non-portable way to explore closures in Haskell, but it will not allow one to easily make use of the code compiled to binary. See discussion in Section (TODO ref)}. Suppose the user calls \texttt{map (+1) xs}. The mentioned array libraries rely on the function \texttt{(+1)} being inlined into the compiled loop code to produce efficient code. If this does not happen, calling \texttt{(+1)} for every element in the array will result in the following:
 \begin{enumerate}
@@ -794,7 +794,7 @@ It is easy to see that TemplateHaskell expressions are trivially created from si
 \end{itemize}
 
 
-\subsection{On the flexibility of parametrising functions}
+\section{On the flexibility of parametrising functions}
 
 \begin{itemize}
 \item Currently function representation of only one backend was shown, namely Haskell source backend.
@@ -809,7 +809,7 @@ It is easy to see that TemplateHaskell expressions are trivially created from si
 \item At some point in the future \texttt{Impl} function representation may be the most natural place to include backend- or even CPU-specific information, on how to generate vector instructions for a particular function, e.g. a reduction using product operator on an Intel CPU.
 \end{itemize}
 
-\subsection{Userland implementation of parametrising functions}
+\section{Userland implementation of parametrising functions}
 
 One feature of the given scalar functions representation allows the user to provide implementation of arbitrary functions the way they want the backend to generate them. After all, it only requires creating a new record of type \texttt{Impl t} where \texttt{t} is the type of the desired function. Library user can then provide the internals of function implementation to appear in the generated code.
 
@@ -829,7 +829,7 @@ This functionality may seem unneccessary, since the library already provides all
 
 
 \pagebreak
-\section{Sharing recovery: Abstract Sematic Graphs}
+\chapter{Sharing recovery: Abstract Sematic Graphs}
 
 \begin{itemize}
 \item Begin with Oleg's blessing quote. Or two probs.
@@ -848,9 +848,9 @@ This functionality may seem unneccessary, since the library already provides all
 \pagebreak
 
 
-\section{LiveFusion - Performance considerations}
+\chapter{LiveFusion - Performance considerations}
 
-\subsection{Two types of sharing}
+\section{Two types of sharing}
 \begin{itemize}
 \item Diamond is easy is there are many ways of achieving it, even though it compromises referential transparency. But we guarranty correctness by design. Extensively covered in section \ref{}
 \item Problem arises if the diamond does not form before the result is required in one of the branches
@@ -867,7 +867,7 @@ This functionality may seem unneccessary, since the library already provides all
 \end{itemize}
 \end{itemize}
 
-\subsection{One solution for branched sharing}
+\section{One solution for branched sharing}
 \begin{itemize}
 \item It maybe benefitial to take a step back and think about the problem in terms of the data structures that represent the delayed computations
 \item Trees
@@ -881,7 +881,7 @@ This functionality may seem unneccessary, since the library already provides all
 \end{itemize}
 
 
-\subsection{Delaying computation of scalar results}
+\section{Delaying computation of scalar results}
 \begin{itemize}
 \item So far assumed that we have arrays as results
 \item However, as discussed we distinguish three types of array combinators:
@@ -902,7 +902,7 @@ This functionality may seem unneccessary, since the library already provides all
 \item There is currently no solution for the problem, however, for easier integration into other systems, LiveFusion does delay scalar computations, i.e. the type of Fold combinator is actually \texttt{..... -> AST a}. In fact the only thing that the wrapper \texttt{fold} functions does is: \inlc{fold f z xs = compute \$ Fold f z xs}
 \end{itemize}
 
-\subsection{Code reuse}
+\section{Code reuse}
 \begin{itemize}
 \item Most of DPH programs are recursive in one form or the other.
 \item E.g. QuickHull, NBody, etc..
@@ -914,9 +914,9 @@ This functionality may seem unneccessary, since the library already provides all
 \end{itemize}
 
 \pagebreak
-\section{Influence of Language and Context}
+\chapter{Influence of Language and Context}
 
-\subsection{Common patterns in DPH}
+\section{Common patterns in DPH}
 \begin{itemize}
 \item Lots of Filtering (common FP approach)
 \item Same length zipping
@@ -924,7 +924,7 @@ This functionality may seem unneccessary, since the library already provides all
 \item Find them in examples
 \end{itemize}
 
-\subsection{Applicability in other languages}
+\section{Applicability in other languages}
 \begin{itemize}
 \item Non DPH
 \item Non pure FP
@@ -937,7 +937,7 @@ This functionality may seem unneccessary, since the library already provides all
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{comment}
-\section{Planning}
+\chapter{Planning}
 
 In the previous sections we reviewed several approaches to array fusion. We proposed a new approach to runtime fusion based on Functional Array Fusion previously applied in DPH. It also uses ideas from the DESOLA library to turn an equational array fusion framework into a runtime one.
 
@@ -957,7 +957,7 @@ There are eight major milestones two of which are optional and will depend on th
 \pagebreak{}
 
 
-\section{Conclusion}
+\chapter{Conclusion}
 
 The problem of array fusion is not in its infancy. Yet there is not a definitive widely accepted approach to it. Most approaches have to be tailored to the surrounding context and align well with the programming model offered by the framework. The proposed research is an attempt to provide an alternative to an already functioning fusion system in the Data Parallel Haskell framework. The currently employed Stream Fusion system is mature yet fragile as it heavily relies on correct inlining, term rewriting and compiler optimisations. The proposed alternative fusion system would deliver on at least the following goals:
 \begin{enumerate}
