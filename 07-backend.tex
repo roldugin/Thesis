@@ -121,12 +121,40 @@ In the \Loop language every local variable must be initialised before use. Since
 
 The bound variables can be mutable as well as immutable. In fact the \Loop language does not make a distinction between the two in the way they are initialised and used.
 
-A variable \*binding* appears as a \*strict* \|let| binding in the generated \Haskell code. The exclamation marks, called \*bang patterns*, ensure that every bound variable is evaluated to WHNF and no thunks are created when evaluating the code. In most cases this is not neccessary since the subsequent strictness analysis determines most variables to be strict anyway. However there are cases, especially in the presence of @filter@ combinators, where forcing strict evaluation is required for maintaining high performance of the generated code.
+A variable \*binding* appears as a \*strict* \|let| binding in the generated \Haskell code. The exclamation marks, called \*bang patterns*, ensure that every bound variable is evaluated to WHNF and no thunks are created when evaluating the code. In most cases this is not neccessary since the subsequent strictness analysis determines most variables to be strict anyway. However there are cases, especially in the presence of @filter@ combinators, where forcing strict evaluation is required for maintaining high performance of the generated code. \todo{See if not seq'ing post-filter variables results in thunks}
 
-A mutable variable which has been \*assigned to* is given a fresh name in the generated code. This is due to \Haskell being ways in which mutable variables can be presented in the 
+Whenever a new variable binding is encountered in a block of the loop it is assumed to be a fresh variable and it shadows any previous bindings of that variable in the environment. In practice this is useful for the cases where the block is entered multiple times throughout loop execution. For example, the \[body] block binds variables @elt_xs@ and @elt_filt@ on every iteration. They are subsequently read in \[body] and \[yield] but are not required afterwards. A simple liveness analysis described in section \todo{ref} allows us to only pass those variables from \[body] to \[yield] and disregard them everywhere else.
+
+The situation with mutable variable is slightly more complex. For example, the loop index @i_xs@ is bound like a regular variable in the \[init] block. However, once it has been \*assigned to* in \[bottom], it is given a fresh name @i'_xs@ in the generated code. This is because variable in \Haskell are immutable. While there are ways to have mutable variables in \|ST| or \|IO| monads, it is less efficient as discussed further in Section \todo{ref}.
+
+During liveness analysis mutable variable are treated the same way as their immutable counterparts. Technically it is possible to have a mutable variable that lives during one loop iteration but is not carried over to the next iteration but the author have not yet seen a combinator that would require that.
 
 \item[Array manipulation] \hfill \\
-...
+
+Array is the fundamental data structure the \Loop language works with. As such the array primitives are built right into the language: @readArray@, @writeArray@, @arrayLength@, @newArray@ and @sliceArray@. The implementation of the primitives is presented in Listing \ref{7-array-primitives}.
+
+\begin{hscode2}%
+      {\label{7-array-primitives}%
+      Array primitives implementation in \Haskell backend.}
+import Data.Vector.Unboxed as V
+import Data.Vector.Unboxed.Mutable as MV
+import Control.Monad.ST
+
+arrayLength :: Unbox a => V.Vector a -> Int
+arrayLength = V.length
+
+readArray :: V.Unbox a => V.Vector a -> Int -> a
+readArray = V.unsafeIndex
+
+writeArray :: V.Unbox a => MV.MVector s a -> Int -> a -> ST s ()
+writeArray = MV.unsafeWrite
+
+newArray :: V.Unbox a => Int -> ST s (MV.MVector s a)
+newArray = MV.new
+
+sliceArray :: V.Unbox a => MV.MVector s a -> Int -> ST s (V.Vector a)
+sliceArray vec len = V.unsafeFreeze $ MV.unsafeTake len vec
+\end{hscode2}
 
 \item[Returning the result] \hfill \\
 ...
@@ -149,7 +177,20 @@ A mutable variable which has been \*assigned to* is given a fresh name in the ge
 
 \subsubsection{Loop state}
 \subsection{Internal optimisations}
+
 \subsubsection{Liveness analysis}
+
+There are two caveats of the \Haskell code generator in its current state:
+\begin{itemize}
+\item A variable can only be assigned to once in any given block
+\item The new value won't be available until the control is transfered to a successor block
+\end{itemize}
+
+Both of the above are not fundamental limitations of either \Loop EDSL or the \Haskell backend. The arise for the fact that the liveness analysis works on per-block basis and not per-statement. This means that liveless analysis tries to determine which variables are expected to be in scope in a particular block, which are updated and which are passed onto subsequent blocks. However, it does not attempt to do the same for each statement.
+
+So far neither of these limitations posed a problem since the loop structure itself is so modular. There is no apparent benefit of investing in a more granular per-statement liveness analysis. The generated \Haskell code is run through \GHC which itself has excellent liveness analysis and many other efficient compilation tactics. The proposed \LLVM backend is also likely to be able to optimise the code in its current form.
+
+
 \subsubsection{Generating}
 
 
