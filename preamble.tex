@@ -35,7 +35,7 @@
 \usepackage{xspace}
 \usepackage[disable]{todonotes}
 \usepackage{fixltx2e} % \textsubscript{} etc.
-
+\usepackage{tcolorbox} % for rounded boxes around label names
 
 %% Packages included in this distribution
 \usepackage{subsections}
@@ -287,7 +287,22 @@
 \def\$#1${$\mathit{#1}$}
 
 %% Also \[body] for specifying loop block labels.
-\def\[#1]{\texttt{#1}}
+\definecolor{labelcolor}{rgb}{0.122, 0.435, 0.698}
+
+\newtcbox{\roundedbox}{
+  nobeforeafter,
+  colframe=labelcolor!50!white,
+  colback=labelcolor!10!white,
+  boxrule=0.5pt,
+  arc=4pt,
+  boxsep=0pt,
+  left=5pt,
+  right=5pt,
+  top=5pt,
+  bottom=5pt,
+  tcbox raise base}
+
+\def\[#1]{\roundedbox{\texttt{#1}}}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
