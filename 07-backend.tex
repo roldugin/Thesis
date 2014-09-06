@@ -6,7 +6,7 @@
 
 \chapter{Imperative Code Generation}
 
-In the previous chapter we discussed how a graph of array combinators is turned into imprative loops. We first showed a generic loop structure consisting of \[init], \[guard], \[body], \[yield], \[bottom] and \[done] blocks. These loop sections represented a skeleton which every combinator would populate with relevant statements that would eventually be merged into a single loop.
+In the previous chapter we discussed how a graph of array combinators is turned into imperative loops. We first showed a generic loop structure consisting of \[init], \[guard], \[body], \[yield], \[bottom] and \[done] blocks. These loop sections represented a skeleton which every combinator would populate with relevant statements that would eventually be merged into a single loop.
 
 We then looked at the translation of several of such combinators into loop language and showed how the populated loop skeletons would be merged together into ``runnable'' loops. While the sections of the loops did resemble imperative style code with some assembly-style labels attached to them, it was never mentioned just what makes a loop ``runnable''. After all, the presented code did not look like anything one would or could write in Haskell.
 
@@ -17,9 +17,9 @@ In this chapter we will see how the \Loop language is used to generate runnable 
 
 There are many ways a loop can be represented in code. In the surface \LiveFusion language the loops are note explicit. However, most of the array combinators eventually form part of loops expressed in the internal \Loop language. We have discussed this language at length in the previous chapter.
 
-When it comes to expressing loops there is a fundamental difference between the vast majourity of general purpose languages (even functional ones) and Haskell. In procedural languages the loop statements are usually built onto the language. Down at the machine level when the program is compiled to \name{Assembly} code, these loops become a collection of instructions with a $label$ and $jump$ instructions to go to either the top of the loop body or break out of the loop.
+When it comes to expressing loops there is a fundamental difference between the vast majority of general purpose languages (even functional ones) and Haskell. In procedural languages the loop statements are usually built onto the language. Down at the machine level when the program is compiled to \name{Assembly} code, these loops become a collection of instructions with a $label$ and $jump$ instructions to go to either the top of the loop body or break out of the loop.
 
-The situation is very different in Haskell however. Haskell does not have an explicit constuct for loops. All looping is expressed in the form of recursion. \todo{Perhaps elaborate on this if you have time}
+The situation is very different in Haskell however. Haskell does not have an explicit construct for loops. All looping is expressed in the form of recursion. \todo{Perhaps elaborate on this if you have time}
 
 If we are to generate \Haskell code that loops over arrays we need a way to express the conceptual loops we outlined in the previous chapter as recursive functions in our generated code.
 
@@ -34,7 +34,7 @@ The internal \Loop language has \|writeArray| statement which hints the need for
 
 In \Haskell all variable are immutable by default. To achieve mutability one must leave the pure context and use one that supports mutable state. In Haskell this usually amounts to using \|IO| or \|ST| monads.
 
-The \|IO| monad lets the programmer alter the global state of the program and perform any desired side-effecting computations. On the other hand, \|ST| monad only allows to work with mutable memory. The memory is thread-local and must be allocated inside the monad in order to be used. The return value from the \|ST| monad is the pure \Haskell value. Stateful computations performed inside the monad are not visible outside the monadic context. The compiler ensures that no mutable state escapes the \|ST| computation. This means that for all intents and puposes an \|ST| computation can be considered pure, despite the fact that it may use side-effects internally (usually for efficiency reasons).
+The \|IO| monad lets the programmer alter the global state of the program and perform any desired side-effecting computations. On the other hand, \|ST| monad only allows to work with mutable memory. The memory is thread-local and must be allocated inside the monad in order to be used. The return value from the \|ST| monad is the pure \Haskell value. Stateful computations performed inside the monad are not visible outside the monadic context. The compiler ensures that no mutable state escapes the \|ST| computation. This means that for all intents and purposes an \|ST| computation can be considered pure, despite the fact that it may use side-effects internally (usually for efficiency reasons).
 
 Mutable arrays in \Haskell can be used from both inside \|IO| and \|ST| monads. There are several implementations that provide similar interfaces to fast mutable arrays. I used the \name{vector}\footnote{http://hackage.haskell.org/package/vector} package in my development, and its use in the examples in this chapter should be quite self-explanatory.\footnote{The choice of \name{vector} library is mostly due to historical reasons. It has been first implemented by Roman Leshchinskiy in the research group I belong to and is currently providing array functionality to \name{Data Parallel Haskell}, \name{Repa} and \name{Accelerate}, all of which originate from this group.\todo{Accelerate uses Vector?}} Since we do not require to do any side-effecting computations in our loops except allocating and working with memory, arrays in \|ST| monad will suffice for us.
 
@@ -99,29 +99,32 @@ done_ys !arr_xs !arr_ys !len_xs !ix_xs !ix_ys
 
 To demonstrate the workings of the code generator we will use the source program given in Figure \todo{ref}, it's internal representation in \Loop language in Figure \todo{ref} as well as the resulting \Haskell code in Figure \ref{lst:7-toPercentile-hs}.
 
-\begin{description}
 
-\item[Blocks and Gotos] \hfill \\
+\subsection{Blocks and Gotos}
+
 A \Loop is essentially a group of labelled code blocks with a predefined entry block. Every code block becomes its own function in the generated code. We see in the example that each code block like \[body] became $body$ function. Each code block has a unique identifier associated with it (in our case $ys$), which distinguishes it from similarly named blocks of any nested loops which may be present.
 
 A \*block* becomes a \*function* in the generated code. Consequently, the \|goto| statements become *function calls*. Each \|goto| statement specifies which block to transfer the control to.
 
-Blocks of the internal \Loop language do not explicitely specify what loop state they require or declare. A loop's state is implicit and global. As will be discussed later in Section \todo{ref} the state of the loop is passed as function arguments in the generated code. This is the reason for a large number of aguments to functions generated from blocks. The process for generating the arguments from loop variables will be outlined in Section \todo{ref}.
+Blocks of the internal \Loop language do not explicitly specify what loop state they require or declare. A loop's state is implicit and global. As will be discussed later in Section \todo{ref} the state of the loop is passed as function arguments in the generated code. This is the reason for a large number of arguments to functions generated from blocks. The process for generating the arguments from loop variables will be outlined in Section \todo{ref}.
 
 
-\item[Guards and Cases] \hfill \\
-The \Loop language offers two conditional statements: \|guard| and \|case|. Given a boolean expression the \|case| statement tranfers control to one of the two specified blocks. A \|guard| is a simplified \|case| statement which only transfers control to a different block if the predicate is \*false*, but stays in the same block otherwise. The \|guard| is used to preemt execution of a block if a condition is not met.
+\subsection{Guards and Cases}
+
+The \Loop language offers two conditional statements: \|guard| and \|case|. Given a boolean expression the \|case| statement transfers control to one of the two specified blocks. A \|guard| is a simplified \|case| statement which only transfers control to a different block if the predicate is \*false*, but stays in the same block otherwise. The \|guard| is used to preempt execution of a block if a condition is not met.
 
 Both \|case| and \|guard| are translated to \Haskell's \|if| expression in the generated code. It can be seen in the provided example, that the \[guard] block as well as the \[body] contain a \|guard|. The former performs the bounds check of the loop index while the latter is the guard of the \|filter| combinator.
 
 % One important thing to note is that the \|case| and the \|guard| must come after all variable bindings and updates. Maybe give an example of (map . filter). But then it is unclear what to do with (map (1/) . filter (/= 0)) The eager evaluation will not short circuit the filter and the division will be performed.
 
-\item[Variable initialisation and update] \hfill \\
-In the \Loop language every local variable must be initialised before use. Since the language is currently untyped and relies on subsequent type inference and type checking in the generated code compiler, there are no explicit declarations. However, the \Loop code generator checks that every variable has exacly one binding spot inside the loop and that the control goes through that binding before the first use of the vaiable.
+
+\subsection{Variable initialisation and update}
+
+In the \Loop language every local variable must be initialised before use. Since the language is currently untyped and relies on subsequent type inference and type checking in the generated code compiler, there are no explicit declarations. However, the \Loop code generator checks that every variable has exactly one binding spot inside the loop and that the control goes through that binding before the first use of the variable.
 
 The bound variables can be mutable as well as immutable. In fact the \Loop language does not make a distinction between the two in the way they are initialised and used.
 
-A variable \*binding* appears as a \*strict* \|let| binding in the generated \Haskell code. The exclamation marks, called \*bang patterns*, ensure that every bound variable is evaluated to WHNF and no thunks are created when evaluating the code. In most cases this is not neccessary since the subsequent strictness analysis determines most variables to be strict anyway. However there are cases, especially in the presence of @filter@ combinators, where forcing strict evaluation is required for maintaining high performance of the generated code. \todo{See if not seq'ing post-filter variables results in thunks}
+A variable \*binding* appears as a \*strict* \|let| binding in the generated \Haskell code. The exclamation marks, called \*bang patterns*, ensure that every bound variable is evaluated to WHNF and no thunks are created when evaluating the code. In most cases this is not necessary since the subsequent strictness analysis determines most variables to be strict anyway. However there are cases, especially in the presence of @filter@ combinators, where forcing strict evaluation is required for maintaining high performance of the generated code. \todo{See if not seq'ing post-filter variables results in thunks}
 
 Whenever a new variable binding is encountered in a block of the loop it is assumed to be a fresh variable and it shadows any previous bindings of that variable in the environment. In practice this is useful for the cases where the block is entered multiple times throughout loop execution. For example, the \[body] block binds variables @elt_xs@ and @elt_filt@ on every iteration. They are subsequently read in \[body] and \[yield] but are not required afterwards. A simple liveness analysis described in section \todo{ref} allows us to only pass those variables from \[body] to \[yield] and disregard them everywhere else.
 
@@ -129,7 +132,8 @@ The situation with mutable variable is slightly more complex. For example, the l
 
 During liveness analysis mutable variable are treated the same way as their immutable counterparts. Technically it is possible to have a mutable variable that lives during one loop iteration but is not carried over to the next iteration but the author have not yet seen a combinator that would require that.
 
-\item[Array manipulation] \hfill \\
+
+\subsection{Array manipulation}
 
 Array is the fundamental data structure the \Loop language works with. As such the array primitives are built right into the language: @readArray@, @writeArray@, @arrayLength@, @newArray@ and @sliceArray@. The implementation of the primitives is presented in Listing \ref{7-array-primitives}.
 
@@ -156,39 +160,135 @@ sliceArray :: V.Unbox a => MV.MVector s a -> Int -> ST s (V.Vector a)
 sliceArray vec len = V.unsafeFreeze $ MV.unsafeTake len vec
 \end{hscode2}
 
-\item[Returning the result] \hfill \\
-...
+The implementation is straight forward and all of these array primitives can be seen used in the example generated code. One will notice, however, that there are two types of vectors in use: \*immutable* @Vector@s and \*mutable* @MVector@s.
 
 
-\end{description}
+\subsubsection*{Immutable vectors}
+
+The \*immutable* vectors are the ones passed around as @Manifest@ arrays in the surface \LiveFusion language. They are pure Haskell values and can be read and queried inside a pure function. They are the array values that are passed into the generated code from the host program and are returned as the result. The @arrayLength@ and @readArray@ statements of the \Loop language result in function calls of the same name in the generated code and operate on immutable @Vector@s.
 
 
+\subsubsection*{Mutable vectors}
+The \*mutable* vectors on the other hand are only used internally by the generated code to create and fill a new array which would represent the result of the loop. The mutability of the vector is indicated in its type and the type of functions that operate on it.
 
+% For example, the type of @unsafeWrite@\footnote{The \|unsafe| prefix of functions used indicates that no bound checks are performed on the indices passed. to avoid runtime overhead.} function which is used to write an element into a mutable array is actually quite a bit more general than that of our own @writeArray@ wrapper around it:
+
+% -- IO/ST generic unsafeWrite
+% unsafeWrite :: (Unbox a, PrimMonad m)
+%             => MVector (PrimState m) a
+%             -> Int
+%             -> a
+%             -> m ()
+
+% This is done to make it possible to use @MVector@ from both @ST@ and @IO@ monads as we discussed previously. When using @ST@ as the @PrimMonad@ the extra @PrimState@ type argument @s@ ensures that stateful computations on the same @MVector@ value are performed inside the same state thread (i.e. they do not escape from the @ST@ monad).
+
+\begin{hscode}
+writeArray :: Unbox a
+           => MVector s a
+           -> Int
+           -> a
+           -> ST s ()
+\end{hscode}
+
+In the above type of @writeArray@, both the type of @MVector@ and the resulting @ST@ computation are indexed by @s@. This ensures that stateful computations on the same MVector value are performed inside the same state thread and do not escape from the @ST@ monad.
+
+In order to return an array from the plugin, and thus outside the @ST@ monad, we must convert it to immutable @Vector@. @freezeArray@ is used for that as indicated by its type. The extra @Int@ argument it takes allows to take only a portion of the array and return that. This is useful in @filter@-like operations which may produce a shorter array than they initially allocated. 
+
+This is the case in our example, as we take the last written index to be the length of the array we return. The unused portion of the array is not released and stays in memory for as long as the the array is used by the program. This slight wastefulness currently seems like a better option than copying the entire array thus incurring runtime overhead.
+
+There is no explicit statement
+
+\subsection{Returning result}
+
+The result of a \Loop computation can currently be one of two things:
+\begin{itemize}
+\item a new array, or
+\item a scalar value
+\end{itemize}
+
+There is only a handful of combinators which return a scalar value, notably, @fold@, @index@ and @length@. The latter two are not actually a result of the compiled \Loop computation. They operate on @Manifest@ arrays in the host program. This leaves us currently with just the @fold@ operation which has to be handled differently.
+
+Whether it is an array or a scalar result, returning it is a matter of calling @return@ of the @ST@ monad with the appropriate variable as argument which can be seen of line \todo{line} in the example code.
+
+The only additional step required before returning an array is converting the mutable array to an immutable one. This allows the array to be returned to the outside of @ST@ monad and thus be usable in the pure host code. The @freezeArray@ function discussed in the previous section serves this purpose and is automatically generated for the \Loop language's @return@ statement.
 
 
 \todo{The translation is presented formally in Figure}
 
+\subsection{Liveness analysis and state passing}
+
+We have discussed that the individual statement blocks of the \Loop language become @ST@ functions in the generated code. Subsequently the statements that transfer control from one block to the other (@goto@, @guard@, @case@) become function calls. 
+
+\Loop language is largely a procedural language with assignment statement (@:=@) that can mutate variables arbitrarily. However, since the target language \Haskell has no mutable state by default\footnote{Later I will describe several ways to introduce mutable state in a \Haskell program and show all but the one chosen are currently negatively affecting performance.} all mutable variables of the \Loop language must be translated to \Haskell as immutable values.
+
+How does one pass state as pure \Haskell values? Each loop potentially has a lot of state that is written and read in different blocks of the loop. Since these blocks are functions it would be natural to assume that the state is passed in function arguments.
+
+The problem, however, is that there is no fixed state alive in the loop at any given time in the loop. For example:
+\begin{itemize}
+\item some intermediate variables like \todo{fix} @elt_1@ in the example are only used inside the block they are defined in (\[body])
+\item some variable like \todo{fix} @elt_2@ are declared in \[body] and are later used in \[yield] but are unused after that
+\item some variable are declared in \[init] and are persistent for the whole duration of the loop. These are of course counters and accumulators.
+\end{itemize}
+
+In order to appropriately generate the argument lists to the functions representing loop blocks I have implemented a \name{liveness analysis} pass in my \LiveFusion EDSL compiler.
+
+I will now offer an intuitive description for how the algorithm works.
+\todo{Give formal semantics too}
+
+Each loop has a single entry block. Starting with that block, and following the loop's control flow graph (CFG), we recursively determine an environment which holds three properties: 
+\begin{enumerate}
+  \item new variables \*defined* in the block (using a new binding @=@)
+  \item variables \*assumed* to be in \*environment*:
+    \begin{itemize}
+      \item either because they are referenced in the \*current* block, or
+      \item they are \*assumed* to be in the environment of any of the \*future* blocks, to which control may be transferred (i.g. variables referenced but not bound in those blocks)
+    \end{itemize}
+  \item variables that are \*updated* in the current block (using assignment @:=@)
+\end{enumerate}
+
+\todo{Give concrete examples in the example}
+
+Several things to note about computing the environment: \todo{Perhaps move to the discussion section}
+\begin{enumerate}
+  \item Some blocks have multiple \*future* blocks to which control can be transferred (e.g. \[guard] can go to \[body] or \[done]). The union of all \*assumed* variables is taken to determine what need to be in the environment of the current block.
+
+  \item Loop CFGs are inherently cyclic (e.g. \[bottom] block usually transfers control to \[guard] to begin the new iteration). Cycle detection is required when exploring CFG.
+
+  \item Loop variables may not be required by the immediate children in the CFG. However, they will be in the set of \*assumed* variables if they are required later on. The relationship is transitive.
+
+  \item The liveness analysis pass will catch any use of variables that have not been previously bound which will result in a runtime error.
+\end{enumerate}
+
+Once the environment has been computed, it is used to generate function argument lists and the appropriate function calls for each @goto@, @guard@ or @case@ statement. Each block's \*assumed* variables become the arguments of the \Haskell function corresponding to that block. \todo{In the example on Figure, the variable assumed are because...blah}.
+
+The exact same list of variables is used to transfer control to that block, i.e. to make function calls to it. The only important point to make here is that the list of \*updated* variables in the calling block and use the appropriate variable on the caller side (e.g. @i'_xs@ instead of @i_xs@ \todo{on line ...})
+
+
+\subsection{Discussion of liveness analysis}
+
+There are two caveats of the \Haskell code generator in its current state:
+\begin{itemize}
+\item A variable can only be assigned to once in any given block
+\item The new value won't be available until the control is transferred to a successor block
+\end{itemize}
+
+Both of the above are not fundamental limitations of either \Loop EDSL or the \Haskell backend. The arise for the fact that the liveness analysis works on \*per-block* basis and not \*per-statement*. This means that liveness analysis attempts to determine which variables are expected to be in scope in a particular block, which are updated and which are passed onto subsequent blocks. However, it does not attempt to do the same for each statement.
+
+So far neither of these limitations posed a problem since the loop structure itself is so modular. There is no apparent benefit of investing in a more granular per-statement liveness analysis. The generated \Haskell code is run through \GHC which itself has excellent liveness analysis and many other efficient compilation tactics. The proposed \LLVM backend is also likely to be able to optimise the code in its current form.
+
+
+\subsection{Passing arguments to the generated code}
 
 
 
 \subsection{Unboxing}
-\subsection{Passing arrays to the generated code}
+
 \subsection{Generating Haskell code}
 
 \subsection{Loop state}
 \section{Internal optimisations}
 
-\subsection{Liveness analysis}
 
-There are two caveats of the \Haskell code generator in its current state:
-\begin{itemize}
-\item A variable can only be assigned to once in any given block
-\item The new value won't be available until the control is transfered to a successor block
-\end{itemize}
-
-Both of the above are not fundamental limitations of either \Loop EDSL or the \Haskell backend. The arise for the fact that the liveness analysis works on per-block basis and not per-statement. This means that liveless analysis tries to determine which variables are expected to be in scope in a particular block, which are updated and which are passed onto subsequent blocks. However, it does not attempt to do the same for each statement.
-
-So far neither of these limitations posed a problem since the loop structure itself is so modular. There is no apparent benefit of investing in a more granular per-statement liveness analysis. The generated \Haskell code is run through \GHC which itself has excellent liveness analysis and many other efficient compilation tactics. The proposed \LLVM backend is also likely to be able to optimise the code in its current form.
 
 
 \subsection{Generating}
