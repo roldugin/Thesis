@@ -215,6 +215,7 @@ The only additional step required before returning an array is converting the mu
 
 \todo{The translation is presented formally in Figure}
 
+
 \subsection{Liveness analysis and state passing}
 
 We have discussed that the individual statement blocks of the \Loop language become @ST@ functions in the generated code. Subsequently the statements that transfer control from one block to the other (@goto@, @guard@, @case@) become function calls. 
@@ -230,7 +231,15 @@ The problem, however, is that there is no fixed state alive in the loop at any g
 \item some variable are declared in \[init] and are persistent for the whole duration of the loop. These are of course counters and accumulators.
 \end{itemize}
 
-In order to appropriately generate the argument lists to the functions representing loop blocks I have implemented a \name{liveness analysis} pass in my \LiveFusion EDSL compiler.
+In order to appropriately generate the argument lists to the functions representing loop blocks I have implemented a \name{liveness analysis} pass in my \LiveFusion EDSL compiler.\\
+
+\begin{important}{Liveness analysis is not a backend feature}
+\ \\
+Liveness analysis operates on \Loop EDSL specification of the program. It computes environments for a control flow graph (CFG) of \*blocks* and operates on the notions of variable \*bindings* (@=@) and \*assignments* (@:=@). The outcome of liveness analysis is the information about the use of state in a CFG.\\
+
+As such this pass is not specific to any specific backend and is an way to analyse a program given in \Loop EDSL. Nonetheless, I believe that the necessity for liveness analysis has not been justified until now. With enough foreword, it is described below.\\
+\end{important}
+
 
 I will now offer an intuitive description for how the algorithm works.
 \todo{Give formal semantics too}
@@ -248,7 +257,7 @@ Each loop has a single entry block. Starting with that block, and following the 
 
 \todo{Give concrete examples in the example}
 
-Several things to note about computing the environment: \todo{Perhaps move to the discussion section}
+Several points to note about calculating the environment: \todo{Perhaps move to the discussion section}
 \begin{enumerate}
   \item Some blocks have multiple \*future* blocks to which control can be transferred (e.g. \[guard] can go to \[body] or \[done]). The union of all \*assumed* variables is taken to determine what need to be in the environment of the current block.
 
@@ -274,10 +283,37 @@ There are two caveats of the \Haskell code generator in its current state:
 
 Both of the above are not fundamental limitations of either \Loop EDSL or the \Haskell backend. The arise for the fact that the liveness analysis works on \*per-block* basis and not \*per-statement*. This means that liveness analysis attempts to determine which variables are expected to be in scope in a particular block, which are updated and which are passed onto subsequent blocks. However, it does not attempt to do the same for each statement.
 
-So far neither of these limitations posed a problem since the loop structure itself is so modular. There is no apparent benefit of investing in a more granular per-statement liveness analysis. The generated \Haskell code is run through \GHC which itself has excellent liveness analysis and many other efficient compilation tactics. The proposed \LLVM backend is also likely to be able to optimise the code in its current form.
+So far neither of these limitations posed a problem since the loop structure itself is so modular. There is no apparent need in a more fine-grained per-statement liveness analysis. The generated \Haskell code is run through \GHC which itself has excellent liveness analysis and many other efficient compilation tactics. The proposed \LLVM backend is also likely to be able to optimise the code in its current form.
 
 
-\subsection{Passing arguments to the generated code}
+\section{Interfacing host and plugin code}
+
+In the previous sections we have seen the process of generating \Haskell code from \Loop EDSL. The functions generated from statement blocks of the loop form the main part of the plugin that would later be compiled and loaded into the running host program.
+
+An extra layer of code that makes the interaction of the host and the plugin possible is described in this section.
+
+Looking at the plugin code presented at the beginning of this chapter in Figure \todo{ref}, the entry functions have the following type:
+
+\todo{update with proper example}
+
+\begin{hscode}
+entry :: [Dynamic] -> Dynamic
+entry [!arr_xs] = toDyn (run (fd arr_xs))
+
+run :: Vector Double -> Vector Double
+run (!arr_xs) = runST (init_ys arr_xs)
+\end{hscode}
+
+\begin{hscode}
+fd :: Typeable a => Dynamic -> a                                        
+fd d = case fromDynamic d of                                            
+         Just v  -> v                                                   
+         Nothing -> error "Argument type mismatch"
+\end{hscode}
+
+\todo{ref the two papers}
+
+
 
 
 
