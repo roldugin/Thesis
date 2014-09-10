@@ -36,6 +36,7 @@
 \usepackage[disable]{todonotes}
 \usepackage{fixltx2e} % \textsubscript{} etc.
 \usepackage{tcolorbox} % for rounded boxes around label names
+\usepackage[tikz]{bclogo} % for highlighting important info in boxes
 
 %% Packages included in this distribution
 \usepackage{subsections}
@@ -83,6 +84,7 @@
 
 \def\compose{$\circ$ }
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Names and abbreviations
 
@@ -95,7 +97,9 @@
 \newcommand\GHC{\name{GHC}}
 \newcommand\LLVM{\name{LLVM}}
 
-%% The following shortcut does not work with caption for some reason
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Figure with caption at the bottom
 \newenvironment
   {cfigure}[1]
   {
@@ -108,12 +112,27 @@
   }
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%% END Shortcuts.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Automatically make code after underscore subscripted
 
+\def\SubscriptWord#1 {\check#1\relax\textsubscript{#1} }
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%% Environments.
+% Check function parses world until space/newline
+\def\check#1{%
+\ifx\relax#1%
+\else
+\ifcat a#1%
+\else
+\typeout{illegal character #1}%
+\fi
+\expandafter\check
+\fi}
 
-
+% How to define \AutoSubscriptOn and \AutoSubscriptOff ??
+%\def\AutoSubscriptOn{\def_{\SubscriptWord}}
+% Hello_World will result in world subscripted World
+% \_ will result in the usual underscore
+%\edef\AutoSubscriptOff{\noexpand\def_{\_}}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -308,26 +327,80 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Other
 
+% Important info
 \newcommand\thesis\emph
 
+% Important info in a coloured box
+\definecolor{bgblue}{RGB}{245,243,253}
+\definecolor{ttblue}{RGB}{91,194,224}
+\renewcommand\bcStyleTitre[1]{\large\bfseries\textcolor{black}{#1}} % used to be ttblue
+\newenvironment{important}[1]
+% before
+{
+\begin{bclogo}[
+  couleur=bgblue,
+  arrondi=0,
+  logo={\ }, %\bcbombe,
+  barre=none,
+  noborder=true]{#1}
+}
+% after
+{
+\end{bclogo}
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% END Environments.
 
 
 \begin{document}
 
-\subfile{main}
+\subfile{title}
+
+\tableofcontents
+\listoffigures
+
+
+\subfile{abstract}
+
+\subfile{acknowledgements}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Chapter 6: Loop representation: The Loop Language                         %%
+%% Chapter 1: Introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subfile{06-loops.tex}
+\subfile{01-introduction}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Chapter 7: Code Generation and Haskell Backend                            %%
+%% Chapter 2: Background
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subfile{02-background}
 
-\subfile{07-backend.tex}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Chapter 3: Delaying Computation: LiveFusion AST
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subfile{03-frontend}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Chapter 6: Loop representation: The Loop Language
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subfile{06-loops}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Chapter 7: Code Generation and Haskell Backend
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subfile{07-backend}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Chapter 8: Results
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subfile{08-results}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Chapter 9: Conclusion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subfile{09-conclusion}
+
+\pagebreak
+\bibliographystyle{is-alpha}
+\bibliography{bib}
 
 \end{document}

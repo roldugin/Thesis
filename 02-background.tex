@@ -1,0 +1,376 @@
+%% We use `subfiles' package
+\documentclass[preamble.tex]{subfiles}
+\begin{document}
+
+\pagebreak
+
+
+\chapter{Background}
+
+
+\section{Equational Fusion Systems}
+
+This section will review the previous approaches to fusion in Haskell. It will cover Shortcut Fusion and DPH's very own Stream Fusion and Functional Array Fusion.
+
+
+\subsection{Shortcut Fusion}
+
+Shortcut Fusion \cite{GLP93} is one of the most referenced techniques for fusion in Haskell. It has been developed to be used in GHC to fuse pipelined list operations. It employs two combinators, $foldr$ and $build$, and a single rewrite rule to eliminate adjacent occurrences of the combinators. It is suitable for use in the cases when the functions to be fused can be defined in terms of these combinators. $ $The definition of $foldr$ is reused from Prelude, Haskell's standard library:
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+foldr :: (a -> b -> b) -> b -> [a] -> b
+foldr f z []     = z
+foldr f z (x:xs) = f x z : (foldr f z xs)
+\end{lstlisting}
+
+
+To understand the motivation behind shortcut fusion one may think of $foldr$ as of replacing each $Cons$ of a list with a binary operator and $Nil$ with the neutral element. The other combinator, $build$, takes a second order function which in turn takes an operator to be used as $Cons$, and a value to be used as $Nil$. Since we are building a list, these immediately become \texttt{(:)} and \texttt{{[} {]}}.
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+build :: ((a -> b -> b) -> b -> b) -> [a]
+build g = g (:) []
+\end{lstlisting}
+
+
+To illustrate the approach a $map$ could be defined in terms of $build/foldr$ as follows:
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+map f xs = build (\c n -> foldr (c . f) n xs)
+-- c is (:), n is []
+\end{lstlisting}
+
+
+In the above code the list is being folded into another list. With the help of a rewrite rule
+
+$\langle foldr/build\, fusion \rangle\forall g\, k\, z.foldr\, k\, z\,(build\, g)\mapsto g\, k\, z$
+
+the two consecutive $map$s could be reduced to as in the following:
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+map h (map f xs)
+ -- inline
+ = build(\c n -> foldr (c.h) n 
+  (build (\c n -> foldr (c.f) n xs)))
+ -- apply rewrite rule
+ = build(\c n -> ((\c n -> foldr (c.f) n xs) (c.h) n)
+ -- beta reduce
+ = build(\c n -> foldr (c.h.f) n xs)
+\end{lstlisting}
+
+
+While this leads to the desired results in many cases, it requires the programmer to define the functions in a not very readable form. This may be acceptable for some of the code in the standard library but is not likely to be widely accepted among client programmers. Thus the fusion breaks for the parts of the code that do not use the explicit $build/foldr$ definitions. To solve this, Chitil proposed a type inference algorithm to automatically infer the $build/foldr$ definitions\cite{Chi99}.
+
+Some of the other limitations of the Shortcut Fusion include the inability to effectively fuse left folds and zips. These shortcomings make this approach less attractive for DPH.
+
+
+\subsection{Stream Fusion}
+
+Stream Fusion \cite{CLS07,CSL06} is currently employed in the DPH primitive library at one of the three levels of fusion discussed in Section \vref{Lit:DPH-fusion-levels}.
+
+It introduces two data types: a stream and a stepper. 
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+data Stream a = forall s. Stream (s -> Step s a) s
+\end{lstlisting}
+
+
+A $Stream$ is defined by its stepper function and seed. The stepper is used to produce a stream by taking the current seed and yielding the next step. That is, the stepper produces next element and state from current state. The next step may be one of the following:
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+data Step s a = Yield a s
+              | Skip s
+              | Done
+\end{lstlisting}
+
+
+A $Done$ would flag the end of the stream, while $Yield$ would contain an element and the next seed. If a $Skip$ is retrieved that would mean that the current step does not contain an element. Thus streaming of a list could be defined in the following way:
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+stream :: [a] -> Stream a
+stream step0 = Stream next step0
+  where next []     = Done
+        next (x:xs) = Yield x xs
+\end{lstlisting}
+
+
+In the above the list itself is being used as the seed. Unstreaming back to a list takes the following form:
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+unstream :: Stream a -> [a]
+unstream (Stream next0 step0) = unfold step0
+  where unfold s = case next0 s of
+          Done       -> []
+          Skip s'    -> unfold s'
+          Yield x s' -> x : unfold s'
+\end{lstlisting}
+
+
+Any fusible list function should now be defined in terms of Streams as opposed to lists, e.g.:
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+mapS :: (a -> b) -> Stream a -> Stream b
+mapS f (Stream next0 s0) = Stream next s0
+  where next s = case next0 s of
+    Done       -> Done
+    Skip    s' -> Skip        s'
+    Yield x s' -> Yield (f x) s'
+
+map :: (a -> b) -> [a] -> [b]
+map f xs = unstream (mapS f (stream xs))
+\end{lstlisting}
+
+
+To see how a $Skip$ step might be used it may be worthwhile to look at the definition of the $filter$ function.
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+filterS :: (a -> Bool) -> Stream a -> Stream a
+filterS p (Stream next0 s0) = Stream next s0
+  where next s = case next0 s of
+    Done                   -> Done
+    Skip    s'             -> Skip    s'
+    Yield x s' | p x       -> Yield x s'
+               | otherwise -> Skip    s'
+
+map :: (a -> b) -> [a] -> [b]
+map f xs = unstream (mapS f (stream xs))
+\end{lstlisting}
+
+
+The fusion opportunity such as $(map\, f\cdot filter\, p)$ may now be exploited with the following rewrite rule
+
+$\langle stream/unstream\, fusion\rangle\,\forall stream(unstream\, s)\mapsto s$
+
+In order to completely remove all traces of the helper data structures Stream Fusion relies on general purpose compiler optimisations. This makes this approach highly depended on GHC. However, due to the non-portability of DPH this does not pose a problem. The major problem with this approach is that the two primitive operations must be adjacent to each other when inlined. This is not always possible. However, the approach is very solid otherwise and it might turn out to be yet more effective when combined with a runtime fusion system.
+
+
+\subsection{Functional Array Fusion}
+
+This last approach will be described by first developing an intuition that would lead to the solution more thoroughly described in \cite{CK01,CK03}. We will go to a greater depth describing this approach since it lays down the basis for the work presented.
+
+When talking about fusion it it important to do so with reference to the context. In our case the interface to the primitive library is limited by a number of predefined functions. This is contrary to the approaches that optimising compilers take for fusing generic free-form loops \cite{KA02}. Now that we have established that the interface to the arrays is fixed it is worthwhile to consider the types of operations it offers. Quite expectedly it follows some of the Haskell Prelude conventions as well as the client interface to DPH (Figure \vref{fig:Lit:DPH-interface-functions}).
+
+Suppose that one of the evaluation paths of the program arrives at the following computation:
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+fold (+) 0 (filter isPrime (map (+1) (map (^2) (enumFromTo 0 9))))
+\end{lstlisting}
+
+
+The dependence graph \cite{RMKB06,KA02} for this computation is presented on the left of Figure \vref{fig:Prime-Sum-evaluation}. One of the ways in which the library functions can be classified is by the types of their arguments and return types. We only focus on whether the function produces or consumes array(s).
+
+\begin{figure}
+\includegraphics[width=1\textwidth]{img/SumPrimes}
+
+\caption{\label{fig:Prime-Sum-evaluation}{Prime Sum evaluation tree. Delayed evaluation tree (left) and values at every step (right).}}
+\end{figure}
+
+
+In the above example we have an enumeration which always produces and array but consumes none. This functions of this type are called generators by the original authors. A more generic name for them is anamorphisms {[}bananas{]}. These functions are used to bring arrays into the scope of array operations.
+
+The dual of anamorphisms are catamorphisms, or reductions, which consume array(s) and only return scalar values. Folds are one example of such functions.
+
+Most of the functions in the library, however, are hylomorphism which means they consume and produce at least one array. If fusion is not used, each of such functions would allocate a new array and fill it in before the next combinator consumes the newly created array. It is desirable to avoid this. The way Functional Array Fusion looks at this problem is it considers the computation as a pipeline of array combinators, whereby each element is consumed in a lockstep and is directly projected to the correct position in the resulting array. As the right of Figure \vref{fig:Prime-Sum-evaluation} suggests, each element is visualised as being \emph{mutated} in some way to produce the final result. Thus, for each new element \emph{enumFromTo} generates it is first squared, then incremented by one. It is then run through the predicate of the filter and is taken into account when folding to the final value if found to be true.
+
+The way in which the original authors approached the problem was to generalise generators, reductions and producer/consumers to a small set of combinators covering most of the library interface. They came up with the \emph{loop} combinator of the following type (adjusted to be consistent with the rest of this document):
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+loop :: (e -> a -> (Maybe e', a)) -- mutator function
+     -> a                         -- accumulator
+     -> Array e                   -- input array
+     -> (Array e', a)
+\end{lstlisting}
+
+
+The \emph{loop} combinator traverses the input array \emph{arr}. The mutator function is made generic so as to be able to act as function supplied to \emph{map}, \emph{filter} and \emph{fold} combinators. Thus, \emph{map f} can be implemented as \emph{loop} with a unit accumulator and the following mutator function:
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+map_mf :: (e -> a -> (Maybe e', a))
+map_mf x acc = (Just (f x), acc)    -- acc unused
+\end{lstlisting}
+
+
+Similarly, \emph{filter p} and \emph{fold f acc} can be implemented as \emph{loop}s with the following mutator functions:
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+filt_mf :: (e -> a -> (Maybe e', a))
+filt_mf x acc = (filt, acc)         -- acc unused
+  where filt = case (p x) of
+                 True  = Just x
+                 False = Nothing
+
+fold_mf :: (e -> a -> (Maybe e', a))
+fold_mf x acc = (Nothing, f x acc)  -- no elt produced
+\end{lstlisting}
+
+
+It should be noted from the above that the \emph{loop} combinator is able to express both hylomorphisms (\emph{map, filter}) and catamorphisms (\emph{fold}). The latter are identified by the \emph{Nothing} value unconditionally returned by the \emph{mutator function.} The only function from the original example that is left to be defined in terms of the \emph{loop} combinator is the anamorphism \emph{enumFromTo.} Its mutator function might\footnote{The library implementation generalises enumerations to \emph{enumFromStepLen}, which takes a value for the first element, the increment and desired length of the resulting sequence. } take the following form:
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+enum_mf :: (e -> a -> (Maybe e', a))
+enum_mf _ acc = (Just acc, acc+1)   -- acc is next val
+\end{lstlisting}
+
+
+The above implementation of \emph{enum} suggests that it might be possible to express generators using the generic \emph{loop} combinator. However, a careful reader may have noticed that \emph{loop,} by definition, traverses \emph{an array}, even though the value of the element is ignored in this particular mutator function. Thus, a cheap but generic implementation of generators would have been possible if we had a dummy array to iterate over. As discussed previously in \subref{DPH-Data-Repr}\vpageref{sub:DPH-Data-Repr} an array of units can be represented by a single value -- its length. Indexing the array at any position within the bounds would just return a unit value\footnote{In Haskell a Unit type conveniently represented in source code as \emph{()} is similar to a \emph{void} in C.}. Now, a generator like \emph{enumFromTo} could be easily and cheaply implemented as follows:
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+enumFromTo :: Int -> Int -> Array Int
+enumFromTo start end = fst (loop enum_mf start units)
+  where units = replicate (end - start + 1) ()
+\end{lstlisting}
+
+
+In the above implementation an array of units is first constructed by replicating (repeating) a unit value the desired number of times. It is then traversed using the appropriate mutator function resulting in a tuple with the desired enumeration in the first position and the final accumulator in the second (\emph{end+1} in this case). We can safely drop the accumulator as we are only interested in the array.
+
+The true convenience of the \emph{loop} combinator is revealed if we try to squash multiple \emph{loop} combinators into a single \emph{loop}. GHC's rewrite rules mechanism is employed to pipeline two adjacent \emph{loop}s. For the sake of being concise we will omit here most of the infrastructure required for the approach to work. We present the way by which two mutator functions can be merged into a single one:
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+-- mutator function of the first loop
+mf1 :: e0 -> a1 -> (Maybe e1, a1)
+
+-- mutator function of the second loop
+mf2 :: e1 -> a2 -> (Maybe e2, a2)
+\end{lstlisting}
+
+
+\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+-- mutator function to express
+-- loop mf2 .. (loop mf1 .. (..)) as a single loop
+mf :: e0 -> (a1,a2) -> (Maybe e2, (a1,a2))
+mf x (acc1, acc2) =
+  case (mf1 x0 acc1) of
+    (Nothing, acc1') = (Nothing, (acc1', acc2))
+    (Just x1, acc1') =
+      case (mf2 x1 acc2) of
+        (Nothing, acc2') = (Nothing, (acc1', acc2'))
+        (Just x2, acc2') = (Just x2, (acc1', acc2'))
+\end{lstlisting}
+
+
+Since the mutator function may not always return a value (e.g. in the case with \emph{filter} combinator) merging two mutator functions proceeds in two steps:
+\begin{enumerate}
+\item We first run the given array element through the first mutator function. If that does not produce a value (produces a \emph{Nothing}) we do not proceed to the second mutator and yield \emph{Nothing} as the overall result.
+\item In case the first mutator did produce a value (\emph{Just}) we run it through the second mutator, returning the final result whatever it might be.
+\end{enumerate}
+Clearly, some trickery is involved in dropping the first accumulator in a (potentially deeply nested) pair, but the above conveys the main concepts behind the Functional Array Fusion.
+
+
+\section{Runtime Fusion Systems}
+
+\subsection{DESOLA - Delayed Evaluation Self Optimising Linear Algebra}
+
+Delayed Evaluation Self Optimising Linear Algebra (DESOLA) \cite{RMKB06} is a C++ active library which was designed to explore the benefits of runtime code generation and optimisation for scientific computing. In contrast to DPH, DESOLA puts portability across compilers as one of its priorities, thus it may provide several insights in doing thing differently. In particular, most of the interesting code generation and optimisation happens at runtime. Quoting the authors of the library, they take the following approach:
+
+\begin{description}
+\item [{Delay~library~call~execution}] Calls made to the library are used to build a “recipe” for the delayed computation. When execution is finally forced by the need for a result, the recipe will often represent a complex composition of primitive calls.
+\item [{Generate~optimised~code~at~runtime}] Code is generated at runtime to perform the operations present in the delayed recipe. In order to improve performance over a conventional library, it is important that the generated code should execute faster than a statically generated counterpart in a conventional library. To achieve this, we apply optimisations that exploit the structure, semantics and context of each library call. Compiled recipes are cached to limit overheads, but need to be executed enough times to offset the cost of the initial compilation.
+\end{description}
+
+\begin{figure}
+\begin{centering}
+\includegraphics{img/DESOLA-running-example}
+\par\end{centering}
+
+\caption{\label{fig:Lib:DESOLA-DAG}{An example DAG. The rectangular node denotes a handle held by the library client. The expression represents the matrix-vector multiply function $y = \alpha Ax + \beta y$.}}
+\end{figure}
+
+
+Figure \ref{fig:Lib:DESOLA-DAG} shows a tree, or more generally a directed acyclic graph (DAG), accumulated during the evaluation of a matrix-vector multiply function. The important thing to note is that the authors insist on that DAG is a more effective way to record computations than a tree as it exposes the sharing of {}``recipes'' among handles in the client code. This may not always be possible in a purely functional context and will have to be explored. The actual fusion algorithms employed in DESOLA are not explained in much detail. The authors found that their achievements in fusion using the information only available at runtime compensated the runtime code generation cost for many real sized problems. The authors also believe that the benefits of array contraction will be more noticeable once they add support for sparse matrices and similar irregular data structures to their library. As this is the focus of DPH, array contraction may be beneficial to look at in more detail.
+
+Overall, the approach of delaying the evaluation until it it required seems promising and aligns well with Haskell's approach to lazy evaluation (only from the ideological point of view, since the performance is the first priority for DPH).
+
+
+
+\section{Stream Processing and Data Flow Languages}
+
+\section{Darte}
+
+Done in Fortran. While more lowlever, the first thing it does is to do dep analysis and separate into several loop. All the fusion is done after that. In this way we actually start one level below. We already have independet loops with most combinators introducing at least one loop into the graph.
+
+\section{On clustering}
+
+Most clustering problems are expressed in compile time and in general take NP to complete. For a medium sized DPH program you have (N) combinators at a time. This shoots the problem outside reasonable compilation times. With a good set of ILP heuristics and without looking for a perfect solution a performat ILP solver can bring this down to reasonable amount of time. It is worth noting two things: at compile time you can indeed see the complete graph at once which is unlikely at runtime. Certain things will be forced and reduced to manifest arrays before time (give an example). Thus there may not be such a high number of things to solve. Also, any time a simple linear pipeline of combinators is encountered and their rate and access pattern (i.e. type) are the same, they can all be reduced to one combinator for the purposes of clustering. This way, it may well be possible that the graphs to analyse for clustering may become very small.
+
+Two other techniques which may drammatically reduce the graph to be analysed is simple runtime forcasting:
+- At compile time you may not always see the sizes of arrays to be computed. You have to assume you will need to fuse everything to our best abilities. However, as the author found in his work on Parallelisation avoidance, only a handful of combinators in an average DPH program are actually majour contributors to the runtime. As such, we may often be able to skip clustering and subsequent compilation altogether. Performing a cheap array computation may just suffice. Working with the resulting manifest arrays for fusion where it is truely beneficial is much easier than with a set of combinators which only introduce ``noise'' into the actual runtime of the program.
+
+\section{Summary}
+
+This section has reviewed some of the array fusion frameworks covering
+a number of:
+\begin{itemize}
+\item languages (C++, Haskell),
+\item applications (algebraic libraries, general purpose list library, data parallel framework),
+\item approaches (runtime evaluation graph optimisation, equational fusion based on rewrite rules).
+\end{itemize}
+The discussion in the next section will be based on the fusion frameworks described above.
+
+
+\pagebreak
+\chapter{LiveFusion - A Runtime Fusion System}
+
+The current project was motivated by Data Parallel Haskell project. Even though much of the design of the new fusion system is decoupled from any particualar system targetting it, the fusion frameworks designed specifically for Haskell were the first to turn to. The Background section discussed three of them: Shortcut Fusion, Stream Fusion and Functional Array Fusion. Glasgow Haskell Compiler's rewrite rules functionality plays crucial rule in all three of them. This is not coincidental:
+\begin{itemize}
+\item Compile-time term rewriting is fundamental optimisation technique in the implementation of functional programming languages \cite{Pey87}. Exposing it to the user \cite{PTH01} makes it an attractive way to expose compiler functionality to pure library code
+\item Inlining \cite{PM02} is another technique which is crucial in compilers like GHC which heuristically removes superfluous levels of indirection in the original code. As a side effect it provides more opportunities for term rewriting to happen
+\item Haskell is a purely functional language therefore valid term rewriting can be done without a sophisticated analysis of side effects. Rewriting would generally be unsafe in a non pure context
+\item (In the case with Stream Fusion) it is reasonable to rely on the existence of certain compiler optimisations since DPH relies on GHC and is not designed for other Haskell implementations
+\end{itemize}
+The above statements suggest that compile time equational fusion seems like a natural choice for the Haskell programming language. This is especially valid for Stream Fusion where the authors were able to achieve, through inlining, rewriting and compiler optimisations, the speed of handwritten code. Moreover, the generated code for many examples was the same as a human programmer would normally write if top performance was required. However, the strong dependence on the optimisation systems of such a complex system as GHC makes the fusion frameworks fragile and non-portable.
+
+One of the cases in which equational fusion breaks is when two array operation do not end up being adjacent after inlining. This may happen due to the so called \emph{let floating} optimisation in GHC \cite{PPS96}.
+
+%% TODO find a breaking example in DPH and list it here This optimisation is designed to avoid duplicating work. When GHC finds two identical terms in an expression and considers them large enough to benefit from computing them only once, it \emph{floats} them out to a new \emph{let} binding outside of the expression. This optimisation is the opposite of inlining. If the term that was forcibly floated out would have otherwise completed a pattern for a fusion rule, that fusion opportunity is missed.
+
+The other problem with equational fusion is that \emph{sharing} is not clearly defined. This is related to the above problem. Sharing prevents large amounts of work from being duplicated. Aggressive unconditional inlining would have introduced a major inefficiency for programs in which the result of a pipeline of costly array operations is independently used in more than one place. Recomputing the shared portion may result in a noticeable performance hit.
+
+Both of the above two problems suggest that correct inlining plays a major part in the process of fusion. It also suggests that the decisions taken by the inliner do not always result in the optimal code for exploiting fusion. 
+
+One of the goals of the current work is to reduce the dependency of successfully exploited fusion opportunities on the behaviour of the inliner. It was decided to explore the possibility of performing fusion at runtime of the program. That would eliminate the need for the inliner at least for the part of decision making when fusing array operations together. The DESOLA library, while designed for C++, serves as a starting point for performing fusion at runtime. The new framework would reuse its approach of constructing a dependence tree. When an array computation is later forced by a catamorphism, the tree can be optimised yielding an equivalent computation in a fused form.
+
+The very first design decision to make would be the way to represent delayed array operations as nodes in the tree. Haskell's ability to delaying function application and effortless function composition to create new functions has lead the author to reusing the approach of Functional Array Fusion. In our case each node in the tree either represents a delayed array computation or holds a precomputed array in memory. The tree represented in this manner may be optimised and evaluated at any time to produce a manifest array in memory. All of the library's interface functions can then be implemented in terms of nodes in the tree.
+
+%%As a special case, the catamorphic functions, not only obtain a new
+%%delayed array handle but also force the evaluation of the tree.
+
+%%The next feature of the new framework to be implemented would be the
+%%support for segmented array operations. Segmented array operations
+%%are central to DPH. Implementing them would complete the interface
+%%of the library. Luckily the authors of Functional Array Fusion have
+%%provided one solution for it. Implementing it would require modifying
+%%the the type signature of the mutator function and generalising the
+%%\emph{loop} combinator to support segment boundaries.
+
+(TODO decide what to do with the following paragraphs, it should probably go in background section) At a minimum give overview of:
+\begin{itemize}
+\item Sharing recovery
+\item New loop representation
+\item Code gen for new loop representation
+\item Code compilation and loading
+\item Finish by saying that these will be discussed in turn in the coming sections
+\end{itemize}
+
+The next major feature required for DPH to be used with the new backend as intended would require adding support for distributing computations over the available processing elements. At present time DPH has two backends: one purely sequential and one parallel. However, they are not entirely independent. The parallel backend is concerned with only the following:
+\begin{itemize}
+\item splitting (chunking) arrays and distributing them among a \emph{gang of threads}
+\item calling a sequential implementation from the sequential backend on each chunk
+\item joining the chunks from the finished parallel operations
+\item statically removing as many synchronisation points as possible (split-joins) 
+\end{itemize}
+
+The last item on the list was parallel backend's own fusion system described \vpageref{Lit:DPH-fusion-levels}. Fusion in the sequential backend occurs only after that in the parallel backend (more precisely after a split and before the next join). On one hand that allows the two fusion systems to be independent. However, considering the nature of the new sequential backend it may sometimes do no work between the two split-joins. Indeed, we said initially that we were only forcing the evaluation of the tree when reaching a catamorphism. A dynamic technique for eliminating superfluous synchronisation points in the context of functional programming languages has been suggested in {[}Operator fusion{]} under the name Operator Fusion for the Scala programming language. It is a simple algorithm with requires every function in the library to be classified according to:
+\begin{itemize}
+\item whether or not the inputs are consumed sequentially (\emph{map} vs. \emph{backpermute}),
+\item whether or not the outputs are produced sequentially (\emph{map} vs. \emph{permute}),
+\item whether or not load unbalancing may happen (\emph{map} vs. \emph{filter})
+\end{itemize}
+
+While the \emph{loop} operator presumes traversing the array from left to right, the aforementioned work may prove to be useful when adjusting the parallel backend.
+
+Lastly, there are two optional features that may be researched and possibly implemented:
+\begin{enumerate}
+\item Traversing more than one array one after the other, e.g. using \emph{concat} or \emph{concatMap}
+\item Sharing recovery and fusion preserving sharing. Normally, it is not possible in the purely functional context to refer to the same tree node from two other nodes to share computation between them. However turning the tree into a Directed Acyclic Graph (DAG) to enable sharing was found to be detrimental for performance and one of the performance bottlenecks in DPH (TODO ref latest paper). This problem has been researched in the context of Accelerate Domain Specific Language embedded in Haskell \cite{CKL+11} (TODO As well as a million other libs, sharing recovery is one of the two biggest problems in EDSL world). Fusion preserving sharing is a step up from sharing recovery enabling to continue running multiple computations in a fused manner (as opposed to first precomputing the shared portion of the DAG). This is unfortunately where Stream Fusion and other equational fusion frameworks fail. (TODO explain better)
+\end{enumerate}
+
+\end{document}

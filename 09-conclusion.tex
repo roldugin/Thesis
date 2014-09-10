@@ -1,0 +1,30 @@
+%% We use `subfiles' package
+\documentclass[preamble.tex]{subfiles}
+\begin{document}
+
+\pagebreak
+
+\chapter{Conclusion}
+
+\begin{comment}
+The problem of array fusion is not in its infancy. Yet there is not a definitive widely accepted approach to it. Most approaches have to be tailored to the surrounding context and align well with the programming model offered by the framework. The proposed research is an attempt to provide an alternative to an already functioning fusion system in the Data Parallel Haskell framework. The currently employed Stream Fusion system is mature yet fragile as it heavily relies on correct inlining, term rewriting and compiler optimisations. The proposed alternative fusion system would deliver on at least the following goals:
+\begin{enumerate}
+\item Simplifier independency
+\item Efficient implementation of \emph{loop} combinator based on unboxed arrays
+\item Flat and segmented fusible implementations for most operations in the primitive library
+\item Parallel and sequential fusible implementations for most operation in the primitive library
+\item Explanations as to why some operations do not have fusible implementations. These would be one of the following forms:
+	\begin{enumerate}
+	\item fusion is not available in the current design of the system
+	\item fusion is not available without further research
+	\item fused implementation does not exist due to the semantics of the operation
+	\end{enumerate}
+\end{enumerate}
+
+
+Due to the time constraints additional goals set out in previous sections are left as optional and will leave room for further research on the topic. It is expected that the fusion system resulting from this research would be competitive to the current one in the number and types of array operations that can be fused. It is also expected that the new system would be able to exploit more fusion opportunities due to the reduced complexity compared to equational fusion systems.
+
+Lastly, the research has the potential to benefit the implementors of numeric libraries in other languages especially if they follow the functional programming paradigm.
+\end{comment}
+
+\end{document}
