@@ -2,6 +2,9 @@
 \documentclass[preamble.tex]{subfiles}
 \begin{document}
 
+% We're compiling the main document, this affects where bibliography is placed
+\def\CompilingAll{}
+
 \subfile{title}
 
 \tableofcontents
@@ -48,7 +51,7 @@
 \subfile{09-conclusion}
 
 \pagebreak
-\bibliographystyle{is-alpha}
-\bibliography{bib}
+
+\bib
 
 \end{document}

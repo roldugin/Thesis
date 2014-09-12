@@ -349,8 +349,60 @@
 \end{bclogo}
 }
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%% END Environments.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% I n d e x
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Index
+% ------------------------------------------------------------------------------
+
+\makeindex
+\providecommand{\indexe}[1]{\index{#1}\emph{#1}}
+\providecommand{\indext}[1]{\index{#1}#1}
+
+\providecommand{\iast}[1][]{\index{AST (abstract syntax tree)!#1}}
+\providecommand{\iasg}[1][]{\index{ASG (abstract semantic graph)!#1}}
+\providecommand{\ihoas}[1][]{\index{HOAS (higher-order abstract syntax)!#1}}
+\providecommand{\idebruijn}[1][]{\index{De Bruijn!#1}}
+\providecommand{\ith}[1][]{\index{Template Haskell!#1}}
+\providecommand{\idph}[1][]{\index{DPH (Data Parallel Haskell)!#1}}
+\providecommand{\ief}[1][]{\index{Equational fusion!#1}}
+\providecommand{\iinl}[1][]{\index{inlining!#1}}
+\providecommand{\irw}[1][]{\index{rewriting!#1}}
+\providecommand{\irwr}[1][]{\index{rewrite rules!#1}}
+\providecommand{\ighc}[1][]{\index{GHC (Glasgow Haskell Compiler)!#1}}
+\providecommand{\iloop}[1][]{\index{Loop EDSL!#1}}
+\providecommand{\ifusion}[1][]{\index{fusion!#1}}
+\providecommand{\ilanguage}[1][]{\index{language!#1}}
+
+\index{DSL|see {language: domain-specific}}
+\index{EDSL|see {language: embedded}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% B i b l i o g r a p h y
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% How to use:
+% - In main.tex:
+%   - put \def\CompilingAll{} after \begin{document}
+%   - put \bib where appropriate
+% - In chapter files:
+%   - put \maybebib where appropriate
+
+\def\bib{
+  \bibliographystyle{is-alpha}
+  \bibliography{bib}
+}
+
+\def\maybebib{
+\ifx\CompilingAll\defined
+  \bib
+\fi
+}
 
 \begin{document}
 
