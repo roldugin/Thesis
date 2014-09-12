@@ -2,7 +2,7 @@
 \documentclass[preamble.tex]{subfiles}
 \begin{document}
 
-\pagebreak
+\clearpage
 
 \chapter{Introduction}
 \label{ch:introduction}
@@ -27,19 +27,17 @@ Additionally, each operation may need to store its result in a new data structur
 
 Optimising out the superfluous data structure traversals and allocations is collectively referred to as \name{Loop Fusion}. It allows to transform a program expressed in terms of high level operations into a program that would be comparable to a handwritten one in operation and speed.
 
-In this essay I explore the problem of \name{loop fusion} in the context of purely functional data parallel programs.
-
-In this chapter I introduce the reader to the context of my work. I outline the problem finding a solution to which, has motivated my work in the prior years.
+In this essay I explore the problem of \name{loop fusion} in the context of purely functional data parallel programs. I shall begin by introducing the reader to the context of my work. I outline the problem finding a solution to which, has motivated my work in the prior years.
 
 
-\pagebreak
+\clearpage
 \section{Motivation}
 
 Suppose we have the following computation to perform:
 
-\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell,tabsize=4]
+\begin{hscode}
 sum (zipWith (*) xs ys)
-\end{lstlisting}
+\end{hscode}
 
 
 A person familiar with the fundamentals of functional programming is likely to spot the computation of the dot product of two vectors in this snippet of Haskell code. Indeed, the $zipWith$ list combinator conventionally creates a list, whose elements are calculated by applying some given function to the elements of the input lists occurring at the same positions in both lists. In the above case {}``zipping'' with the product as the function will element-wise multiply the two vectors $xs$ and $ys$. Quite expectedly the $sum$ combinator will sum the elements of the resulting vector into a scalar value, yielding the dot product of $xs$ and $ys$.
@@ -92,8 +90,8 @@ which does not completely bypass the extra allocation. The optimisation that get
 
 The work described in this thesis is oriented towards complementing the fusion mechanisms\footnote{While there is the distinction between loop fusion and array contraction, in many cases throughout this document the term $fusion$ will be used to describe both optimisations applied together.} currently employed in DPH. In the remainder of this chapter we will introduce the reader to the Data Parallel Haskell (DPH) project and similar systems, progressing to the description of some of the most common fusion systems.
 
-\pagebreak{}
 
+\clearpage
 
 \section{Context: Data Parallel Haskell}
 \label{sec:DPH}
