@@ -5,31 +5,35 @@
 \pagebreak
 
 \chapter{Introduction}
+\label{ch:introduction}
 
-\begin{comment}
-The need for the research (aims, problem statement and justification)
-½ to 1page introduction
-\end{comment}
+The past decade has seen a rise in development of increasingly sophisticated multi-core and multi-processor computer systems. From the early hyperthreaded solutions to the modern architectures comprising of a number of independent processing cores, the horsepower for demanding applications is now available even in the most affordable consumer systems. To offer a large amount of parallelism the high grade systems may have multiple multi-core processors, where each of the cores can run a number of hardware scheduled threads.
 
+While the hardware for running highly parallel computations is available and is improving at a high pace, the development of such applications targeting an arbitrary number of processing elements is often a challenging task. The problems involved are finding an appropriate parallel implementation of the task at hand, implementing it such that the computations are evenly distributed across processing elements and synchronising parallel computations when necessary. The latter two require a substantial programmer's intervention to get the algorithm running fast.
 
-The past decade has seen a rise in development of increasingly sophisticated multi-core and multi-processor computer systems. From the early hyperthreaded solutions boosting the performance of interleaved IO and CPU bound computations, to the modern architectures comprising of a number of independent processing cores, the horsepower for demanding applications is now available even in the most affordable consumer systems. The high grade systems targeting scientific applications exposing a large amount of parallelism combine multiple processors with multiple cores, where each of the cores can run a number of hardware scheduled threads.
-
-While the hardware for running highly parallel computations is available and is improving at a high pace, the development of such applications targeting an arbitrary number of processing elements (be that cores, processors or hardware threads) is often a challenging task. The problems involved are finding an appropriate parallel implementation of the task at hand, implementing it such that the computations are evenly distributed across processing elements and synchronising parallel computations when necessary. The latter two require a substantial programmer's intervention to get the algorithm running fast. %
-
-
-\begin{comment}
-It is not uncommon for the initial parallel implementation to run
-only slightly faster than the sequential version.
-\end{comment}
-
+% It is not uncommon for the initial parallel implementation to run only slightly faster than the sequential version.
 
 The resulting application is a mixture of the actual algorithm and the implementation specific code, dealing with concurrency and parallelism. This obscures code clarity and may generally be error-prone.
 
-One alternative to this practice of explicit parallelisation is to provide a common set of operations on large data structures. Programs implemented in terms of these operations would be automatically parallelised across the available processing elements. This approach is exercised by several frameworks covering a number of host languages, target architectures and suitable applications domains \cite{PLKC08,KCL+10,CKL+11,AS07}. In the pursuit of a high level view of the problem a major inefficiency is introduced. Having provided a number of primitive operations the problem of multiple traversals arises. In a manually written program the programmer could merge multiple primitive operations into one. That would only traverse a data structure once keeping the memory traffic to the necessary minimum and utilising cache correctly. On the other hand a straight forward high level library implementation would potentially traverse the same data structure in each operation. For large data structures this may lead to poor cache utilisation and high memory traffic. Additionally the operations may allocate temporary data structures to store their intermediate results which leads to further memory and runtime penalties. Optimising out the superfluous data structure traversals and allocations is collectively referred to as Loop Fusion. It allows to transform a program expressed in terms of high level operations into a program that would be semantically comparable to a handwritten one. The following chapters provide the motivation behind fusion, introduce the context of the project as well as the previous work in the field. A research proposal and a planned list of milestones are provided in the final chapters.
+One alternative to this practice of explicit parallelisation is to provide a common set of collective operations\icollop{} on large data structures. Programs implemented in terms of these operations would be automatically parallelised across the available processing elements. This approach is successfully exercised by a multitude of frameworks covering many host languages, target architectures and suitable applications domains \cite{PLKC08,KCL+10,CKL+11,AS07}.
+
+However, in the pursuit of a high level approach to programming a major inefficiency is introduced. Having provided a number of collective operations, the problem of multiple traversals arises. In each program there is likely to be a number of such operations composed together in some way to compute the desired result. With each collective operation potentially traversing a large data structure, the memory traffic is considerably increased.
+
+In a program written by hand without the use of collective operations the programmer would naturally recognise all the operation that could be performed in one pass over the data structure. The program would only traverse the data structure as few times as required, keeping the memory traffic to the necessary minimum and utilising cache correctly.
+
+On the other hand using a straight-forward implementation of a high level library of collective operations would result in code that traverses data which performing only a small change in each pass. For large data structures this may lead to poor cache utilisation and high memory traffic, noticeably reducing the overall performance.
+
+Additionally, each operation may need to store its result in a new data structure, which is especially true for languages where values are immutable by default. Allocating temporary data structures to store the intermediate results\index{intermediate value} leads to further memory and runtime penalties.
+
+Optimising out the superfluous data structure traversals and allocations is collectively referred to as \name{Loop Fusion}. It allows to transform a program expressed in terms of high level operations into a program that would be comparable to a handwritten one in operation and speed.
+
+In this essay I explore the problem of \name{loop fusion} in the context of purely functional data parallel programs.
+
+In this chapter I introduce the reader to the context of my work. I outline the problem finding a solution to which, has motivated my work in the prior years.
 
 
 \pagebreak
-\chapter{Motivation}
+\section{Motivation}
 
 Suppose we have the following computation to perform:
 
@@ -40,7 +44,7 @@ sum (zipWith (*) xs ys)
 
 A person familiar with the fundamentals of functional programming is likely to spot the computation of the dot product of two vectors in this snippet of Haskell code. Indeed, the $zipWith$ list combinator conventionally creates a list, whose elements are calculated by applying some given function to the elements of the input lists occurring at the same positions in both lists. In the above case {}``zipping'' with the product as the function will element-wise multiply the two vectors $xs$ and $ys$. Quite expectedly the $sum$ combinator will sum the elements of the resulting vector into a scalar value, yielding the dot product of $xs$ and $ys$.
 
-This one-liner was an attempt to develop the motivation for the high-level view on numeric computations. It may seem reasonable to replace the lists with arrays and reimplement the same high-level interface in terms of traditional arrays to avoid random memory access penalties as in the case of lists. Providing an instantly familiar interface without compromising performance has been one of the goals of the Data Parallel Haskell (DPH) project \cite{PLKC08,CLP+07}. The work in this thesis has been carried out in the context of this project. It will be discussed in more detail in section \ref{sec:Lit:DPH}.
+This one-liner was an attempt to develop the motivation for the high-level view on numeric computations. It may seem reasonable to replace the lists with arrays and reimplement the same high-level interface in terms of traditional arrays to avoid random memory access penalties as in the case of lists. Providing an instantly familiar interface without compromising performance has been one of the goals of the Data Parallel Haskell (DPH) project \cite{PLKC08,CLP+07}. The work in this thesis has been carried out in the context of this project. It will be discussed in more detail in section \ref{sec:DPH}.
 
 However, even if we replaced the lists with arrays and gave efficient implementations to $sum$ and $zipWith$, the resulting algorithm is still likely to be slower than on written by hand. The $zipWith$ combinator produces an intermediate array containing the element-wise product of the two input vectors. It is immediately consumed by $sum$, yielding the final (scalar) value. Thus the algorithm performs two traversals and allocates another array of the size of the input arrays. The same algorithm could be expressed by the following function in C:
 
@@ -91,11 +95,12 @@ The work described in this thesis is oriented towards complementing the fusion m
 \pagebreak{}
 
 
-\chapter{\label{sec:Lit:DPH}Context}
+\section{Context: Data Parallel Haskell}
+\label{sec:DPH}
 
-Data Parallel Haskell is an active library for the Haskell programming language, providing high level access to nested data parallelism. The above definition may seem complicated at first and should probably be backed up by a set of explanations:
+\name{Data Parallel Haskell (DPH)}\idph{} is an \*active library* for the \Haskell programming language, providing high level access to \*nested data parallelism*. The above definition may seem complicated at first and should probably be backed up by a set of explanations:
 \begin{itemize}
-\item Nested data parallelism is a type of SPMD parallelism, which operates on irregular data structures. Some of the examples of irregular data structures are sparse matrices and unbalanced trees
+\item Nested data parallelism\index{data parallelism: nested}{} is a type of SPMD\index{data parallelism: SPMD (single program, multiple data)}{} parallelism (single program, multiple data) which operates on \*irregular*\index{data structure: irregular} data structures. Two of the examples of irregular data structures are \*sparse matrices*\index{data structure: sparse matrix} and \*unbalanced trees*\index{data structure: unbalanced tree}
 
 \item An active library may be defined as one which takes active part in the optimisation and the compilation of its client code. Indeed, DPH guides the compilation process in many ways including choosing the data representation \cite{CDL09} and applying rewrite rules \cite{PTH01} to improve performance. In fact, a major part of DPH -- the vectoriser -- is implemented in the Glasgow Haskell Compiler\footnote{Glasgow Haskell Compiler: http://www.haskell.org/ghc} (GHC).
 
@@ -172,7 +177,7 @@ together with the segment descriptor containing the lengths and the starting ind
 
 \section{\label{sub:DPH-Data-Repr}Data Representation}
 
-Together with flattening, the vectoriser chooses the best representation for the data, e.g. for sum types and product types. Haskell's product types, or the tuples of two of more heterogeneous elements, are allocated as boxed values on the heap. Storing an array of pointers to heap allocated values would have been a major hit on performance due to the costs of unboxing as well as loading the individual values from memory instead of fetching multiple at a time. Instead, an array of pairs \texttt{{[}:(a,b):{]}} is stored as a pair of arrays \texttt{({[}:a:{]},{[}:b:{]})}.
+Together with flattening, the vectoriser chooses the best representation for the data, e.g. for sum types and product types. \Haskell's product types, or the tuples of two of more heterogeneous elements, are allocated as boxed values on the heap. Storing an array of pointers to heap allocated values would have been a major hit on performance due to the costs of unboxing as well as loading the individual values from memory instead of fetching multiple at a time. Instead, an array of pairs \texttt{{[}:(a,b):{]}} is stored as a pair of arrays \texttt{({[}:a:{]},{[}:b:{]})}.
 
 Similarly, the sum types, or the user defined ADT's, are stored as tuples of arrays. Having multiple arrays, each storing the interesting values wrapped by the same constructor, not only avoids the cost of unboxing but also facilitates pattern matching on constructors. Thus the values constructed by the same constructor are stored in the same array. The penalty paid is keeping a selector array to recreate the original interleaving. Quite clearly sum types and product types can be recursively nested.%
 
