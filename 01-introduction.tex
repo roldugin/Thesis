@@ -23,14 +23,15 @@ In a program written by hand without the use of collective operations the progra
 
 On the other hand using a straight-forward implementation of a high level library of collective operations would result in code that traverses data which performing only a small change in each pass. For large data structures this may lead to poor cache utilisation and high memory traffic, noticeably reducing the overall performance.
 
-Additionally, each operation may need to store its result in a new data structure, which is especially true for languages where values are immutable by default. Allocating temporary data structures to store the intermediate results\index{intermediate value} leads to further memory and runtime penalties.
+Additionally, each operation may need to store its result in a new data structure, which is especially true for languages where values are immutable by default. Allocating temporary data structures to store the intermediate results\index{intermediate value}{} leads to further memory and runtime penalties.
 
 Optimising out the superfluous data structure traversals and allocations is collectively referred to as \name{Loop Fusion}. It allows to transform a program expressed in terms of high level operations into a program that would be comparable to a handwritten one in operation and speed.
 
 In this essay I explore the problem of \name{loop fusion} in the context of purely functional data parallel programs. I shall begin by introducing the reader to the context of my work. I outline the problem finding a solution to which, has motivated my work in the prior years.
 
-
 \clearpage
+
+
 \section{Motivation}
 
 Suppose we have the following computation to perform:
@@ -39,56 +40,56 @@ Suppose we have the following computation to perform:
 sum (zipWith (*) xs ys)
 \end{hscode}
 
+A person familiar with the fundamentals of functional programming is likely to spot the computation of the dot product of two vectors in this snippet of \Haskell code. Indeed, the @zipWith@ list combinator\icomb{} will element-wise multiply the two vectors @xs@ and @ys@. Quite expectedly the @sum@ combinator will sum the elements of the resulting vector into a scalar value yielding the dot product of @xs@ and @ys@.
 
-A person familiar with the fundamentals of functional programming is likely to spot the computation of the dot product of two vectors in this snippet of Haskell code. Indeed, the $zipWith$ list combinator conventionally creates a list, whose elements are calculated by applying some given function to the elements of the input lists occurring at the same positions in both lists. In the above case {}``zipping'' with the product as the function will element-wise multiply the two vectors $xs$ and $ys$. Quite expectedly the $sum$ combinator will sum the elements of the resulting vector into a scalar value, yielding the dot product of $xs$ and $ys$.
+This one-liner was an attempt to develop the motivation for the high-level view on numeric computations. It may seem reasonable to replace the lists with arrays and reimplement the same high-level interface in terms of traditional arrays to avoid random memory access penalties as in the case of lists.
 
-This one-liner was an attempt to develop the motivation for the high-level view on numeric computations. It may seem reasonable to replace the lists with arrays and reimplement the same high-level interface in terms of traditional arrays to avoid random memory access penalties as in the case of lists. Providing an instantly familiar interface without compromising performance has been one of the goals of the Data Parallel Haskell (DPH) project \cite{PLKC08,CLP+07}. The work in this thesis has been carried out in the context of this project. It will be discussed in more detail in section \ref{sec:DPH}.
+Providing an instantly familiar interface without compromising performance has been one of the goals of the \name{Data Parallel Haskell (DPH)}\idph{} project \cite{PLKC08,CLP+07}. The work described in this essay has been carried out in the context of this project. It will be discussed in more detail in section \ref{sec:DPH}.
 
-However, even if we replaced the lists with arrays and gave efficient implementations to $sum$ and $zipWith$, the resulting algorithm is still likely to be slower than on written by hand. The $zipWith$ combinator produces an intermediate array containing the element-wise product of the two input vectors. It is immediately consumed by $sum$, yielding the final (scalar) value. Thus the algorithm performs two traversals and allocates another array of the size of the input arrays. The same algorithm could be expressed by the following function in C:
+However, even if we replaced the lists with arrays and gave efficient implementations to @sum@ and @zipWith@, the resulting algorithm is still likely to be slower than one written by hand in a language such as \C. The @zipWith@ combinator \*produces* an \*intermediate array*\iintermediate{} containing the element-wise product of the two input vectors. It is immediately \*consumed* by @sum@, yielding the final (scalar) value. Thus the algorithm performs two traversals and allocates another array of the size of the input arrays. The same algorithm could be expressed by the following function in C:
 
-\begin{lstlisting}[basicstyle={\ttfamily},language=C,tabsize=4]
+\begin{ccode}
 double dotProduct (double xs[], double ys[], int len) {
-	int i;
+	// zipWith
+	double* temp = malloc(len * sizeof(double));
+	for(int i = 0; i < len; i++)
+		temp[i] = xs[i] * ys[i];
 
-	double* temp = malloc(sizeof(double)*len);
-	for(i=0; i<len; ++i)
-		temp[i] = xs[i]*ys[i];
-
+	// sum
 	double result = 0;
-	for(i=0; i<len; ++i)
+	for(int i = 0; i < len; i++)
 		result += temp[i];
 
 	return result;
 }
-\end{lstlisting}
-
+\end{ccode}
 
 It should be obvious that the same result could be achieved by using a single loop computing the final result incrementally without allocating a temporary array as in the following:
 
-\begin{lstlisting}[basicstyle={\ttfamily},language=C,tabsize=4]
+\begin{ccode}
 double dotProduct (int[] xs, int[] ys, int len) {
 	double result = 0;
-	int i;
-	for(i=0; i<len; ++i)
-		result += xs[i]*ys[i];
+	for(int i = 0; i < len; i++)
+		result += xs[i] * ys[i];
 	return result;
 }
-\end{lstlisting}
+\end{ccode}
 
 
 The process of finding and exploiting the opportunities for squashing multiple loops into one is referred to as loop fusion. Another term for this commonly encountered in literature is deforestation, first coined by Philip Wadler in \cite{Wad90}. In reality the code in the the above examples has been optimised in two ways. Just fusing the two loops together on the basis that they iterate over the same range would have produced:
 
-\begin{lstlisting}[basicstyle={\ttfamily},language=C,tabsize=4]
-for(i=0; i<len; ++i) {
-	temp[i] = xs[i]*ys[i];
+\begin{ccode}
+double* temp = malloc(len * sizeof(double));
+for(i = 0; i < len; i++) {
+	temp[i] = xs[i] * ys[i];
 	result += temp[i];
 }
-\end{lstlisting}
+\end{ccode}
 
 
 which does not completely bypass the extra allocation. The optimisation that gets rid of the unnecessary temporary arrays and is commonly applied when fusing loops, is called scalarisation or, more generally, array contraction. During this optimisation we attempt to remove a dimension from the array. In this particular case we contracted a one dimensional array to a scalar, hence scalarisation. However, in the examples with arrays of higher dimensions the dimension could just be reduced, and not eliminated entirely.
 
-The work described in this thesis is oriented towards complementing the fusion mechanisms\footnote{While there is the distinction between loop fusion and array contraction, in many cases throughout this document the term $fusion$ will be used to describe both optimisations applied together.} currently employed in DPH. In the remainder of this chapter we will introduce the reader to the Data Parallel Haskell (DPH) project and similar systems, progressing to the description of some of the most common fusion systems.
+The work described in this thesis is oriented towards complementing the fusion mechanisms\footnote{While there is the distinction between loop fusion and array contraction, in many cases throughout this document the term \*fusion* will be used to describe both optimisations applied together.} currently employed in DPH. In the remainder of this chapter we will introduce the reader to the Data Parallel Haskell (DPH) project and similar systems, progressing to the description of some of the most common fusion systems.
 
 
 \clearpage
@@ -100,33 +101,29 @@ The work described in this thesis is oriented towards complementing the fusion m
 \begin{itemize}
 \item Nested data parallelism\index{data parallelism: nested}{} is a type of SPMD\index{data parallelism: SPMD (single program, multiple data)}{} parallelism (single program, multiple data) which operates on \*irregular*\index{data structure: irregular} data structures. Two of the examples of irregular data structures are \*sparse matrices*\index{data structure: sparse matrix} and \*unbalanced trees*\index{data structure: unbalanced tree}
 
-\item An active library may be defined as one which takes active part in the optimisation and the compilation of its client code. Indeed, DPH guides the compilation process in many ways including choosing the data representation \cite{CDL09} and applying rewrite rules \cite{PTH01} to improve performance. In fact, a major part of DPH -- the vectoriser -- is implemented in the Glasgow Haskell Compiler\footnote{Glasgow Haskell Compiler: http://www.haskell.org/ghc} (GHC).
+\item An active library may be defined as one which takes active part in the optimisation and the compilation of its client code. Indeed, \DPH guides the compilation process in many ways including choosing the data representation \cite{CDL09} and applying rewrite rules \cite{PTH01} to improve performance. In fact, a major part of \DPH -- the vectoriser -- is implemented in the \name{Glasgow Haskell Compiler}\footnote{Glasgow Haskell Compiler: http://www.haskell.org/ghc} (GHC).
 
 \end{itemize}
-In essence, DPH reimplements the familiar list interface in terms of seamlessly parallelised arrays. Figure \ref{fig:Lit:DPH-interface-functions} lists some of the most important functions in the DPH interface. Since DPH has language support, the bracket notation for parallel arrays closely resembles that for Haskell lists: \lstinline[basicstyle={\ttfamily}]![:a:]! denotes a parallel array of type \lstinline[basicstyle={\ttfamily}]!a!. The counterpart of Haskell's list comprehensions is also present and is called \emph{parallel array comprehensions.}
+In essence, \DPH reimplements the familiar list interface in terms of seamlessly parallelised arrays. Figure \ref{fig:DPH-interface-functions} lists some of the most important functions in the \DPH interface. Since \DPH has language support, the bracket notation for parallel arrays closely resembles that for \Haskell lists: @[:a:]@ denotes a parallel array of type @a@. The counterpart of \Haskell's list comprehensions is also present and is called \emph{parallel array comprehensions.}
 
-\begin{figure}
-\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell,tabsize=4]
-(!:)		:: [:a:] -> Int -> a
-sliceP		:: [:a:] -> (Int,Int) -> [:a:]
-replicateP	:: Int -> a -> [:a:]
-mapP		:: (a->b) -> [:a:] -> [:b:]
-zipP		:: [:a:] -> [:b:] -> [:(a,b):]
-zipWithP	:: (a->b->c) -> [:a:] -> [:b:] -> [:c:]
-filterP		:: (a->Bool) -> [:a:] -> [:a:]
+\begin{hscode2}{Type signatures for parallel array operations. \label{fig:DPH-interface-functions}}
+(!:)         :: [:a:] -> Int -> a
+sliceP       :: [:a:] -> (Int,Int) -> [:a:]
+replicateP   :: Int -> a -> [:a:]
+mapP         :: (a -> b) -> [:a:] -> [:b:]
+zipP         :: [:a:] -> [:b:] -> [:(a,b):]
+zipWithP     :: (a -> b -> c) -> [:a:] -> [:b:] -> [:c:]
+filterP      :: (a -> Bool) -> [:a:] -> [:a:]
 
-concatP		:: [:[:a:]:] -> [:a:]
-concatMapP	:: (a -> [:b:]) -> [:a:] -> [:b:]
-unconcatMapP:: [:[:a:]:] -> [:b:] -> [:[:b:]:]
-transposeP	:: [:[:a:]:] -> [:[:a:]:]
-expandP		:: [:[:a:]:] -> [:b:] -> [:b:]
+concatP      :: [:[:a:]:] -> [:a:]
+concatMapP   :: (a -> [:b:]) -> [:a:] -> [:b:]
+unconcatMapP :: [:[:a:]:] -> [:b:] -> [:[:b:]:]
+transposeP   :: [:[:a:]:] -> [:[:a:]:]
+expandP      :: [:[:a:]:] -> [:b:] -> [:b:]
 
-combineP	:: [:Bool:] -> [:a:] -> [:a:] -> [:a:]
-splitP		:: [:Bool:] -> [:a:] -> ([:a:], [:a:])
-\end{lstlisting}
-
-\caption{\label{fig:Lit:DPH-interface-functions}{Type signatures for parallel array operations.}}
-\end{figure}
+combineP     :: [:Bool:] -> [:a:] -> [:a:] -> [:a:]
+splitP       :: [:Bool:] -> [:a:] -> ([:a:], [:a:])
+\end{hscode2}
 
 
 Collective operations on parallel arrays are executed in parallel when hardware supports it. Currently, a backend supporting Haskell threads \cite{Jones08atutorial} exists. Due to the flexible design of the library, support for other parallel architectures may be added in the future. By design the computation is split evenly across processing elements even for highly irregular parallel programs. The remainder of the section will outline the library structure, cover the basics of vectorisation and describe the current stages of fusion in DPH.
@@ -150,7 +147,7 @@ data Tree = Tree Int [:Tree:]
 \end{lstlisting}
 
 
-A sample tree is given in Figure \ref{fig:Lit:Tree}. Just by looking at the top level of the tree it would not be possible to know the branching. What vectorisation does is it translates user programs that use nested data parallelism to those using flat data parallelism. Figure \ref{fig:Lit:Tree} presents the same tree with each of its levels placed into a parallel array. At the implementation level it is flattened even further by storing a flat data array with all the node values and a \emph{segment descriptor} defining the partitioning to recreate the original nesting. Thus, a parallel array with elements
+A sample tree is given in Figure \ref{fig:Lit:Tree}. Just by looking at the top level of the tree it would not be possible to know the branching. What vectorisation does is it translates user programs that use nested data parallelism to those using flat data parallelism. Figure \ref{fig:Lit:Tree} presents the same tree with each of its levels placed into a parallel array. At the implementation level it is flattened even further by storing a flat data array with all the node values and a \*segment descriptor*\isegd{} defining the partitioning to recreate the original nesting. Thus, a parallel array with elements
 
 \begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
 [: [:5:],[::],[:4,2:],[::],[:3:],[:17:],[::],[:11:] :]
@@ -187,10 +184,10 @@ TODO: give an example of sum types and their representation in parrs
 
 We have discussed the way the data is represented in DPH but said nothing about how the vectoriser adapts the functions to fit the new data representation. We do not need to delve into too much detail here, since by the time we get to the backend of the library (where the fusion takes place) we are no longer interested in how it's done. One important intuition to develop can be illustrated by the following:
 
-\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+\begin{hscode}
 f :: Float -> Float
 f x = x*x + 1
-\end{lstlisting}
+\end{hscode}
 
 
 For every such function the vectoriser generates its \emph{lifted }version \texttt{f\textasciicircum{}} thus:

@@ -37,6 +37,7 @@
 \usepackage{fixltx2e} % \textsubscript{} etc.
 \usepackage{tcolorbox} % for rounded boxes around label names
 \usepackage[tikz]{bclogo} % for highlighting important info in boxes
+%\usepackage{parskip} % apparently fixes skips between paragraphs
 
 %% Packages included in this distribution
 \usepackage{subsections}
@@ -95,6 +96,7 @@
 \newcommand\C{\name{C}}
 \newcommand\Haskell{\name{Haskell}}
 \newcommand\GHC{\name{GHC}}
+\newcommand\DPH{\name{DPH}}
 \newcommand\LLVM{\name{LLVM}}
 
 
@@ -152,7 +154,7 @@
     frame=none,
     rulecolor={\color[gray]{0.7}},
     numbers=none,
-    basicstyle=\ttfamily,
+    basicstyle=\singlespacing\ttfamily,
     numberstyle=\color{Gray}\tiny\it,
     commentstyle=\color{MidnightBlue}\it,
     stringstyle=\color{Maroon},
@@ -161,9 +163,9 @@
     keywordstyle=[3]\color{Bittersweet},
     keywordstyle=[4]\color{RoyalPurple},
     captionpos=b,
-%   aboveskip=2\medskipamount,          % this overrides \singlespacing
-    xleftmargin=0.5\parindent,
-    xrightmargin=0.5\parindent,
+%   aboveskip=2\medskipamount,          % this overrides \singlespacing ?
+%   xleftmargin=0.5\parindent,
+%   xrightmargin=0.5\parindent,
     flexiblecolumns=false,
 %   basewidth={0.5em,0.45em},           % default {0.6,0.45}
     escapechar={\%},
@@ -262,40 +264,58 @@
 %% lstlisting environments for floating and fixed Haskell, C and Loop code
 
 %% C code block without a figure box
-\lstnewenvironment
-  {ccode}[1]
-  {\singlespacing\lstset{basicstyle={\ttfamily}, language=C, tabsize=4, #1}}
-  {}
+\lstnewenvironment{ccode}
+    {
+        \minipage{\linewidth}
+        \lstset{
+            basicstyle=\singlespacing\ttfamily,
+            language=C, 
+            tabsize=4
+        }
+    }
+    {
+        \endminipage
+    }
 
 %% C code block with a figure box
-\lstnewenvironment
-  {ccode2}[2]
-  {\singlespacing\lstset{basicstyle={\ttfamily}, language=C, tabsize=4, label=#1, caption=#2}}
-  {}
+\lstnewenvironment{ccode2}[1]
+    {
+        \lstset{
+            basicstyle=\singlespacing\ttfamily,
+            language=C,
+            tabsize=4,
+            caption=#1
+        }
+    }
+    {}
 
 %% Haskell code block without a figure box
-\lstnewenvironment
-  {hscode}
-  {\singlespacing\lstset{style=haskell}}
-  {}
+\lstnewenvironment{hscode}
+    {
+        \minipage{\linewidth}
+        \lstset{style=haskell}
+    }
+    {
+        \endminipage
+    }
 
 %% Haskell code block with a figure box
-\lstnewenvironment
-  {hscode2}[1]
-  {\singlespacing\lstset{style=haskell, caption=#1}}
-  {}
+\lstnewenvironment{hscode2}[1]
+    {\lstset{style=haskell, caption=#1}}
+    {}
 
 %% Loop code block without a figure box
-\lstnewenvironment
-  {loopcode}
-  {\singlespacing\lstset{style=haskell}}
-  {}
+\lstnewenvironment{loopcode}
+    {
+        \minipage{\linewidth}
+        \lstset{style=haskell}
+    }
+    {}
 
 %% Loop code block with a figure box
-\lstnewenvironment
-  {loopcode2}[2]
-  {\singlespacing\lstset{style=haskell, float=htpb, label=#1, caption=#2}}
-  {}
+\lstnewenvironment{loopcode2}[2]
+    {\lstset{style=haskell, float=htpb, label=#1, caption=#2}}
+    {}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -377,6 +397,11 @@
 \providecommand{\ifusion}[1][]{\index{fusion!#1}}
 \providecommand{\ilanguage}[1][]{\index{language!#1}}
 \providecommand{\icollop}[1][]{\index{collective operation!#1}}
+\providecommand{\isegd}[1][]{\index{segment descriptor!#1}}
+\providecommand{\ivect}[1][]{\index{vectoriser, vectorisation!#1}}
+\providecommand{\ivect}[1][]{\index{vectoriser, vectorisation!#1}}
+\providecommand{\icomb}[1][]{\index{combinator!#1}}
+\providecommand{\iintermediate}[1][]{\index{intermediate value!#1}}
 
 
 \index{DSL|see {language: domain-specific}}
