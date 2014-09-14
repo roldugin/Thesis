@@ -25,7 +25,7 @@ On the other hand using a straight-forward implementation of a high level librar
 
 Additionally, each operation may need to store its result in a new data structure, which is especially true for languages where values are immutable by default. Allocating temporary data structures to store the intermediate results\index{intermediate value}{} leads to further memory and runtime penalties.
 
-Optimising out the superfluous data structure traversals and allocations is collectively referred to as \name{Loop Fusion}. It allows to transform a program expressed in terms of high level operations into a program that would be comparable to a handwritten one in operation and speed.
+Optimising out the superfluous data structure traversals and allocations is collectively referred to as \name{Loop Fusion}\ifusion{}. It allows to transform a program expressed in terms of high level operations into a program that would be comparable to a handwritten one in operation and speed.
 
 In this essay I explore the problem of \name{loop fusion} in the context of purely functional data parallel programs. I shall begin by introducing the reader to the context of my work. I outline the problem finding a solution to which, has motivated my work in the prior years.
 
@@ -48,6 +48,7 @@ Providing an instantly familiar interface without compromising performance has b
 
 However, even if we replaced the lists with arrays and gave efficient implementations to @sum@ and @zipWith@, the resulting algorithm is still likely to be slower than one written by hand in a language such as \C. The @zipWith@ combinator \*produces* an \*intermediate array*\iintermediate{} containing the element-wise product of the two input vectors. It is immediately \*consumed* by @sum@, yielding the final (scalar) value. Thus the algorithm performs two traversals and allocates another array of the size of the input arrays. The same algorithm could be expressed by the following function in C:
 
+
 \begin{ccode}
 double dotProduct (double xs[], double ys[], int len) {
 	// zipWith
@@ -64,19 +65,29 @@ double dotProduct (double xs[], double ys[], int len) {
 }
 \end{ccode}
 
-It should be obvious that the same result could be achieved by using a single loop computing the final result incrementally without allocating a temporary array as in the following:
+
+Clearly the same result could be achieved by using a single loop computing the final result incrementally without allocating a temporary array as in the following:
+
 
 \begin{ccode}
 double dotProduct (int[] xs, int[] ys, int len) {
 	double result = 0;
 	for(int i = 0; i < len; i++)
-		result += xs[i] * ys[i];
+	    double temp = xs[i] * ys[i];
+		result += temp;
 	return result;
 }
 \end{ccode}
 
 
-The process of finding and exploiting the opportunities for squashing multiple loops into one is referred to as loop fusion. Another term for this commonly encountered in literature is deforestation, first coined by Philip Wadler in \cite{Wad90}. In reality the code in the the above examples has been optimised in two ways. Just fusing the two loops together on the basis that they iterate over the same range would have produced:
+\begin{bluebox}
+The process of finding and exploiting the opportunities for squashing multiple loops into one is referred to as \textbf{loop fusion}\ifusion{}.
+\end{bluebox}
+
+Another term for this commonly encountered in literature is \textbf{deforestation}, first coined by Philip Wadler in \cite{Wad90}.
+
+In reality the \C code in the the above example has been optimised in two ways. Just fusing the two loops together on the basis that they iterate over the same \*range* of indices would have produced the following code:
+
 
 \begin{ccode}
 double* temp = malloc(len * sizeof(double));
@@ -87,8 +98,27 @@ for(i = 0; i < len; i++) {
 \end{ccode}
 
 
-which does not completely bypass the extra allocation. The optimisation that gets rid of the unnecessary temporary arrays and is commonly applied when fusing loops, is called scalarisation or, more generally, array contraction. During this optimisation we attempt to remove a dimension from the array. In this particular case we contracted a one dimensional array to a scalar, hence scalarisation. However, in the examples with arrays of higher dimensions the dimension could just be reduced, and not eliminated entirely.
+This does not completely bypass the allocation of an intermediate array\iintermediate{}. Thus, in order to get to the fully optimised code we have seen above, we have essentially performed two optimisations:
 
+\begin{description}
+
+\item[Loop Fusion] \hfill \\
+
+We have detected that two loops operate over the same \*range* of indices array and merged it into one single loop.
+
+\begin{bluebox}
+We say that the two loops have the same \*rate*.
+\end{bluebox}
+
+\item[Array Contraction / Scalarisation] \hfill \\
+
+We have detected that the second loop operates on the array that was produced by the first loop. This has allowed us to remove the need for the intermediate array. Instead the computation of the second loop is said to consume the first loop's in a scalar.
+
+
+
+
+The optimisation that removes the need for the unnecessary temporary arrays and is commonly applied when fusing loops, is called \textbf{scalarisation}\index{scalarisation}{} or, more generally, \textbf{array contraction}\index{array contraction}{}. During this optimisation we attempt to remove a \*dimension* from the array. In this particular case we contracted a one dimensional array to a scalar, hence \*scalarisation*. However, in the examples with arrays of higher dimensions the dimension could just be reduced, and not eliminated entirely.
+\end{description}
 The work described in this thesis is oriented towards complementing the fusion mechanisms\footnote{While there is the distinction between loop fusion and array contraction, in many cases throughout this document the term \*fusion* will be used to describe both optimisations applied together.} currently employed in DPH. In the remainder of this chapter we will introduce the reader to the Data Parallel Haskell (DPH) project and similar systems, progressing to the description of some of the most common fusion systems.
 
 

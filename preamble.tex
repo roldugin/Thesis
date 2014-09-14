@@ -37,7 +37,7 @@
 \usepackage{fixltx2e} % \textsubscript{} etc.
 \usepackage{tcolorbox} % for rounded boxes around label names
 \usepackage[tikz]{bclogo} % for highlighting important info in boxes
-%\usepackage{parskip} % apparently fixes skips between paragraphs
+
 
 %% Packages included in this distribution
 \usepackage{subsections}
@@ -326,12 +326,12 @@
 \def\$#1${$\mathit{#1}$}
 
 %% Also \[body] for specifying loop block labels.
-\definecolor{labelcolor}{rgb}{0.122, 0.435, 0.698}
+\definecolor{someblue}{rgb}{0.122, 0.435, 0.698}
 
 \newtcbox{\roundedbox}{
   nobeforeafter,
-  colframe=labelcolor!50!white,
-  colback=labelcolor!10!white,
+  colframe=someblue!50!white,
+  colback=someblue!10!white,
   boxrule=0.5pt,
   arc=4pt,
   boxsep=0pt,
@@ -345,7 +345,7 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Other
+%% Emphasising stuff
 
 % Important info
 \newcommand\thesis\emph
@@ -357,16 +357,28 @@
 \newenvironment{important}[1]
 % before
 {
-\begin{bclogo}[
-  couleur=bgblue,
-  arrondi=0,
-  logo={\ }, %\bcbombe,
-  barre=none,
-  noborder=true]{#1}
+    \begin{bclogo}[
+        couleur=bgblue,
+        arrondi=0,
+        logo={\ }, %\bcbombe,
+        barre=none,
+        noborder=true]{#1}
 }
 % after
 {
-\end{bclogo}
+    \end{bclogo}
+}
+
+\newenvironment{bluebox}{%
+    \noindent
+    \adjustbox{
+        innerenv={varwidth}[c]{\linewidth},
+        margin=\fboxsep+.15cm \fboxsep+.2cm,
+        bgcolor=someblue!20!white,
+        center}
+    \bgroup
+}{%
+    \egroup
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -394,7 +406,7 @@
 \providecommand{\irwr}[1][]{\index{rewrite rules!#1}}
 \providecommand{\ighc}[1][]{\index{GHC (Glasgow Haskell Compiler)!#1}}
 \providecommand{\iloop}[1][]{\index{Loop EDSL!#1}}
-\providecommand{\ifusion}[1][]{\index{fusion!#1}}
+\providecommand{\ifusion}[1][]{\index{fusion, loop fusion, array fusion!#1}}
 \providecommand{\ilanguage}[1][]{\index{language!#1}}
 \providecommand{\icollop}[1][]{\index{collective operation!#1}}
 \providecommand{\isegd}[1][]{\index{segment descriptor!#1}}
@@ -402,10 +414,11 @@
 \providecommand{\ivect}[1][]{\index{vectoriser, vectorisation!#1}}
 \providecommand{\icomb}[1][]{\index{combinator!#1}}
 \providecommand{\iintermediate}[1][]{\index{intermediate value!#1}}
-
+\providecommand{\irate}[1][]{\index{rate!#1}}
 
 \index{DSL|see {language: domain-specific}}
 \index{EDSL|see {language: embedded}}
+\index{deforestation|see {fusion}}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
