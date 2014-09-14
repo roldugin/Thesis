@@ -32,7 +32,7 @@ In this essay I explore the problem of \name{loop fusion} in the context of pure
 \clearpage
 
 
-\section{Motivation}
+\section{What is Array Fusion?}
 
 Suppose we have the following computation to perform:
 
@@ -46,7 +46,9 @@ This one-liner was an attempt to develop the motivation for the high-level view 
 
 Providing an instantly familiar interface without compromising performance has been one of the goals of the \name{Data Parallel Haskell (DPH)}\idph{} project \cite{PLKC08,CLP+07}. The work described in this essay has been carried out in the context of this project. It will be discussed in more detail in section \ref{sec:DPH}.
 
-However, even if we replaced the lists with arrays and gave efficient implementations to @sum@ and @zipWith@, the resulting algorithm is still likely to be slower than one written by hand in a language such as \C. The @zipWith@ combinator \*produces* an \*intermediate array*\iintermediate{} containing the element-wise product of the two input vectors. It is immediately \*consumed* by @sum@, yielding the final (scalar) value. Thus the algorithm performs two traversals and allocates another array of the size of the input arrays. The same algorithm could be expressed by the following function in C:
+However, even if we replaced the lists with arrays and gave efficient implementations to @sum@ and @zipWith@, the resulting algorithm is still likely to be slower than one written by hand in a language such as \C. The @zipWith@ combinator \*produces* an \*intermediate array*\iintermediate{} containing the element-wise product of the two input vectors. It is immediately \*consumed* by @sum@, yielding the final (scalar) value. Thus the algorithm performs two traversals and allocates another array of the size of the input arrays.
+
+To illustrate the benefit of Array Fusion let us turn to the implementation of same algorithm expressed in \C:
 
 
 \begin{ccode}
@@ -66,31 +68,12 @@ double dotProduct (double xs[], double ys[], int len) {
 \end{ccode}
 
 
-Clearly the same result could be achieved by using a single loop computing the final result incrementally without allocating a temporary array as in the following:
-
-
-\begin{ccode}
-double dotProduct (int[] xs, int[] ys, int len) {
-	double result = 0;
-	for(int i = 0; i < len; i++)
-	    double temp = xs[i] * ys[i];
-		result += temp;
-	return result;
-}
-\end{ccode}
-
-
-\begin{bluebox}
-The process of finding and exploiting the opportunities for squashing multiple loops into one is referred to as \textbf{loop fusion}\ifusion{}.
-\end{bluebox}
-
-Another term for this commonly encountered in literature is \textbf{deforestation}, first coined by Philip Wadler in \cite{Wad90}.
-
-In reality the \C code in the the above example has been optimised in two ways. Just fusing the two loops together on the basis that they iterate over the same \*range* of indices would have produced the following code:
+We immediately notice that both loops iterate over the same \*range* of indices and we could hence perform it as one loop. The two loops are said to have the same \*rate*\irate{} (the term used more recently in the context of loop fusion in \Haskell \cite{BenLippmeier:2014jc}).
 
 
 \begin{ccode}
 double* temp = malloc(len * sizeof(double));
+double result = 0;
 for(i = 0; i < len; i++) {
 	temp[i] = xs[i] * ys[i];
 	result += temp[i];
@@ -98,33 +81,42 @@ for(i = 0; i < len; i++) {
 \end{ccode}
 
 
-This does not completely bypass the allocation of an intermediate array\iintermediate{}. Thus, in order to get to the fully optimised code we have seen above, we have essentially performed two optimisations:
-
-\begin{description}
-
-\item[Loop Fusion] \hfill \\
-
-We have detected that two loops operate over the same \*range* of indices array and merged it into one single loop.
-
 \begin{bluebox}
-We say that the two loops have the same \*rate*.
+The process of finding and exploiting the opportunities for merging multiple loops into one is referred to as \term{loop fusion}\ifusion{}.
 \end{bluebox}
 
-\item[Array Contraction / Scalarisation] \hfill \\
 
-We have detected that the second loop operates on the array that was produced by the first loop. This has allowed us to remove the need for the intermediate array. Instead the computation of the second loop is said to consume the first loop's in a scalar.
-
+However, this does not completely bypass the allocation of an intermediate array\iintermediate{}. Clearly, the intermediate array is redundant and the intermediate value @temp@ could just be a \*scalar* as in the following:
 
 
+\begin{ccode}
+double temp; // temp has become scalar
+double result = 0;
+for(int i = 0; i < len; i++) {
+	temp = xs[i] * ys[i];
+	result += temp;
+}
+\end{ccode}
 
-The optimisation that removes the need for the unnecessary temporary arrays and is commonly applied when fusing loops, is called \textbf{scalarisation}\index{scalarisation}{} or, more generally, \textbf{array contraction}\index{array contraction}{}. During this optimisation we attempt to remove a \*dimension* from the array. In this particular case we contracted a one dimensional array to a scalar, hence \*scalarisation*. However, in the examples with arrays of higher dimensions the dimension could just be reduced, and not eliminated entirely.
-\end{description}
-The work described in this thesis is oriented towards complementing the fusion mechanisms\footnote{While there is the distinction between loop fusion and array contraction, in many cases throughout this document the term \*fusion* will be used to describe both optimisations applied together.} currently employed in DPH. In the remainder of this chapter we will introduce the reader to the Data Parallel Haskell (DPH) project and similar systems, progressing to the description of some of the most common fusion systems.
 
+\begin{bluebox}
+The optimisation that removes the need for temporary arrays by replacing them with scalars is called \term{scalarisation}\index{scalarisation}{}.
+\end{bluebox}
+
+
+It is a special case of \term{array contraction}\index{array contraction}{}. Array contraction optimisation attempts to remove a \*dimension* from the array. In this particular case we contracted a one dimensional array to a scalar, hence \*scalarisation*. However, in the examples with arrays of higher dimensions the dimension could just be reduced, and not eliminated entirely. We will see examples of that in the upcoming chapters when we discuss \*segmented array combinators*\isegmented. This concept is taken even further in multi-dimensional array systems such as \name{Repa} \cite{KCL+10} and \name{Accelerate} \cite{CKL+11}.
+
+\begin{bluebox}
+\term{Loop Fusion} and \term{Array Contraction} optimisation are collectively referred to as \term{Array Fusion}.
+\end{bluebox}
+
+Another term for this commonly encountered in literature is \term{deforestation}\index{deforestation}{}, first coined by Philip Wadler in \cite{Wad90}.
+
+The work described in this thesis is aimed at introducing a new fusion mechanism in \name{Data Parallel Haskell (DPH)}\idph{} framework. In following section I will introduce the reader to the \DPH project. I will then describe some of the most common fusion systems and identify their shortcomings which motivated the search for a fresh approach.
 
 \clearpage
 
-\section{Context: Data Parallel Haskell}
+\section{Data Parallel Haskell}
 \label{sec:DPH}
 
 \name{Data Parallel Haskell (DPH)}\idph{} is an \*active library* for the \Haskell programming language, providing high level access to \*nested data parallelism*. The above definition may seem complicated at first and should probably be backed up by a set of explanations:
@@ -260,6 +252,9 @@ levels:
 Unfortunately, the common point of failure of all of the above fusion types is that they rely on the consecutive operations being inlined and always following each other with nothing in between. This is a necessary condition for the rewrite rules to fire.
 
 
-\maybebib
+\ifx\CompilingAll\undefined
+    \bibliographystyle{is-alpha}
+    \bibliography{bib}
+\fi
 
 \end{document}
