@@ -44,9 +44,20 @@
 
 \lstset{language=Haskell, columns=fixed, basewidth=.5em}
 
+% 1.5 Line spacing between lines
 \renewcommand{\baselinestretch}{1.5}
 
 \makeatletter
+
+% -1 part
+%  0 chapter
+%  1 section
+%  2 subsection
+%  3 subsubsection
+%  4 subsubsubsection
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
 

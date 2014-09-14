@@ -129,7 +129,7 @@ The work described in this thesis is aimed at introducing a new fusion mechanism
 
 In a nested data parallel program parallel computations can call further data parallel computations. For example when traversing an unbalanced tree each node may process each of its children in parallel. Without statically knowing the branching of the tree, it may be difficult to adequately parallelise the process. \DPH offers an elegant solution through its vectorisation process which will be discussed in Section \ref{sec:Vectorisation}.
 
-\DPH takes an active part in the optimisation and the compilation of its client code. It guides the compilation process in many ways including vectorisation \cite{PLKC08}, choosing the optimal data representation \cite{CDL09} as well as applying fusion \cite{CLP+07} and rewrite rules \cite{PTH01} to improve performance. \todo{move to vect} A major part of \DPH -- the vectoriser -- is implemented in the \name{Glasgow Haskell Compiler}\footnote{Glasgow Haskell Compiler: http://www.haskell.org/ghc} (\GHC).
+\DPH takes an active part in the optimisation and the compilation of its client code. It guides the compilation process in many ways including vectorisation \cite{PLKC08}, choosing the optimal data representation \cite{CDL09} as well as applying fusion \cite{CLP+07} and rewrite rules \cite{PTH01} to improve performance.
 
 In essence \DPH reimplements the familiar list interface in terms of seamlessly parallelised arrays. Listing \ref{fig:DPH-interface} shows some of the most important functions in the \DPH interface. Since \DPH has language support, the bracket notation for parallel arrays closely resembles that for \Haskell lists: @[:a:]@ denotes a parallel array of type @a@, while @[:[:a:]:]@ is a nested parallel array. The counterpart of \Haskell's list comprehensions is also present and is called \*parallel array comprehensions*.
 
@@ -160,24 +160,37 @@ By design the computation is split evenly across processing elements even for hi
 
 
 
-
 \subsection{Vectorisation}
 \label{sec:Vectorisation}
+\ivect{}
 
-The main goal behind DPH was to allow the programmer to write parallel programs without worrying about scheduling, load balancing and low level optimisations. The work on DPH was originally inspired by Blelloch's pioneering work on NESL \cite{BCH+}, a research language designed specifically to explore the potential of the new approach to nested data parallelism.
+The principle idea behind \DPH was to allow the programmer write parallel programs without the additional effort of parallelising, scheduling, load balancing and low level optimisation.
+
+The work on \DPH was originally inspired by Blelloch's pioneering work on \name{NESL} \cite{BCH+}, a research language designed to explore the new approach to nested data parallelism.
+
+At the core of \DPH is the vectoriser which is implemented in the \name{Glasgow Haskell Compiler}\footnote{Glasgow Haskell Compiler: http://www.haskell.org/ghc} (\GHC).
+
+\begin{bluebox}
+\name{Vectoriser} transforms \term{nested} data parallelism to \term{flat} data parallelism by means of \term{flattening transform} on \*data* and \term{lifting transform} on \*functions*.
+\end{bluebox}
+
+The two transforms are described below:
+
+
+\subsubsection{Flattening transform (on data)}
 
 \begin{figure}
 \includegraphics[width=1\textwidth]{img/TreeRepr}
-
-\caption{\label{fig:Tree}{Value of type \code{[:Tree:]} and its vectorised representation. Empty subtrees are omitted from the conceptual representation.}}
+\caption{Value of type \code{[:Tree:]} and its vectorised representation. Empty subtrees are omitted from the conceptual representation.%
+\label{fig:Tree}}
 \end{figure}
 
 
-If we were to take a tree of an arbitrary shape and tried to apply some computation to its every node in parallel, a naive tree representation would have probably failed to provide us with enough clues on how to split the load between processing elements. Suppose we store an element of type \texttt{Int} and an array of subtrees at each node. Then the tree can be expressed as
+If we were to take a tree\index{data structure: tree}{} of an arbitrary shape and tried to apply some computation to its every node in parallel, a naive tree representation would have probably failed to provide us with enough clues on how to split the load between processing elements. Suppose we store an element of type \texttt{Int} and an array of subtrees at each node. Then the tree can be expressed as
 
-\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell,tabsize=4]
+\begin{hscode}
 data Tree = Tree Int [:Tree:]
-\end{lstlisting}
+\end{hscode}
 
 
 A sample tree is given in Figure \ref{fig:Tree}. Just by looking at the top level of the tree it would not be possible to know the branching. What vectorisation does is it translates user programs that use nested data parallelism to those using flat data parallelism. Figure \ref{fig:Tree} presents the same tree with each of its levels placed into a parallel array. At the implementation level it is flattened even further by storing a flat data array with all the node values and a \*segment descriptor*\isegd{} defining the partitioning to recreate the original nesting. Thus, a parallel array with elements $[: [:5:],[::],[:4,2:],[::],[:3:],[:17:],[::],[:11:] :]$
@@ -203,7 +216,8 @@ together with the segment descriptor containing the lengths and the starting ind
 
 
 
-\subsection{\label{sub:DPH-Data-Repr}Data Representation}
+\subsubsection{Data Representation}
+\label{sub:DPH-Data-Representation}
 
 Together with flattening, the vectoriser chooses the best representation for the data, e.g. for sum types and product types. \Haskell's product types, or the tuples of two of more heterogeneous elements, are allocated as boxed values on the heap. Storing an array of pointers to heap allocated values would have been a major hit on performance due to the costs of unboxing as well as loading the individual values from memory instead of fetching multiple at a time. Instead, an array of pairs \texttt{{[}:(a,b):{]}} is stored as a pair of arrays \texttt{({[}:a:{]},{[}:b:{]})}.
 
@@ -214,7 +228,7 @@ Similarly, the sum types, or the user defined ADT's, are stored as tuples of arr
 TODO: give an example of sum types and their representation in parrs
 \end{comment}
 
-
+\subsubsection{Lifting transform (on functions)}
 We have discussed the way the data is represented in DPH but said nothing about how the vectoriser adapts the functions to fit the new data representation. We do not need to delve into too much detail here, since by the time we get to the backend of the library (where the fusion takes place) we are no longer interested in how it's done. One important intuition to develop can be illustrated by the following:
 
 \begin{hscode}
