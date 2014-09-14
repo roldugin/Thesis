@@ -373,6 +373,7 @@ Lastly, there are two optional features that may be researched and possibly impl
 \item Sharing recovery and fusion preserving sharing. Normally, it is not possible in the purely functional context to refer to the same tree node from two other nodes to share computation between them. However turning the tree into a Directed Acyclic Graph (DAG) to enable sharing was found to be detrimental for performance and one of the performance bottlenecks in DPH (TODO ref latest paper). This problem has been researched in the context of Accelerate Domain Specific Language embedded in Haskell \cite{CKL+11} (TODO As well as a million other libs, sharing recovery is one of the two biggest problems in EDSL world). Fusion preserving sharing is a step up from sharing recovery enabling to continue running multiple computations in a fused manner (as opposed to first precomputing the shared portion of the DAG). This is unfortunately where Stream Fusion and other equational fusion frameworks fail. (TODO explain better)
 \end{enumerate}
 
-\maybebib
+
+\IfNotCompilingAll{\bibliography{bib}}
 
 \end{document}

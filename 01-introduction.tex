@@ -252,9 +252,7 @@ levels:
 Unfortunately, the common point of failure of all of the above fusion types is that they rely on the consecutive operations being inlined and always following each other with nothing in between. This is a necessary condition for the rewrite rules to fire.
 
 
-\ifx\CompilingAll\undefined
-    \bibliographystyle{is-alpha}
-    \bibliography{bib}
-\fi
+\IfNotCompilingAll{\bibliography{bib}}
+
 
 \end{document}

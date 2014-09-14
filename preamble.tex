@@ -428,22 +428,20 @@
 %% B i b l i o g r a p h y
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% How to use:
+% How to conditionally insert bibliography:
 % - In main.tex:
 %   - put \def\CompilingAll{} after \begin{document}
-%   - put \bib where appropriate
-% - In chapter files:
-%   - put \maybebib where appropriate
+%   - where appropriate put:
+%     \bibliography{bib}
+%
+% - In chapter files put:
+%   \IfNotCompilingAll{\bibliography{bib}}
+\bibliographystyle{ieeetr}
 
-\def\bib{
-  \bibliographystyle{is-alpha}
-  \bibliography{bib}
-}
-
-\def\maybebib{
-\ifx\CompilingAll\defined
-  \bib
-\fi
+\newcommand\IfNotCompilingAll[1]{
+    \ifx\CompilingAll\undefined
+        #1
+    \fi
 }
 
 \begin{document}

@@ -433,6 +433,7 @@ fd d = case fromDynamic d of
 \item Arguably the cleanest approach to unboxed mutable state. Removes the limitation outlined in () whereby the updated value of the assigned variable won't be available in the same block it's assigned. It would also make the internal compilation process cleaner. Right now it needs to generate a fresh variable name for the updated variable and keep track of the variables updated in the current block.
 \end{itemize}
 
-\maybebib
+
+\IfNotCompilingAll{\bibliography{bib}}
 
 \end{document}
