@@ -52,9 +52,10 @@ I will now present the translation of the \Loop EDSL to Haskell. The definition 
 \todo{Put the footnotetext on the same page where the grammar ends up}\footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings instead.}
 
 
-\begin{minipage}{\linewidth}
+%\begin{minipage}{\linewidth}
 \begin{hscode2}%
-      {\label{lst:7-toPercentile-hs}Generated Haskell code for $toPercentile$ function}
+      {Generated Haskell code for $toPercentile$ function %
+       \label{lst:7-toPercentile-hs}}
 entry :: [Dynamic] -> Dynamic
 entry [!arr_xs] = toDyn (run (fd arr_xs))
 
@@ -94,7 +95,7 @@ done_ys !arr_xs !arr_ys !len_xs !ix_xs !ix_ys
   = do !result <- sliceArray arr_ys ix_ys;
        return result
 \end{hscode2}
-\end{minipage}
+%\end{minipage}
 
 
 To demonstrate the workings of the code generator we will use the source program given in Figure \todo{ref}, it's internal representation in \Loop language in Figure \todo{ref} as well as the resulting \Haskell code in Figure \ref{lst:7-toPercentile-hs}.

@@ -9,7 +9,7 @@
 
 The past decade has seen a rise in development of increasingly sophisticated multi-core and multi-processor computer systems. From the early hyperthreaded solutions to the modern architectures comprising of a number of independent processing cores, the horsepower for demanding applications is now available even in the most affordable consumer systems. To offer a large amount of parallelism the high grade systems may have multiple multi-core processors, where each of the cores can run a number of hardware scheduled threads.
 
-While the hardware for running highly parallel computations is available and is improving at a high pace, the development of such applications targeting an arbitrary number of processing elements is often a challenging task. The problems involved are finding an appropriate parallel implementation of the task at hand, implementing it such that the computations are evenly distributed across processing elements and synchronising parallel computations when necessary. The latter two require a substantial programmer's intervention to get the algorithm running fast.
+While the hardware for running highly parallel computations is available and is improving at a high pace, the development of such applications targeting an arbitrary number of processing elements\ipe{}\footnote{A processing element is taken to be a processor, a processor's core, a hardware thread or a combination of the above.} is often a challenging task. The problems involved are finding an appropriate parallel implementation of the task at hand, implementing it such that the computations are evenly distributed across processing elements and synchronising parallel computations when necessary. The latter two require a substantial programmer's intervention to get the algorithm running fast.
 
 % It is not uncommon for the initial parallel implementation to run only slightly faster than the sequential version.
 
@@ -106,30 +106,35 @@ The optimisation that removes the need for temporary arrays by replacing them wi
 
 It is a special case of \term{array contraction}\index{array contraction}{}. Array contraction optimisation attempts to remove a \*dimension* from the array. In this particular case we contracted a one dimensional array to a scalar, hence \*scalarisation*. However, in the examples with arrays of higher dimensions the dimension could just be reduced, and not eliminated entirely. We will see examples of that in the upcoming chapters when we discuss \*segmented array combinators*\isegmented. This concept is taken even further in multi-dimensional array systems such as \name{Repa} \cite{KCL+10} and \name{Accelerate} \cite{CKL+11}.
 
+
 \begin{bluebox}
 \term{Loop Fusion} and \term{Array Contraction} optimisation are collectively referred to as \term{Array Fusion}.
 \end{bluebox}
 
+
 Another term for this commonly encountered in literature is \term{deforestation}\index{deforestation}{}, first coined by Philip Wadler in \cite{Wad90}.
 
 The work described in this thesis is aimed at introducing a new fusion mechanism in \name{Data Parallel Haskell (DPH)}\idph{} framework. In following section I will introduce the reader to the \DPH project. I will then describe some of the most common fusion systems and identify their shortcomings which motivated the search for a fresh approach.
+
+
 
 \clearpage
 
 \section{Data Parallel Haskell}
 \label{sec:DPH}
 
-\name{Data Parallel Haskell (DPH)}\idph{} is an \*active library* for the \Haskell programming language, providing high level access to \*nested data parallelism*. The above definition may seem complicated at first and should probably be backed up by a set of explanations:
+\name{Data Parallel Haskell (DPH)}\idph{} is a library for and an extension to the \Haskell programming language, providing high level access to \*nested data parallelism*. The above definition may seem complicated at first and should probably be backed up by a set of explanations:
 
-\begin{itemize}
-\item \term{Nested data parallelism}\index{data parallelism: nested}{} is a type of \name{SPMD}\index{data parallelism: SPMD (single program, multiple data)}{} parallelism (single program, multiple data) which operates on \*irregular*\index{data structure: irregular} data structures. Two examples of irregular data structures are \*sparse matrices*\index{data structure: sparse matrix} and \*unbalanced trees*\index{data structure: unbalanced tree}.
+\term{Nested data parallelism}\index{data parallelism: nested}{} is a type of \name{SPMD}\index{data parallelism: SPMD (single program, multiple data)}{} parallelism (single program, multiple data) which operates on \*irregular*\index{data structure: irregular} data structures. Two examples of irregular data structures are \*sparse matrices*\index{data structure: sparse matrix} and \*unbalanced trees*\index{data structure: unbalanced tree}.
 
-\item An \*active* library may be defined as one which takes an active part in the optimisation and the compilation of its client code. Indeed, \DPH guides the compilation process in many ways including vectorisation \cite{PLKC08}, choosing the most optimal data representation \cite{CDL09} as well as applying fusion \cite{CLP+07} and rewrite rules \cite{PTH01} to improve performance. In fact, a major part of \DPH -- the vectoriser -- is implemented in the \name{Glasgow Haskell Compiler}\footnote{Glasgow Haskell Compiler: http://www.haskell.org/ghc} (GHC).
+In a nested data parallel program parallel computations can call further data parallel computations. For example when traversing an unbalanced tree each node may process each of its children in parallel. Without statically knowing the branching of the tree, it may be difficult to adequately parallelise the process. \DPH offers an elegant solution through its vectorisation process which will be discussed in Section \ref{sec:Vectorisation}.
 
-\end{itemize}
-In essence, \DPH reimplements the familiar list interface in terms of seamlessly parallelised arrays. Figure \ref{fig:DPH-interface-functions} lists some of the most important functions in the \DPH interface. Since \DPH has language support, the bracket notation for parallel arrays closely resembles that for \Haskell lists: @[:a:]@ denotes a parallel array of type @a@. The counterpart of \Haskell's list comprehensions is also present and is called \emph{parallel array comprehensions.}
+\DPH takes an active part in the optimisation and the compilation of its client code. It guides the compilation process in many ways including vectorisation \cite{PLKC08}, choosing the optimal data representation \cite{CDL09} as well as applying fusion \cite{CLP+07} and rewrite rules \cite{PTH01} to improve performance. \todo{move to vect} A major part of \DPH -- the vectoriser -- is implemented in the \name{Glasgow Haskell Compiler}\footnote{Glasgow Haskell Compiler: http://www.haskell.org/ghc} (\GHC).
 
-\begin{hscode2}{Type signatures for parallel array operations. \label{fig:DPH-interface-functions}}
+In essence \DPH reimplements the familiar list interface in terms of seamlessly parallelised arrays. Listing \ref{fig:DPH-interface} shows some of the most important functions in the \DPH interface. Since \DPH has language support, the bracket notation for parallel arrays closely resembles that for \Haskell lists: @[:a:]@ denotes a parallel array of type @a@, while @[:[:a:]:]@ is a nested parallel array. The counterpart of \Haskell's list comprehensions is also present and is called \*parallel array comprehensions*.
+
+
+\begin{hscode2}{Type signatures for parallel array operations. \label{fig:DPH-interface}}
 (!:)         :: [:a:] -> Int -> a
 sliceP       :: [:a:] -> (Int,Int) -> [:a:]
 replicateP   :: Int -> a -> [:a:]
@@ -149,17 +154,22 @@ splitP       :: [:Bool:] -> [:a:] -> ([:a:], [:a:])
 \end{hscode2}
 
 
-Collective operations on parallel arrays are executed in parallel when hardware supports it. Currently, a backend supporting Haskell threads \cite{Jones08atutorial} exists. Due to the flexible design of the library, support for other parallel architectures may be added in the future. By design the computation is split evenly across processing elements even for highly irregular parallel programs. The remainder of the section will outline the library structure, cover the basics of vectorisation and describe the current stages of fusion in DPH.
+Collective operations on parallel arrays are executed in parallel when the hardware supports it. The framework is targeting shared memory architectures and currently uses \Haskell threads \cite{Jones08atutorial} to achieve parallelism.
+
+By design the computation is split evenly across processing elements even for highly irregular parallel programs. The next section will outline the library structure, cover the basics of vectorisation and describe the current stages of fusion in \DPH.
 
 
-\section{Vectorisation}
+
+
+\subsection{Vectorisation}
+\label{sec:Vectorisation}
 
 The main goal behind DPH was to allow the programmer to write parallel programs without worrying about scheduling, load balancing and low level optimisations. The work on DPH was originally inspired by Blelloch's pioneering work on NESL \cite{BCH+}, a research language designed specifically to explore the potential of the new approach to nested data parallelism.
 
 \begin{figure}
 \includegraphics[width=1\textwidth]{img/TreeRepr}
 
-\caption{\label{fig:Lit:Tree}{Value of type \texttt{{[}:Tree:{]}} and its vectorised representation. Empty subtrees are omitted from the conceptual representation.}}
+\caption{\label{fig:Tree}{Value of type \code{[:Tree:]} and its vectorised representation. Empty subtrees are omitted from the conceptual representation.}}
 \end{figure}
 
 
@@ -170,7 +180,7 @@ data Tree = Tree Int [:Tree:]
 \end{lstlisting}
 
 
-A sample tree is given in Figure \ref{fig:Lit:Tree}. Just by looking at the top level of the tree it would not be possible to know the branching. What vectorisation does is it translates user programs that use nested data parallelism to those using flat data parallelism. Figure \ref{fig:Lit:Tree} presents the same tree with each of its levels placed into a parallel array. At the implementation level it is flattened even further by storing a flat data array with all the node values and a \*segment descriptor*\isegd{} defining the partitioning to recreate the original nesting. Thus, a parallel array with elements
+A sample tree is given in Figure \ref{fig:Tree}. Just by looking at the top level of the tree it would not be possible to know the branching. What vectorisation does is it translates user programs that use nested data parallelism to those using flat data parallelism. Figure \ref{fig:Tree} presents the same tree with each of its levels placed into a parallel array. At the implementation level it is flattened even further by storing a flat data array with all the node values and a \*segment descriptor*\isegd{} defining the partitioning to recreate the original nesting. Thus, a parallel array with elements $[: [:5:],[::],[:4,2:],[::],[:3:],[:17:],[::],[:11:] :]$
 
 \begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
 [: [:5:],[::],[:4,2:],[::],[:3:],[:17:],[::],[:11:] :]
@@ -193,7 +203,7 @@ together with the segment descriptor containing the lengths and the starting ind
 
 
 
-\section{\label{sub:DPH-Data-Repr}Data Representation}
+\subsection{\label{sub:DPH-Data-Repr}Data Representation}
 
 Together with flattening, the vectoriser chooses the best representation for the data, e.g. for sum types and product types. \Haskell's product types, or the tuples of two of more heterogeneous elements, are allocated as boxed values on the heap. Storing an array of pointers to heap allocated values would have been a major hit on performance due to the costs of unboxing as well as loading the individual values from memory instead of fetching multiple at a time. Instead, an array of pairs \texttt{{[}:(a,b):{]}} is stored as a pair of arrays \texttt{({[}:a:{]},{[}:b:{]})}.
 

@@ -302,7 +302,7 @@
 
 %% Haskell code block with a figure box
 \lstnewenvironment{hscode2}[1]
-    {\lstset{style=haskell, caption=#1}}
+    {\lstset{style=haskell-float, caption=#1}}
     {}
 
 %% Loop code block without a figure box
@@ -311,11 +311,13 @@
         \minipage{\linewidth}
         \lstset{style=haskell}
     }
-    {}
+    {
+        \endminipage
+    }
 
 %% Loop code block with a figure box
-\lstnewenvironment{loopcode2}[2]
-    {\lstset{style=haskell, float=htpb, label=#1, caption=#2}}
+\lstnewenvironment{loopcode2}[1]
+    {\lstset{style=haskell-float, float=htpb, caption=#1}}
     {}
 
 
@@ -417,6 +419,8 @@
 \providecommand{\icomb}[1][]{\index{combinator!#1}}
 \providecommand{\iintermediate}[1][]{\index{intermediate value!#1}}
 \providecommand{\irate}[1][]{\index{rate!#1}}
+\providecommand{\ipe}[1][]{\index{processing element!#1}}
+
 
 \index{DSL|see {language: domain-specific}}
 \index{EDSL|see {language: embedded}}
