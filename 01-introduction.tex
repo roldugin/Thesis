@@ -120,10 +120,11 @@ The work described in this thesis is aimed at introducing a new fusion mechanism
 \label{sec:DPH}
 
 \name{Data Parallel Haskell (DPH)}\idph{} is an \*active library* for the \Haskell programming language, providing high level access to \*nested data parallelism*. The above definition may seem complicated at first and should probably be backed up by a set of explanations:
-\begin{itemize}
-\item Nested data parallelism\index{data parallelism: nested}{} is a type of SPMD\index{data parallelism: SPMD (single program, multiple data)}{} parallelism (single program, multiple data) which operates on \*irregular*\index{data structure: irregular} data structures. Two of the examples of irregular data structures are \*sparse matrices*\index{data structure: sparse matrix} and \*unbalanced trees*\index{data structure: unbalanced tree}
 
-\item An active library may be defined as one which takes active part in the optimisation and the compilation of its client code. Indeed, \DPH guides the compilation process in many ways including choosing the data representation \cite{CDL09} and applying rewrite rules \cite{PTH01} to improve performance. In fact, a major part of \DPH -- the vectoriser -- is implemented in the \name{Glasgow Haskell Compiler}\footnote{Glasgow Haskell Compiler: http://www.haskell.org/ghc} (GHC).
+\begin{itemize}
+\item \term{Nested data parallelism}\index{data parallelism: nested}{} is a type of \name{SPMD}\index{data parallelism: SPMD (single program, multiple data)}{} parallelism (single program, multiple data) which operates on \*irregular*\index{data structure: irregular} data structures. Two examples of irregular data structures are \*sparse matrices*\index{data structure: sparse matrix} and \*unbalanced trees*\index{data structure: unbalanced tree}.
+
+\item An \*active* library may be defined as one which takes an active part in the optimisation and the compilation of its client code. Indeed, \DPH guides the compilation process in many ways including vectorisation \cite{PLKC08}, choosing the most optimal data representation \cite{CDL09} as well as applying fusion \cite{CLP+07} and rewrite rules \cite{PTH01} to improve performance. In fact, a major part of \DPH -- the vectoriser -- is implemented in the \name{Glasgow Haskell Compiler}\footnote{Glasgow Haskell Compiler: http://www.haskell.org/ghc} (GHC).
 
 \end{itemize}
 In essence, \DPH reimplements the familiar list interface in terms of seamlessly parallelised arrays. Figure \ref{fig:DPH-interface-functions} lists some of the most important functions in the \DPH interface. Since \DPH has language support, the bracket notation for parallel arrays closely resembles that for \Haskell lists: @[:a:]@ denotes a parallel array of type @a@. The counterpart of \Haskell's list comprehensions is also present and is called \emph{parallel array comprehensions.}
