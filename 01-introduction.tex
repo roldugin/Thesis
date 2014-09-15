@@ -179,6 +179,7 @@ The two transforms are described in the following sections.
 
 
 \subsubsection{Flattening transform}
+\label{sec:Flattening}
 \index{flattening transform}{}
 
 
@@ -192,19 +193,26 @@ The two transforms are described in the following sections.
 Suppose we wanted to store trees of an arbitrary shape\index{data structure: tree}{}. The following definition of a tree using parallel arrays is not unlike those a Haskell programmer would write using lists:
 
 \begin{hscode}
-data Tree a = Tree a [:Tree a:]
+data Tree = Tree Int [:Tree:]
 \end{hscode}
+
+A sample tree is given on the left of Figure \ref{fig:TreeRepr}. Just by looking at the top level of the tree it would not be possible to know what the branching is.
 
 Now suppose we wanted to apply some function @f@ to every node of the tree:
 \begin{hscode}
-visit :: (a -> a) -> Tree a -> Tree a
+visit :: (Int -> Int) -> Tree -> Tree
 visit f (Tree v children) = Tree (f v) children'
   where children' = mapP (visit f) children
 \end{hscode}
 
-If we were to take a tree of arbitrary shape and apply some computation to every node in parallel, a naive tree representation would have probably failed to provide us with enough clues on how to split the load between processing elements.
+Since the array of @children@ may be small, we are unlikely to gain any performance by parallelising the processing. Additionally every @visit@ to a child node would potentially spawn more parallel computations. 
+% A naive tree representation would have probably failed to provide us with enough clues on how to split the load between processing elements.
 
-A sample tree is given on the left of Figure \ref{fig:TreeRepr}. Just by looking at the top level of the tree it would not be possible to know what the branching is. What flattening transform does is it translates \*nested data* in user programs to \*flat data representation*. The right of Figure \ref{fig:TreeRepr} presents the same tree with each of its levels placed into a \term{nested parallel array}\index{nested: parallel array}{}.
+\begin{bluebox}
+What flattening transform does is it translates \*nested data* in user programs to \*flat data representation*.
+\end{bluebox}
+
+The right of Figure \ref{fig:TreeRepr} shows the same tree with each of its levels placed into a \term{nested parallel array}\index{nested: parallel array}{}.
 
 At runtime a \*nested parallel array* (e.g. each level of a tree) is represented by a \term{data array} and a \term{segment descriptor}\isegd{}. The flat data array stores all the nodes' values, while the segment descriptor defines the partitioning to recreate the original nesting.
 
@@ -214,7 +222,7 @@ The following nested parallel array may have been the deepest level of the discu
 [: [:5:], [::], [:4,2:], [::], [:3:], [:17:], [::], [:11:] :]
 \end{hscode}
 
-At runtime it would stored as an array of data values together with the segment descriptor containing the lengths and the starting index positions of the contained arrays (offsets into the data array)\footnote{Technically the array of index offsets can be computed from the array of lengths. It is stored with the segment descriptor for efficiency reasons.}:
+At runtime it would be stored as an array of data values together with the segment descriptor containing the lengths and the starting index positions of the contained arrays (offsets into the data array)\footnote{Technically the array of index offsets can be computed from the array of lengths. It is stored with the segment descriptor for efficiency reasons.}:
 
 \begin{hscode}
 [# 5, 4, 2, 3, 17, 11 #]       -- data
@@ -223,54 +231,100 @@ At runtime it would stored as an array of data values together with the segment 
 [# 0, 1, 1, 3, 3, 4, 5, 5 #]   -- indices
 \end{hscode}
 
-As a result every level of a tree can be efficiently processed in parallel since the size of the \*data* array is known at runtime.
+As a result every level of a tree can be efficiently processed in parallel.
 
-In summary, the \term{flattening transform} allows the user
+In summary, flattening transform allows the user to define data which is then automatically aggregated into parallel arrays.
 
-
-
-
-\subsubsection{Data Representation}
-\label{sub:DPH-Data-Representation}
-
-Together with flattening, the vectoriser chooses the best representation for the data, e.g. for sum types and product types. \Haskell's product types, or the tuples of two of more heterogeneous elements, are allocated as boxed values on the heap. Storing an array of pointers to heap allocated values would have been a major hit on performance due to the costs of unboxing as well as loading the individual values from memory instead of fetching multiple at a time. Instead, an array of pairs \texttt{{[}:(a,b):{]}} is stored as a pair of arrays \texttt{({[}:a:{]},{[}:b:{]})}.
-
-Similarly, the sum types, or the user defined ADT's, are stored as tuples of arrays. Having multiple arrays, each storing the interesting values wrapped by the same constructor, not only avoids the cost of unboxing but also facilitates pattern matching on constructors. Thus the values constructed by the same constructor are stored in the same array. The penalty paid is keeping a selector array to recreate the original interleaving. Quite clearly sum types and product types can be recursively nested.%
+In the following section we discuss the lifting transform which vectorises the functions that can be applied to the flattened data.
 
 
-\begin{comment}
-TODO: give an example of sum types and their representation in parrs
-\end{comment}
+\subsubsection{Lifting transform}
+\label{sec:Lifting}
 
-\subsubsection{Lifting transform (on functions)}
-We have discussed the way the data is represented in DPH but said nothing about how the vectoriser adapts the functions to fit the new data representation. We do not need to delve into too much detail here, since by the time we get to the backend of the library (where the fusion takes place) we are no longer interested in how it's done. One important intuition to develop can be illustrated by the following:
+We have discussed the way the data is represented in \DPH but said nothing about how the vectoriser adapts the functions to fit the new data representation.
+
+We do not need to delve into too much detail here, since by the time we get to the backend of \DPH (where the fusion takes place) we are no longer interested in how it's done. One important intuition to develop can be illustrated by the following:
 
 \begin{hscode}
 f :: Float -> Float
-f x = x*x + 1
+f x = x * x + 1
 \end{hscode}
 
+For every such function the vectoriser generates its \*lifted* version @f^@ thus:
 
-For every such function the vectoriser generates its \emph{lifted }version \texttt{f\textasciicircum{}} thus:
-
-\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
+\begin{hscode}
 f^ :: [:Float:] -> [:Float:] -> [:Float:]
 f^ x = (x *^ x) +^ (replicateP n 1)
-       where n = lengthP x
-\end{lstlisting}
+  where n = lengthP x
+\end{hscode}
+
+This new definition obeys the rule @f^ = mapP f@, thus it is possible to replace @(mapP f)@ with @f^@.
+
+In the generated code\footnote{The code generated internally to be used with the backend library of primitive operations} @f^@ becomes the following\footnote{This is no longer true for functions as simple as \code{f} \cite{vectavoid} but it is still a clear example indicative of \DPH inner workings }:
+
+\begin{hscode}
+f^ :: Array Float -> Array Float -> Array Float
+f^ x = zipWith (+) (zipWith (*) x x)
+                   (replicate n 1)
+  where n = length x
+\end{hscode}
+
+The above code is an example of the code which is compiled against the backend library of flat array combinators. Since the backend library is where array fusion ultimately takes place this type of code will show up quite regularly throughout this thesis.
+
+% If we return to the original tree example from the previous section, there we may need to apply @f@ to an array of arrays. The flat data representation we chose allows us to easily derive @f^^@ in terms of @f^@ like this:
+
+% \begin{hscode}
+% f^^ :: [:[:Float:]:] -> [:[:Float:]:]
+% f^^ xss = unconcatP xss (f^ (concatP xss))
+% \end{hscode}
+
+% Recalling that we use a flat data array together with a segment descriptor to represent @xss@, it becomes clear that both @concatP@ and @unconcatP@ are simple constant time operations that do nothing more than replacing one segment descriptor with another.
+
+Vectorisation is more thoroughly covered in the tutorial-style paper \cite{PLKC08}. However, since some of the code generated by the vectoriser is particularly idiomatic, I will come back to the topic of vectorisation at various points of this thesis.
 
 
-This new definition obeys the equation \texttt{f\textasciicircum{} = mapP f}, thus it is possible to replace \texttt{(mapP f)} with \texttt{f\textasciicircum{}}. Now if we return to the tree example, there we may need to apply \texttt{f }to an array of arrays. The flat data representation we chose above allows us to easily derive \texttt{f\textasciicircum{}\textasciicircum{}} in terms of \texttt{f\textasciicircum{}} like this:
+\subsection{Data Representation}
+\label{sub:DPH-Data-Representation}
 
-\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
-f^^ :: [:[:Float:]:] -> [:[:Float:]:]
-f^^ xss = unconcatP xss (f^ (concatP xss))
-\end{lstlisting}
+\Haskell allows for a very high-level of expressiveness when it comes to user-defined types. \DPH attempts to support this expressiveness and allow the programmer to create and compose types to be used in \DPH programs. We have already an example of a recursive tree type in Section \ref{sec:Flattening} which is fully supported by \DPH.
+
+Over the next several pages I will briefly outline how \DPH chooses the data representation.
 
 
-Recalling that we use a flat data array together with a segment descriptor to represent \texttt{xss}, it becomes clear that both \texttt{concatP} and \texttt{unconcatP} are simple constant time operations that do nothing more than replacing one segment descriptor with another.
+\paragraph{Unboxed values}
+\iboxing{}
 
-Vectorisation is more thoroughly covered in the tutorial-style paper \cite{PLKC08}.
+Regular \Haskell values, such as @Int@s and @Float@s are stored as boxed values on the heap. This means that an array of such values would be stored as array of pointers to the heap allocated values which would be a major hit on performance. It would incur boxing/unboxing costs as well as make it impossible to cache multiple consecutive elements at a time.
+
+Instead, \DPH uses arrays of unboxed values in its backend which will be referred to as \*unboxed arrays*.
+
+
+\paragraph{Product types}
+
+\Haskell's product types, or the tuples of two of more heterogeneous elements, are allocated as boxed values on the heap. As discussed, dereferencing heap allocated values considerably affects performance. Instead, an array of pairs @[:(a,b):]@ is stored as a pair of arrays @([:a:],[:b:])@. Similarly an array of larger n-tuples becomes an n-tuple of arrays.
+
+This parametric representation is made possible through the use of type families as described in \cite{CDL09}.
+
+
+\paragraph{Sum types}
+
+One distinctive feature of \DPH compared to other {\EDSL}s for data parallelism is that is allows one to use user defined data types. We have already seen how a user could define a data type for @Tree@. Likewise we could define a new data type @Shape@ with two constructors:
+
+\begin{hscode}
+data Shape = Circle Float
+           | Rectangle Int Int
+\end{hscode}
+
+In \DPH the values constructed by the \*same constructor* are stored in the same array. To store an array @[:Shape:]@ the following arrays are used:
+\being{itemize}
+\item An array @[:Float:]@ that stores radii of all circles
+\item A pari of arrays @([:Int:],[:Int:])@ that sore dimensions of all rectanges
+\item A \*selector*\index{selector}{} array [:Int:] which determines which of the two constructors has been used. The selector array allows to recreate the original interleaving of values constructed with different constructors.
+\end{itemize}
+
+Having multiple arrays, each storing only the relevant values wrapped by the same constructor, not only avoids the cost of unboxing but also facilitates pattern matching on constructors. %
+
+
 
 
 \section{Backend and Fusion}
