@@ -25,97 +25,16 @@ On the other hand using a straight-forward implementation of a high level librar
 
 Additionally, each operation may need to store its result in a new data structure, which is especially true for languages where values are immutable by default. Allocating temporary data structures to store the intermediate results\index{intermediate value}{} leads to further memory and runtime penalties.
 
-Optimising out the superfluous data structure traversals and allocations is collectively referred to as \name{Loop Fusion}\ifusion{}. It allows to transform a program expressed in terms of high level operations into a program that would be comparable to a handwritten one in operation and speed.
+Optimising out the superfluous data structure traversals and allocations is collectively referred to as \term{Loop Fusion}\ifusion{}. It allows to transform a program expressed in terms of high level operations into a program that would be comparable to a handwritten one in operation and speed.
 
-In this essay I explore the problem of \name{loop fusion} in the context of purely functional data parallel programs. I shall begin by introducing the reader to the context of my work. I outline the problem finding a solution to which, has motivated my work in the prior years.
+In this essay I explore the problem of loop fusion in the context of purely functional data parallel programs.
 
-\clearpage
+\todo{Contributions}
+In summary... (contributions + structure)
 
+I shall begin by introducing the reader to the problem of fusion and context of my work. In the next chapter I will outline the problem finding a solution to which, has motivated my work in the prior years.
 
-\section{What is Array Fusion?}
-\label{sec:Fusion}
-
-Suppose we have the following computation to perform:
-
-\begin{hscode}
-sum (zipWith (*) xs ys)
-\end{hscode}
-
-A person familiar with the fundamentals of functional programming is likely to spot the computation of the dot product of two vectors in this snippet of \Haskell code. Indeed, the @zipWith@ list combinator\icomb{} will element-wise multiply the two vectors @xs@ and @ys@. Quite expectedly the @sum@ combinator will sum the elements of the resulting vector into a scalar value yielding the dot product of @xs@ and @ys@.
-
-This one-liner was an attempt to develop the motivation for the high-level view on numeric computations. It may seem reasonable to replace the lists with arrays and reimplement the same high-level interface in terms of traditional arrays to avoid random memory access penalties as in the case of lists.
-
-Providing an instantly familiar interface without compromising performance has been one of the goals of the \name{Data Parallel Haskell (DPH)}\idph{} project \cite{PLKC08,CLP+07}. The work described in this essay has been carried out in the context of this project. It will be discussed in more detail in section \ref{sec:DPH}.
-
-However, even if we replaced the lists with arrays and gave efficient implementations to @sum@ and @zipWith@, the resulting algorithm is still likely to be slower than one written by hand in a language such as \C. The @zipWith@ combinator \*produces* an \*intermediate array*\iintermediate{} containing the element-wise product of the two input vectors. It is immediately \*consumed* by @sum@, yielding the final (scalar) value. Thus the algorithm performs two traversals and allocates another array of the size of the input arrays.
-
-To illustrate the benefit of Array Fusion let us turn to the implementation of same algorithm expressed in \C:
-
-
-\begin{ccode}
-double dotProduct (double xs[], double ys[], int len) {
-	// zipWith
-	double* temp = malloc(len * sizeof(double));
-	for(int i = 0; i < len; i++)
-		temp[i] = xs[i] * ys[i];
-
-	// sum
-	double result = 0;
-	for(int i = 0; i < len; i++)
-		result += temp[i];
-
-	return result;
-}
-\end{ccode}
-
-
-We immediately notice that both loops iterate over the same \*range* of indices and we could hence perform it as one loop. The two loops are said to have the same \*rate*\irate{} (the term used more recently in the context of loop fusion in \Haskell \cite{BenLippmeier:2014jc}).
-
-
-\begin{ccode}
-double* temp = malloc(len * sizeof(double));
-double result = 0;
-for(i = 0; i < len; i++) {
-	temp[i] = xs[i] * ys[i];
-	result += temp[i];
-}
-\end{ccode}
-
-
-\begin{bluebox}
-The process of finding and exploiting the opportunities for merging multiple loops into one is referred to as \term{loop fusion}\ifusion{}.
-\end{bluebox}
-
-
-However, this does not completely bypass the allocation of an intermediate array\iintermediate{}. Clearly, the intermediate array is redundant and the intermediate value @temp@ could just be a \*scalar* as in the following:
-
-
-\begin{ccode}
-double temp; // temp has become scalar
-double result = 0;
-for(int i = 0; i < len; i++) {
-	temp = xs[i] * ys[i];
-	result += temp;
-}
-\end{ccode}
-
-
-\begin{bluebox}
-The optimisation that removes the need for temporary arrays by replacing them with scalars is called \term{scalarisation}\index{scalarisation}{}.
-\end{bluebox}
-
-
-It is a special case of \term{array contraction}\index{array contraction}{}. Array contraction optimisation attempts to remove a \*dimension* from the array. In this particular case we contracted a one dimensional array to a scalar, hence \*scalarisation*. However, in the examples with arrays of higher dimensions the dimension could just be reduced, and not eliminated entirely. We will see examples of that in the upcoming chapters when we discuss \*segmented array combinators*\isegmented. This concept is taken even further in multi-dimensional array systems such as \name{Repa} \cite{KCL+10} and \name{Accelerate} \cite{CKL+11}.
-
-
-\begin{bluebox}
-\term{Loop Fusion} and \term{Array Contraction} optimisation are collectively referred to as \term{Array Fusion}.
-\end{bluebox}
-
-
-Another term for this commonly encountered in literature is \term{deforestation}\index{deforestation}{}, first coined by Philip Wadler in \cite{Wad90}.
-
-The work described in this thesis is aimed at introducing a new fusion mechanism in \name{Data Parallel Haskell (DPH)}\idph{} framework. In following section I will introduce the reader to the \DPH project. I will then describe some of the most common fusion systems and identify their shortcomings which motivated the search for a fresh approach.
+% The work described in this thesis is aimed at introducing a new fusion mechanism in \name{Data Parallel Haskell (DPH)}\idph{} framework.
 
 
 
