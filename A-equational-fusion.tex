@@ -3,6 +3,7 @@
 \begin{document}
 
 \chapter{Equational Fusion Systems}
+\label{sec:Equational-Fusion-Systems}
 \ieqfusion{}
 
 This section will review three of the previous approaches to fusion in \Haskell: Shortcut Fusion, Stream Fusion and Functional Array Fusion (which was originally developed for \DPH but subsequently replaced by Stream Fusion). They are all \*equational* fusion systems meaning that they rely on compiler \*rewrite rules* in order for them to work.
@@ -13,6 +14,7 @@ A major problem with this approach is that it cannot fuse a producer into multip
 \clearpage
 
 \section{Shortcut Fusion}
+\label{sec:Shortcut-Fusion}
 
 Shortcut Fusion \cite{GLP93} is one of the most referenced techniques for fusion in Haskell. It has been developed for use in \GHC to fuse pipelined list operations. It employs two combinators, $foldr$ and $build$, and a single rewrite rule to eliminate adjacent occurrences of the combinators. It is suitable for use in the cases when the functions to be fused can be defined in terms of these combinators. The definition of $foldr$ is reused from Prelude, Haskell's standard library:
 
@@ -65,8 +67,9 @@ Some of the other limitations of the Shortcut Fusion include the inability to ef
 \clearpage
 
 \section{Stream Fusion}
+\label{sec:Stream-Fusion}
 
-Stream Fusion \cite{CLS07,CSL06} is originally employed in the \DPH backend library at one of the two levels of fusion discussed in Section \vref{sec:DPH-fusion-levels}.
+Stream Fusion \cite{CLS07,CSL06} is originally employed in the \DPH backend library at one of the two levels of fusion discussed in Section \vref{list:DPH-fusion-levels}.
 
 It introduces two data types: a \term{stream} and a \term{stepper}.
 
