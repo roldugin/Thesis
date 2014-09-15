@@ -342,7 +342,8 @@
             basicstyle=\singlespacing\ttfamily,
             language=C,
             tabsize=4,
-            caption=#1
+            float,
+            #1
         }
     }
     {}
@@ -359,7 +360,7 @@
 
 %% Haskell code block with a figure box
 \lstnewenvironment{hscode2}[1]
-    {\lstset{style=haskell-float, caption=#1}}
+    {\lstset{style=haskell-float, #1}}
     {}
 
 %% Loop code block without a figure box
@@ -374,8 +375,13 @@
 
 %% Loop code block with a figure box
 \lstnewenvironment{loopcode2}[1]
-    {\lstset{style=haskell-float, float=htpb, caption=#1}}
+    {\lstset{style=haskell-float, float=htpb, #1}}
     {}
+
+% Sample usage of ccode2, hscode2 and loopcode2
+% \begin{hscode2}{%
+%  caption={The equation of everything.},%
+%  label=lst:eqn-of-everythin}
 
 
 

@@ -47,7 +47,7 @@ Let us take a simple function which adjusts elements of an array by applying a c
 \begin{subfigure}{.3\textwidth}
   \includegraphics[height=12em]{img/aboveThreshold}
 \end{subfigure}
-\caption{$aboveThreshold$ function (left) and its data flow (right).}
+\caption{\code{aboveThreshold} function (left) and its data flow (right).}
 \label{fig:Loops:aboveThreshold}
 \end{figure}
 
@@ -252,8 +252,9 @@ We have essentially given the complete Loop representation for \|Manifest|, \|ma
 
 In the previous section we have established how each of the combinators of the $aboveThreshold$ function contribute to each loop. Each of those loops has \|init|, \|guard|, \|body|, \|yield|, \|bottom| and \|done| code blocks which are connected by \|goto|s. We can now simpy merge the respective sections of all loops to give a loop in Figure . The statements of \|Manifest| array itteration preceed those of the \|map|, which in turn preceed those of the \|filter|. The statements of physical array creation come last.
 
-\begin{loopcode2}{Final loop for a call of aboveThreshold Function%
-\label{Listing:aboveThreshold-final-loop}}
+\begin{loopcode2}{%
+    caption={Final loop for a call of aboveThreshold Function.}%
+    label=lst:aboveThreshold-final-loop}
   -- Loop: force !!!dol!!! filter (> 100) !!!dol!!! map f !!!dol!!! Manifest xs
   init:
     len_xs = arrayLength xs          -- From \|Manifest|

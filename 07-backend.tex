@@ -53,9 +53,9 @@ I will now present the translation of the \Loop EDSL to Haskell. The definition 
 
 
 %\begin{minipage}{\linewidth}
-\begin{hscode2}%
-      {Generated Haskell code for $toPercentile$ function %
-       \label{lst:7-toPercentile-hs}}
+\begin{hscode2}{%
+    caption={Generated Haskell code for \code{toPercentile} function.},%
+    label=lst:toPercentile-hs}
 entry :: [Dynamic] -> Dynamic
 entry [!arr_xs] = toDyn (run (fd arr_xs))
 
@@ -98,7 +98,7 @@ done_ys !arr_xs !arr_ys !len_xs !ix_xs !ix_ys
 %\end{minipage}
 
 
-To demonstrate the workings of the code generator we will use the source program given in Figure \todo{ref}, it's internal representation in \Loop language in Figure \todo{ref} as well as the resulting \Haskell code in Figure \ref{lst:7-toPercentile-hs}.
+To demonstrate the workings of the code generator we will use the source program given in Figure \todo{ref}, it's internal representation in \Loop language in Figure \todo{ref} as well as the resulting \Haskell code in Figure \ref{lst:toPercentile-hs}.
 
 
 \subsection{Blocks and Gotos}
@@ -136,11 +136,11 @@ During liveness analysis mutable variable are treated the same way as their immu
 
 \subsection{Array manipulation}
 
-Array is the fundamental data structure the \Loop language works with. As such the array primitives are built right into the language: @readArray@, @writeArray@, @arrayLength@, @newArray@ and @sliceArray@. The implementation of the primitives is presented in Listing \ref{7-array-primitives}.
+Array is the fundamental data structure the \Loop language works with. As such the array primitives are built right into the language: @readArray@, @writeArray@, @arrayLength@, @newArray@ and @sliceArray@. The implementation of the primitives is presented in Listing \ref{lst:array-primitives}.
 
-\begin{hscode2}%
-      {\label{7-array-primitives}%
-      Array primitives implementation in \Haskell backend.}
+\begin{hscode2}{%
+    label=lst:array-primitives,%
+    caption={Array primitives implementation in \Haskell backend.}}
 import Data.Vector.Unboxed as V
 import Data.Vector.Unboxed.Mutable as MV
 import Control.Monad.ST

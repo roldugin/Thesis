@@ -131,10 +131,12 @@ In a nested data parallel program parallel computations can call further data pa
 
 \DPH takes an active part in the optimisation and the compilation of its client code. It guides the compilation process in many ways including vectorisation \cite{PLKC08}, choosing the optimal data representation \cite{CDL09} as well as applying fusion \cite{CLP+07} and rewrite rules \cite{PTH01} to improve performance.
 
-In essence \DPH reimplements the familiar list interface in terms of seamlessly parallelised arrays. Listing \ref{fig:DPH-interface} shows some of the most important functions in the \DPH interface. Since \DPH has language support, the bracket notation for parallel arrays closely resembles that for \Haskell lists: @[:a:]@ denotes a parallel array of type @a@, while @[:[:a:]:]@ is a nested parallel array. The counterpart of \Haskell's list comprehensions is also present and is called \*parallel array comprehensions*.
+In essence \DPH reimplements the familiar list interface in terms of seamlessly parallelised arrays. Listing \ref{lst:DPH-interface} shows some of the most important functions in the \DPH interface. Since \DPH has language support, the bracket notation for parallel arrays closely resembles that for \Haskell lists: @[:a:]@ denotes a parallel array of type @a@, while @[:[:a:]:]@ is a nested parallel array. The counterpart of \Haskell's list comprehensions is also present and is called \*parallel array comprehensions*.
 
 
-\begin{hscode2}{Type signatures for parallel array operations. \label{fig:DPH-interface}}
+\begin{hscode2}{%
+	caption={Type signatures for parallel array operations.},%
+	label=lst:DPH-interface}
 (!:)         :: [:a:] -> Int -> a
 sliceP       :: [:a:] -> (Int,Int) -> [:a:]
 replicateP   :: Int -> a -> [:a:]
@@ -152,6 +154,7 @@ expandP      :: [:[:a:]:] -> [:b:] -> [:b:]
 combineP     :: [:Bool:] -> [:a:] -> [:a:] -> [:a:]
 splitP       :: [:Bool:] -> [:a:] -> ([:a:], [:a:])
 \end{hscode2}
+
 
 
 Collective operations on parallel arrays are executed in parallel when the hardware supports it. The framework is targeting shared memory architectures and currently uses \Haskell threads \cite{Jones08atutorial} to achieve parallelism.
@@ -199,17 +202,20 @@ data Tree = Tree Int [:Tree:]
 A sample tree is given on the left of Figure \ref{fig:TreeRepr}. Just by looking at the top level of the tree it would not be possible to know what the branching is.
 
 Now suppose we wanted to apply some function @f@ to every node of the tree:
+
+
 \begin{hscode}
 visit :: (Int -> Int) -> Tree -> Tree
 visit f (Tree v children) = Tree (f v) children'
   where children' = mapP (visit f) children
 \end{hscode}
 
-Since the array of @children@ may be small, we are unlikely to gain any performance by parallelising the processing. Additionally every @visit@ to a child node would potentially spawn more parallel computations. 
+
+Since the array of @children@ may be small, we are unlikely to gain any performance by parallelising the call to @mapP@. Additionally every @visit@ to a child node would potentially spawn more tiny parallel computations. 
 % A naive tree representation would have probably failed to provide us with enough clues on how to split the load between processing elements.
 
 \begin{bluebox}
-What flattening transform does is it translates \*nested data* in user programs to \*flat data representation*.
+The \term{flattening transform} translates \*nested data* in user programs to \*flat data representation*.
 \end{bluebox}
 
 The right of Figure \ref{fig:TreeRepr} shows the same tree with each of its levels placed into a \term{nested parallel array}\index{nested: parallel array}{}.

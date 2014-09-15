@@ -147,7 +147,7 @@ In order to completely remove all traces of the helper data structures Stream Fu
 
 This last approach will be described by first developing an intuition that would lead to the solution more thoroughly described in \cite{CK01,CK03}. We will go to a greater depth describing this approach since it lays down the basis for the work presented.
 
-When talking about fusion it it important to do so with reference to the context. In our case the interface to the primitive library is limited by a number of predefined functions. This is contrary to the approaches that optimising compilers take for fusing generic free-form loops \cite{KA02}. Now that we have established that the interface to the arrays is fixed it is worthwhile to consider the types of operations it offers. Quite expectedly it follows some of the Haskell Prelude conventions as well as the client interface to DPH (Figure \vref{fig:DPH-interface}).
+When talking about fusion it it important to do so with reference to the context. In our case the interface to the primitive library is limited by a number of predefined functions. This is contrary to the approaches that optimising compilers take for fusing generic free-form loops \cite{KA02}. Now that we have established that the interface to the arrays is fixed it is worthwhile to consider the types of operations it offers. Quite expectedly it follows some of the Haskell Prelude conventions as well as the client interface to DPH (Figure \vref{lst:DPH-interface}).
 
 Suppose that one of the evaluation paths of the program arrives at the following computation:
 
