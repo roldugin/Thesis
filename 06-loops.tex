@@ -82,7 +82,7 @@ double* aboveThreshold (double xs[], int len, int *result_len ) {
 \end{ccode}
 
 
-\subsubsection{Sections of \|for| loop}
+\subsection{Sections of \|for| loop}
 Each \|for|-loop in C has four sections: \|initialisation| ($i=0$), \|guard| ($i<len$), the main \|body| and finally, the \|update| section ($++i$). Compared to free-formed \|while|-loops which only have the \|guard| and the \|body|, the \|for|-loops are already more stuctured. However, as we will now show, futher structural elements could be introduced to assist fusion.
 
 \subsubsection{Initialisation}
@@ -302,7 +302,7 @@ An important difference however, is that while in the C version there were two s
 + Identify problem of identifying common variables
 + Identify the problem of naming conventions
 
-\subsection{More on \|goto|'s}
+\section{More on \|goto|'s}
 
 While the use of \texttt{goto}'s is considered bad practive in modern software engineering we note several reasons for using them in our intermediate language:
 + It is completely hidden from the library user. Given a well behaving Loop code generator the produced code will always be valid if the user program is valid. This is akin to using \|unsafePerformIO| and similar combinators within the guts of the library for performance reasons. They can lead to bad code but with careful use give very noticeable advantages to purely functional programs.
@@ -310,7 +310,7 @@ While the use of \texttt{goto}'s is considered bad practive in modern software e
 + The \|goto|-based design seemed to be the most flexible and the easiest to implement. None-the-less, the Loop language may be extended to support a safer and more advanced implementation where individual *blocks* become functions.
 
 
-\subsection{Block names}
+\section{Block names}
 
 
 + Many of the combinators use a similar set of variables, e.g. both Map and Scan produce a value at each iteration which they assign to an intermediate variable in the body of the loop, say elt
