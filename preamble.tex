@@ -59,34 +59,6 @@
 \setcounter{tocdepth}{4}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
-
-\AtBeginDocument{\providecommand\subref[1]{\ref{sub:#1}}}
-\DeclareRobustCommand{\greektext}{%
-  \fontencoding{LGR}\selectfont\def\encodingdefault{LGR}}
-\DeclareRobustCommand{\textgreek}[1]{\leavevmode{\greektext #1}}
-\DeclareFontEncoding{LGR}{}{}
-\DeclareTextSymbol{\~}{LGR}{126}
-%% Because html converters don't know tabularnewline
-\providecommand{\tabularnewline}{\\}
-\RS@ifundefined{subref}
-  {\def\RSsubtxt{section~}\newref{sub}{name = \RSsubtxt}}
-  {}
-\RS@ifundefined{thmref}
-  {\def\RSthmtxt{theorem~}\newref{thm}{name = \RSthmtxt}}
-  {}
-\RS@ifundefined{lemref}
-  {\def\RSlemtxt{lemma~}\newref{lem}{name = \RSlemtxt}}
-  {}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%% END LyX specific LaTeX commands.
-
-%\makeatother
-
-
-%\input{itemize_md.tex}
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 %% Shorthand macros, environments, etc..
