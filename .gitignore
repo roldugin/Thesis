@@ -12,6 +12,7 @@
 *.fls
 *.lof
 *.toc
+*.out
 
 # Careful with this one
 *.pdf
