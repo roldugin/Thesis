@@ -33,6 +33,7 @@ In this essay I explore the problem of \name{loop fusion} in the context of pure
 
 
 \section{What is Array Fusion?}
+\label{sec:Fusion}
 
 Suppose we have the following computation to perform:
 
@@ -169,7 +170,7 @@ By design the computation is split evenly across processing elements even for hi
 
 The principle idea behind \DPH was to allow the programmer write parallel programs without the additional effort of parallelising, scheduling, load balancing and low level optimisation.
 
-The work on \DPH was originally inspired by Blelloch's pioneering work on \name{NESL} \cite{BCH+}, a research language designed to explore the new approach to nested data parallelism.
+The work on \DPH was originally inspired by Blelloch's pioneering work on \name{NESL} \cite{BCH+}, a research language designed to explore the new approach to nested data parallelism\index{data parallelism: nested}{}.
 
 At the core of \DPH is the vectoriser which is implemented in the \name{Glasgow Haskell Compiler}\footnote{Glasgow Haskell Compiler: http://www.haskell.org/ghc} (\GHC).
 
@@ -296,7 +297,7 @@ Vectorisation is more thoroughly covered in the tutorial-style paper \cite{PLKC0
 
 
 \subsection{Data Representation}
-\label{sub:DPH-Data-Representation}
+\label{sec:DPH-Data-Representation}
 
 \Haskell allows for a very high-level of expressiveness when it comes to user-defined types. \DPH attempts to support this expressiveness and allow the programmer to create and compose types to be used in \DPH programs. We have already an example of a recursive tree type in Section \ref{sec:Flattening} which is fully supported by \DPH.
 
@@ -339,20 +340,30 @@ Having multiple arrays, each storing only the relevant values wrapped by the sam
 
 \subsection{Backend and Fusion}
 
-By the time the backend is reached the nesting in the original user program is only defined in terms of segment descriptors where required. As discussed in the previous section the vectoriser has also stripped out the product and sum types including those defined by the user and conveniently arranged them in flat data arrays. Thus, the backend, or the library of primitive operations, needs only support the arrays of primitive types. Since some of the operations on nested arrays need to respect the boundaries of the inner arrays (e.g. reductions), the segmentation information is still present.
+By the time the backend is reached in the compilation pipeline the nested data parallelism\index{data parallelism: nested}{} in the original user program has been completely transformed to flat data parallelism:
+\begin{itemize}
+\item The program is now expressed in terms of flat and \*segmented array combinators*\isegmemented{} that take the segment descriptor as an additional argument.\todo{Some of these segmented operations are shows in listing...}
+\item All data is now represented in terms of flat unboxed\iboxing{} data arrays and segment descriptors\isegd{}.
+\item As discussed in Section \ref{sec:DPH-Data-Representation} the vectoriser has also stripped out the product and sum types including those defined by the user and conveniently arranged them in flat arrays.
+\end{itemize}
 
-The primitive library implements a fixed interface that is called by the vectoriser. The support for any architectures other than multi-core systems can be added through reimplementing the primitive library interface, though the parallel programming model heavily relies on shared memory architectures for efficiency. The primitive library in its current state uses the Vector library\footnote{http://hackage.haskell.org/package/vector } to store arrays and Haskell threads to implement parallelism \cite{Jones08atutorial}. Essentially each thread is given a chunk of array(s) and a sequential operation to apply to it.
+Thus the backend, or the library of array combinators\icomb{}, only needs to support the arrays of primitive types (@Int@, @Double@, @Bool@, etc. and tuples of these). This is where both the fusion and parallelisation occur.
 
-\label{Lit:DPH-fusion-levels}DPH introduces fusion at three different
-levels:
-\begin{enumerate}
-\item Removing synchronisation points\\ Due to the use of Haskell threads, the code responsible for distributing the processing across the processing elements introduces many fork/join points. Due to the specifics of the other two fusion levels, this does not allow the fusion to be applied. Thus, if there is no processing to be done between the join and the next fork, these are fused together using the rewrite rules \cite{PTH01}. One problem with this approach is that the rewrite happens unconditionally when matched, which may lead to unbalanced load, e.g. after a \texttt{filter} operation.
-\item A minimal set of sequential rewrite rules\\ Just like removing superfluous synchronisation points, some adjacent array operations can be optimised away with the help of rewrite rules. An example of an easy optimisation would be on two consecutive maps on the same array, i.e. \texttt{map f (map g xs) = map (f . g) xs}. While these optimisations are quick and effective, it is not feasible to come up with a rewrite rule for every pair of fusible operations. A small set of such rewrite rule is employed in DPH to get rid of the most common combinations at a relatively low cost.
-\item Stream Fusion\\ Stream fusion receives the most attention as far as the fusion in DPH goes. It not only considerably affects the internal implementation of primitive operations in DPH and in the Vector library, but also relies on a certain set of optimisations in the compiler. It will be described in a later section. Like the two previous fusion rules, this one also includes a rewrite rule which triggers the optimisation.
-\end{enumerate}
+% The backend library implements a fixed interface that is called by the vectoriser. The support for any architectures other than multi-core systems can be added through reimplementing the primitive library interface, though the parallel programming model heavily relies on shared memory architectures for efficiency. The primitive library in its current state uses the Vector library\footnote{http://hackage.haskell.org/package/vector } to store arrays and Haskell threads to implement parallelism \cite{Jones08atutorial}. Essentially each thread is given a chunk of array(s) and a sequential operation to apply to it.
 
+\label{Lit:DPH-fusion-levels}\DPH system originally introduced fusion at two levels:
+\begin{description}
+\item Removing synchronisation points \hfill \\
 
-Unfortunately, the common point of failure of all of the above fusion types is that they rely on the consecutive operations being inlined and always following each other with nothing in between. This is a necessary condition for the rewrite rules to fire.
+Due to the use of \Haskell threads \cite{Jones08atutorial}, the code responsible for distributing the processing across the processing elements\ipe{} introduces many thread @fork/join@ points. This prohibits the application of array fusion that we discussed in Section \ref{sec:Fusion}. Thus if there is no processing to be done between the @join@ and the next @fork@, these are fused together using the rewrite rules\irwrules{} \cite{PTH01}.
+
+\item Stream Fusion \hfill \\
+
+Stream fusion\istreamfusion{} receives the most attention as far as the fusion in \DPH goes. It not only considerably affects the internal implementation of primitive operations in \DPH and in the underlying \name{Vector} library\footnote{http://hackage.haskell.org/package/vector}, but also relies on a certain set of optimisations in the compiler. It will be described in a later section. Like the fusion that removes superfluous synchronisation points, Stream Fusion one also heavily relies on inlining and rewriting to work.
+\end{description}
+
+Unfortunately, the common point of failure of all of the above fusion types is that they rely on the consecutive operations being inlined and being adjacent to each other for the rewrite rules to fire.
+
 
 
 \IfNotCompilingAll{\bibliography{bib}}
