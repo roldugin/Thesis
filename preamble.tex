@@ -42,6 +42,13 @@
 %% Packages included in this distribution
 \usepackage{subsections}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% D o c u m e n t   f o r m a t t i n g
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \lstset{language=Haskell, columns=fixed, basewidth=.5em}
 
 % 1.5 Line spacing between lines
@@ -61,13 +68,79 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
-%% Shorthand macros, environments, etc..
+%% Shorthand syntax, macros, environments, etc..
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 \def\compose{$\circ$ }
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Minimal syntax for supporting Markdown style \*italic*, \|fixed-width|, \$mathit$
+
+\def\|#1|{\texttt{#1}}
+\def\*#1*{\emph{#1}}
+\def\$#1${$\mathit{#1}$}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Formatting block labels using \[bracket] syntax.
+
+\definecolor{someblue}{rgb}{0.122, 0.435, 0.698}
+
+\newtcbox{\roundedbox}{
+  nobeforeafter,
+  colframe=someblue!50!white,
+  colback=someblue!10!white,
+  boxrule=0.5pt,
+  arc=4pt,
+  boxsep=0pt,
+  left=5pt,
+  right=5pt,
+  top=5pt,
+  bottom=5pt,
+  tcbox raise base}
+
+\def\[#1]{\roundedbox{\texttt{#1}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Emphasising stuff
+
+% Important info
+\newcommand\thesis\emph
+
+
+% Important info in a coloured box
+\definecolor{bgblue}{RGB}{245,243,253}
+\definecolor{ttblue}{RGB}{91,194,224}
+\renewcommand\bcStyleTitre[1]{\large\bfseries\textcolor{black}{#1}} % used to be ttblue
+\newenvironment{important}[1]
+% before
+{
+    \begin{bclogo}[
+        couleur=bgblue,
+        arrondi=0,
+        logo={\ }, %\bcbombe,
+        barre=none,
+        noborder=true]{#1}
+}
+% after
+{
+    \end{bclogo}
+}
+
+\newenvironment{bluebox}{%
+    \noindent
+    \adjustbox{
+        innerenv={varwidth}[c]{\linewidth},
+        margin=\fboxsep+.15cm \fboxsep+.2cm,
+        bgcolor=someblue!20!white,
+        center}
+    \bgroup
+}{%
+    \egroup
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Names and abbreviations
@@ -131,7 +204,6 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Styles
-%%
 %% TODO: Perhaps add aboveskip, belowcaptionskip and belowskip
 
 \lstset{%
@@ -304,68 +376,6 @@
     {}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Minimal syntax for supporting Markdown style \*italic*, \|fixed-width|, \$mathit$
-
-\def\|#1|{\texttt{#1}}
-\def\*#1*{\emph{#1}}
-\def\$#1${$\mathit{#1}$}
-
-%% Also \[body] for specifying loop block labels.
-\definecolor{someblue}{rgb}{0.122, 0.435, 0.698}
-
-\newtcbox{\roundedbox}{
-  nobeforeafter,
-  colframe=someblue!50!white,
-  colback=someblue!10!white,
-  boxrule=0.5pt,
-  arc=4pt,
-  boxsep=0pt,
-  left=5pt,
-  right=5pt,
-  top=5pt,
-  bottom=5pt,
-  tcbox raise base}
-
-\def\[#1]{\roundedbox{\texttt{#1}}}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Emphasising stuff
-
-% Important info
-\newcommand\thesis\emph
-
-% Important info in a coloured box
-\definecolor{bgblue}{RGB}{245,243,253}
-\definecolor{ttblue}{RGB}{91,194,224}
-\renewcommand\bcStyleTitre[1]{\large\bfseries\textcolor{black}{#1}} % used to be ttblue
-\newenvironment{important}[1]
-% before
-{
-    \begin{bclogo}[
-        couleur=bgblue,
-        arrondi=0,
-        logo={\ }, %\bcbombe,
-        barre=none,
-        noborder=true]{#1}
-}
-% after
-{
-    \end{bclogo}
-}
-
-\newenvironment{bluebox}{%
-    \noindent
-    \adjustbox{
-        innerenv={varwidth}[c]{\linewidth},
-        margin=\fboxsep+.15cm \fboxsep+.2cm,
-        bgcolor=someblue!20!white,
-        center}
-    \bgroup
-}{%
-    \egroup
-}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
