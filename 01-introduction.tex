@@ -174,45 +174,59 @@ At the core of \DPH is the vectoriser which is implemented in the \name{Glasgow 
 \name{Vectoriser} transforms \term{nested} data parallelism to \term{flat} data parallelism by means of \term{flattening transform} on \*data* and \term{lifting transform} on \*functions*.
 \end{bluebox}
 
-The two transforms are described below:
+The two transforms are described in the following sections.
 
 
-\subsubsection{Flattening transform (on data)}
+
+\subsubsection{Flattening transform}
+\index{flattening transform}{}
+
 
 \begin{figure}
 \includegraphics[width=1\textwidth]{img/TreeRepr}
-\caption{Value of type \code{[:Tree:]} and its vectorised representation. Empty subtrees are omitted from the conceptual representation.%
-\label{fig:Tree}}
+\caption{Value of type \code{[:Tree:]} (left) and its flattened representation (right). Empty subtrees are omitted from the conceptual representation.%
+\label{fig:TreeRepr}}
 \end{figure}
 
 
-If we were to take a tree\index{data structure: tree}{} of an arbitrary shape and tried to apply some computation to its every node in parallel, a naive tree representation would have probably failed to provide us with enough clues on how to split the load between processing elements. Suppose we store an element of type \texttt{Int} and an array of subtrees at each node. Then the tree can be expressed as
+Suppose we wanted to store trees of an arbitrary shape\index{data structure: tree}{}. The following definition of a tree using parallel arrays is not unlike those a Haskell programmer would write using lists:
 
 \begin{hscode}
-data Tree = Tree Int [:Tree:]
+data Tree a = Tree a [:Tree a:]
 \end{hscode}
 
+Now suppose we wanted to apply some function @f@ to every node of the tree:
+\begin{hscode}
+visit :: (a -> a) -> Tree a -> Tree a
+visit f (Tree v children) = Tree (f v) children'
+  where children' = mapP (visit f) children
+\end{hscode}
 
-A sample tree is given in Figure \ref{fig:Tree}. Just by looking at the top level of the tree it would not be possible to know the branching. What vectorisation does is it translates user programs that use nested data parallelism to those using flat data parallelism. Figure \ref{fig:Tree} presents the same tree with each of its levels placed into a parallel array. At the implementation level it is flattened even further by storing a flat data array with all the node values and a \*segment descriptor*\isegd{} defining the partitioning to recreate the original nesting. Thus, a parallel array with elements $[: [:5:],[::],[:4,2:],[::],[:3:],[:17:],[::],[:11:] :]$
+If we were to take a tree of arbitrary shape and apply some computation to every node in parallel, a naive tree representation would have probably failed to provide us with enough clues on how to split the load between processing elements.
 
-\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
-[: [:5:],[::],[:4,2:],[::],[:3:],[:17:],[::],[:11:] :]
-\end{lstlisting}
+A sample tree is given on the left of Figure \ref{fig:TreeRepr}. Just by looking at the top level of the tree it would not be possible to know what the branching is. What flattening transform does is it translates \*nested data* in user programs to \*flat data representation*. The right of Figure \ref{fig:TreeRepr} presents the same tree with each of its levels placed into a \term{nested parallel array}\index{nested: parallel array}{}.
 
+At runtime a \*nested parallel array* (e.g. each level of a tree) is represented by a \term{data array} and a \term{segment descriptor}\isegd{}. The flat data array stores all the nodes' values, while the segment descriptor defines the partitioning to recreate the original nesting.
 
-which may have been the deepest level of the discussed tree, would have been stored as an array of unboxed values
+The following nested parallel array may have been the deepest level of the discussed tree:
 
-\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
-[# 5, 4, 2, 3, 17, 11 #]        -- data
-\end{lstlisting}
+\begin{hscode}
+[: [:5:], [::], [:4,2:], [::], [:3:], [:17:], [::], [:11:] :]
+\end{hscode}
 
+At runtime it would stored as an array of data values together with the segment descriptor containing the lengths and the starting index positions of the contained arrays (offsets into the data array)\footnote{Technically the array of index offsets can be computed from the array of lengths. It is stored with the segment descriptor for efficiency reasons.}:
 
-together with the segment descriptor containing the lengths and the starting index positions of the contained arrays (offsets into the data array):
+\begin{hscode}
+[# 5, 4, 2, 3, 17, 11 #]       -- data
 
-\begin{lstlisting}[basicstyle={\ttfamily},language=Haskell]
-([# 1, 0, 2, 0, 1, 1, 0, 1 #],  -- lengths
- [# 0, 1, 1, 3, 3, 4, 5, 5 #])  -- indices
-\end{lstlisting}
+[# 1, 0, 2, 0, 1, 1, 0, 1 #]   -- lengths
+[# 0, 1, 1, 3, 3, 4, 5, 5 #]   -- indices
+\end{hscode}
+
+As a result every level of a tree can be efficiently processed in parallel since the size of the \*data* array is known at runtime.
+
+In summary, the \term{flattening transform} allows the user
+
 
 
 
