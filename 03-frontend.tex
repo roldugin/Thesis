@@ -172,18 +172,6 @@ One feature of the given scalar functions representation allows the user to prov
 
 This functionality may seem unnecessary, since the library already provides all functions from such type classes as @Num@, @Ord@, @Floating@, etc., as well as a powerful mechanisms to compose them into more complex functions. However, in the light of vector instructions discussion in Section \todo{ref}, leaving this door open to the user may be valuable and make the library more flexible on more architectures.
 
-%%\begin{itemize}
-%%\item Closest to the API
-%%\item User-facing arrays are internally represented a ASTs.
-%%\item Give example
-%%\item What does AST need to keep track of
-%%\item Show the data structure
-%%\item A deeply embedded EDSL
-%%\item Creates an internal AST of type @AST a@, which represents a delayed computation returning @a@.
-%%\item LiveFusion is an array processing system, so our main type is an array, say @Vector a@. Thus a delayed computation returning a @Vector@ of element of type @a@s would be represented as @AST (Vector a)@
-%%\item But vectors are not the only data type we can handle, hence we can also have @AST (Int, Float)@ - a delayed computation, which, when forced, produces a pair of an @Int@ and a @Float@.
-%%\end{itemize}
-
 
 \clearpage
 
