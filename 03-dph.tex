@@ -241,12 +241,14 @@ Thus the backend, or the library of array combinators\icomb{}, only needs to sup
 
 % The backend library implements a fixed interface that is called by the vectoriser. The support for any architectures other than multi-core systems can be added through reimplementing the primitive library interface, though the parallel programming model heavily relies on shared memory architectures for efficiency. The primitive library in its current state uses the Vector library\footnote{http://hackage.haskell.org/package/vector } to store arrays and Haskell threads to implement parallelism \cite{Jones08atutorial}. Essentially each thread is given a chunk of array(s) and a sequential operation to apply to it.
 
+\todo{Possibly kill everything below}
+
 \DPH system originally introduced fusion at two levels:
 \begin{description}
 \label{list:DPH-fusion-levels}
 \item Removing synchronisation points \hfill \\
 
-Due to the use of \Haskell threads \cite{Jones08atutorial}, the code responsible for distributing the processing across the processing elements\ipe{} introduces many thread @fork/join@ points. This prohibits the application of array fusion that we discussed in Section \ref{sec:Fusion}. Thus if there is no processing to be done between the @join@ and the next @fork@, these are fused together using the rewrite rules\irwrules{} \cite{PTH01}.
+Due to the use of \Haskell threads \cite{Jones08atutorial}, the code responsible for distributing the processing across the processing elements\ipe{} introduces many thread @fork/join@ points. This prohibits the application of array fusion that we discussed in the previous chapter. Thus if there is no processing to be done between the @join@ and the next @fork@, these are fused together using the rewrite rules\irwrules{} \cite{PTH01}.
 
 \item Stream Fusion \hfill \\
 
