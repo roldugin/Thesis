@@ -253,9 +253,9 @@ We have essentially given the complete Loop representation for \|Manifest|, \|ma
 In the previous section we have established how each of the combinators of the $aboveThreshold$ function contribute to each loop. Each of those loops has \|init|, \|guard|, \|body|, \|yield|, \|bottom| and \|done| code blocks which are connected by \|goto|s. We can now simpy merge the respective sections of all loops to give a loop in Figure . The statements of \|Manifest| array itteration preceed those of the \|map|, which in turn preceed those of the \|filter|. The statements of physical array creation come last.
 
 \begin{loopcode2}{%
-    caption={Final loop for a call of aboveThreshold Function.}%
+    caption={Final loop for a call of aboveThreshold Function.},%
     label=lst:aboveThreshold-final-loop}
-  -- Loop: force $ filter (> 100) $ map f $ Manifest xs
+  -- Loop: force DOL filter (> 100) DOL map f DOL Manifest xs
   init:
     len_xs = arrayLength xs          -- From \|Manifest|
     i_xs = 0                         -- From \|Manifest|
@@ -512,7 +512,12 @@ The implementation of the \|body| block of the combinator is staight-forward. It
 
 What is more interesting is that the index at which the filter combinator outputs the elements may be different from the index at which it takes it in. Thus the equality $i_3 = i_2$ from the previous section no longer holds. Filter combinator is responsible for keeping track of its index. We declare a separate index $i_3$ which we only increment if an element in returned from the filter.
 
-\begin{loopcode}
+
+\begin{loopcode}[%
+\lstset{%
+    literate=
+        {_1}{{\sub{xs}}}2
+        {_2}{{\sub{ys}}}2}]
 init:
   -- Manifest xs
   len_0 = length xs
