@@ -143,7 +143,7 @@ It is now time to remember the \|Manifest| combinator of LiveFusion language tha
 Applied to the function from our $aboveThreshold$ example, this tells us that since we don't know which combinator produced the $xs$ array, the loop code generated for the $aboveThreshold$ function will *not* inlcude the specifics of where the individual elements of $xs$ came from.
 
 \begin{loopcode}
-  -- Loop: $adjusted$ = \|map| $f$ $xs$
+  -- Loop: adjusted = \|map| f xs
   init_adj:
     goto guard_adj
 
@@ -163,7 +163,7 @@ Applied to the function from our $aboveThreshold$ example, this tells us that si
   done_adj:
 
 
-  -- Loop: $above$ = \|filter| $(>100)$ $adjusted$
+  -- Loop: above = \|filter| (>100) adjusted
   init_abv:
     o_abv = 0
     goto guard_abv
@@ -196,7 +196,7 @@ in  ...random access $accepted$...
 What happens is that two new loops are generated: one for \|Manifest| $xs$ and one for the physical array creation:
 
 \begin{loopcode}
-  -- Loop: \|Manifest| $xs$
+  -- Loop: \|Manifest| xs
   init_xs:
     len_xs = arrayLength xs
     i_xs = 0
@@ -220,7 +220,7 @@ What happens is that two new loops are generated: one for \|Manifest| $xs$ and o
   done_xs:
 
 
-  -- Loop: forcing $aboveThreshold f xs$
+  -- Loop: forcing aboveThreshold f xs
   init_force:
     result = newArray len_xs
     goto guard_force
@@ -255,7 +255,7 @@ In the previous section we have established how each of the combinators of the $
 \begin{loopcode2}{%
     caption={Final loop for a call of aboveThreshold Function.}%
     label=lst:aboveThreshold-final-loop}
-  -- Loop: force !!!dol!!! filter (> 100) !!!dol!!! map f !!!dol!!! Manifest xs
+  -- Loop: force $ filter (> 100) $ map f $ Manifest xs
   init:
     len_xs = arrayLength xs          -- From \|Manifest|
     i_xs = 0                         -- From \|Manifest|
@@ -346,13 +346,13 @@ In the above example, we have established that for combinators that consume one 
 
 The two combinators |map g . map f| give us code similar to the following:
 
-\begin{lstlisting}[mathescape]
+\begin{loopcode}
 body:
-  $elt_{i_1}$ = $elt_{o_0}$          -- input  of `map f'
-  $elt_{o_1}$ = f $elt_{i_1}$  -- output of `map f'
-  $elt_{i_2}$ = $elt_{o_2}$          -- input  of `map g'
-  $elt_{o_2}$ = g $elt_{i_1}$  -- output of `map g'
-\end{lstlisting}
+  elt_{i_1} = elt_{o_0}          -- input  of `map f'
+  elt_{o_1} = f elt_{i_1}  -- output of `map f'
+  elt_{i_2} = elt_{o_2}          -- input  of `map g'
+  elt_{o_2} = g elt_{i_1}  -- output of `map g'
+\end{loopcode}
 
 \subsection{Loop counters}
 
@@ -383,58 +383,58 @@ Following the above steps introduces the loop counter into the loop. The remaini
 
 The complete loop definition resulting from lifting a physical array into LiveFusion EDSL using \|Manifest| combinator is shown in Figure (TODO ref).
 
-\begin{lstlisting}[mathescape]
+\begin{loopcode}
 init:
-  $len_0$ = length $xs$
-  $i_0$   = 0
+  len_0 = length xs
+  i_0   = 0
 
 guard:
-  $pred_0$ = $i_0$ < $len_0$
-  guard $pred_0$ done        -- goto done block if the predicate is false
+  pred_0 = i_0 < len_0
+  guard pred_0 done        -- goto done block if the predicate is false
 
 body:
-  $elt_{o_0}$ = read $xs$ $i_0$
+  elt_{o_0} = read xs i_0
 
 bottom:
-  $i_0$ = $i_0$ + 1
+  i_0 = i_0 + 1
 
 done:
 
-\end{lstlisting}
+\end{loopcode}
 
 
 \subsection{Merging Loops}
 
 Coming back to our example of \inlc{map g \$ map f \$ xs} we now have both the code lifting \|xs| into the loop computation as well as the code for the \|map|s. Since theses are all part of the same loop, we can merge the statements from the same loop clauses into one loop. In this case the \|map| combinators really only had statements in the \|body| so this is the one clause which actually demonstates the loop merging\footnote{Technically, there are three loops which are generated and merged together: one for the manifest array, one for |map f| and one for |map g|. We initially omitted the merging process for |map g \compose map f| expression to avoid introducing too many concepts at a time.}:
 
-\begin{lstlisting}[mathescape]
+\begin{loopcode}
 init:
   -- Manifest xs
-  $len_0$ = length $xs$
-  $i_0$   = 0
+  len_0 = length xs
+  i_0   = 0
 
 guard:
   -- Manifest xs
-  $pred_0$ = $i_0$ < $len_0$
-  guard $pred_0$ done        -- goto done block if the predicate is false
+  pred_0 = i_0 < len_0
+  guard pred_0 done        -- goto done block if the predicate is false
 
 body:
   -- Manifest xs
-  $elt_{o_0}$ = read $xs$ $i_0$
+  elt_{o_0} = read xs i_0
   -- Map f
-  $elt_{i_1}$ = $elt_{o_0}$          -- input  of `map f'
-  $elt_{o_1}$ = f $elt_{i_1}$  -- output of `map f'
+  elt_{i_1} = elt_{o_0}          -- input  of `map f'
+  elt_{o_1} = f elt_{i_1}  -- output of `map f'
   -- Map g
-  $elt_{i_2}$ = $elt_{o_2}$          -- input  of `map g'
-  $elt_{o_2}$ = g $elt_{i_1}$  -- output of `map g'
+  elt_{i_2} = elt_{o_2}          -- input  of `map g'
+  elt_{o_2} = g elt_{i_1}  -- output of `map g'
 
 bottom:
   -- Manifest xs
-  $i_0$ = $i_0$ + 1
+  i_0 = i_0 + 1
 
 done:
 
-\end{lstlisting}
+\end{loopcode}
 
 
 
@@ -453,53 +453,53 @@ We introduce one other important convention our combinators follow. We saw in Se
 
 Following this approach, if the combinator 2 consumes elements produced by combinator 1 at the same index, then the Loop language automatically updates the index for combinator 2 (i.e. $i_2$ = $i_1$). This way, writing out the result of combinator 2 is as easy as generating a statement `writeArray $arr_2$ $i_2$ $elt_{o_2}$'.
 
-\begin{lstlisting}[mathescape]
+\begin{loopcode}
 init:
   -- Manifest xs
-  $len_0$ = length $xs$
-  $i_0$   = 0
+  len_0 = length xs
+  i_0   = 0
   -- Producing result
-  $arr_2$ = allocateArray $len_0$
+  arr_2 = allocateArray len_0
   -- Default control flow
   goto guard
 
 guard:
   -- Manifest xs
-  $pred_0$ = $i_0$ < $len_0$
-  guard $pred_0$ done        -- goto done block if the predicate is false
+  pred_0 = i_0 < len_0
+  guard pred_0 done        -- goto done block if the predicate is false
   -- Default control flow
   goto body
 
 body:
   -- Manifest xs
-  $elt_{o_0}$ = read $xs$ $i_0$
+  elt_{o_0} = read xs i_0
   -- Map f
-  $i_1$ = $i_0$                -- index of `map f' is index of `Manifest xs'
-  $elt_{i_1}$ = $elt_{o_0}$    -- input  of `map f'
-  $elt_{o_1}$ = f $elt_{i_1}$  -- output of `map f'
+  i_1 = i_0                -- index of `map f' is index of `Manifest xs'
+  elt_{i_1} = elt_{o_0}    -- input  of `map f'
+  elt_{o_1} = f elt_{i_1}  -- output of `map f'
   -- Map g
-  $i_2$ = $i_1$                -- index of `map g' is index of `map f'
-  $elt_{i_2}$ = $elt_{o_2}$    -- input  of `map g' is output of `map f'
-  $elt_{o_2}$ = g $elt_{i_1}$  -- output of `map g'
+  i_2 = i_1                -- index of `map g' is index of `map f'
+  elt_{i_2} = elt_{o_2}    -- input  of `map g' is output of `map f'
+  elt_{o_2} = g elt_{i_1}  -- output of `map g'
   -- Default control flow
   goto write
 
 write:
   -- Producing result
-  writeArray $arr_2$ $i_2$ $elt_{o_2}$  -- write result of `map g' into array
+  writeArray arr_2 i_2 elt_{o_2}  -- write result of `map g' into array
   -- Default control flow
   goto bottom
 
 bottom:
   -- Manifest xs
-  $i_0$ = $i_0$ + 1
+  i_0 = i_0 + 1
   -- Default control flow
   goto guard
 
 done:
   -- Producing result
-  freezeArray $arr_2$
-\end{lstlisting}
+  freezeArray arr_2
+\end{loopcode}
 
 
 \subsection{\label{sec:Loop:Filt}More Loop Counters and Filters}
@@ -512,14 +512,14 @@ The implementation of the \|body| block of the combinator is staight-forward. It
 
 What is more interesting is that the index at which the filter combinator outputs the elements may be different from the index at which it takes it in. Thus the equality $i_3 = i_2$ from the previous section no longer holds. Filter combinator is responsible for keeping track of its index. We declare a separate index $i_3$ which we only increment if an element in returned from the filter.
 
-\begin{lstlisting}[mathescape]
+\begin{loopcode}
 init:
   -- Manifest xs
-  $len_0$ = length $xs$
-  $i_0$   = 0           -- input index
-  $i_3$   = 0           -- declare filter output index
+  len_0 = length xs
+  i_0   = 0           -- input index
+  i_3   = 0           -- declare filter output index
   -- Producing result
-  $arr_3$ = allocateArray $len_0$
+  arr_3 = allocateArray len_0
   -- Default control flow
   goto guard
 
@@ -531,12 +531,12 @@ guard:
 body:
   -- Previous combinators
   ...
-  $i_1$ = $i_0$
-  $i_2$ = $i_1$
+  i_1 = i_0
+  i_2 = i_1
   -- Filter p
-  $pred_3$ = p $elt_{i_3}$
-  guard $pred_3$ \|bottom|     -- goto \|bottom| block if predicate is false
-  $i_3$ := $i_3$ + 1          -- increment filter output index
+  pred_3 = p elt_{i_3}
+  guard pred_3 \|bottom|     -- goto \|bottom| block if predicate is false
+  i_3 := i_3 + 1          -- increment filter output index
   -- Default control flow
   goto write
 
@@ -546,13 +546,13 @@ write:
 
 bottom:
   -- Manifest xs
-  $i_0$ = $i_0$ + 1
+  i_0 = i_0 + 1
   -- Default control flow
   goto guard
 
 done:
 
-\end{lstlisting}
+\end{loopcode}
 
 
 It's worth noting that any combinator following the \|filter| remains unaware that the indexing has changed. The Loop language will generate $i_4 = i_3$ equation, which will be consistent with the semantics of the combinator pipeline.
@@ -567,15 +567,15 @@ Suppose that out expressing is `scan (*) 1 xs'. We already know how to generate 
 
 If \|scan| gets the id of 6 in the pipeline, then we know that it can access its input elements in $elt_{i_6}$, the index of the iteration in $i_6$. Any local variable will also get postfixed with id 6. As such we will declare $f_6 = (*)$ as the reduction function, $acc_6 = 1$ as the mutable accumulator value containing the initial value. Moreover, we will be placing the output element for the current iteration in $elt_{o_6}$.
 
-\begin{lstlisting}[mathescape]
+\begin{loopcode}
 init:
   -- Previous combinators
   ...
-  $i_0$ = 0
+  i_0 = 0
   ...
   -- id 6: Scan f
-  $f_6$ = (*)
-  $acc_6$ = 1
+  f_6 = (*)
+  acc_6 = 1
   -- Default control flow
   goto guard
 
@@ -588,7 +588,7 @@ body:
   -- Previous combinators
   ...
   -- Scan f
-  $elt_6$ = $acc_6$                     -- yield previous accumulator value
+  elt_6 = acc_6                     -- yield previous accumulator value
   -- Following combinators
   ...
   -- Default control flow
@@ -602,16 +602,16 @@ write:
 bottom:
   -- Previous combinators
   ...
-  $i_0$ = $i_0$ + 1                     -- goto next iteration
+  i_0 = i_0 + 1                     -- goto next iteration
   ...
   -- Scan f
-  $acc_6$ := $f_6$ $acc_6$ $elt_{i_6}$  -- compute new accumulator
+  acc_6 := f_6 acc_6 elt_{i_6}  -- compute new accumulator
   -- Default control flow
   goto guard
 
 done:
 
-\end{lstlisting}
+\end{loopcode}
 
 \subsection{Zipping}
 
@@ -625,42 +625,42 @@ A call to `zipWith (*) xs ys' element-wise multiplies arrays $xs$ and $ys$. Thos
 
 The loops for $xs$ and $ys$ have been generated independently of each other. They have their own index spaces and their own control flows. Suppose that we get the following tree of combinators to compute:
 
-\begin{lstlisting}[language=haskell]
+\begin{hscode}
 let xs = map (+10) [1..10]
     ys = map (*3)  [100..110]
 in  zipWith (*) xs ys
-\end{lstlisting}
+\end{hscode}
 
 We can easily generate the loops for each of $xs$ and $ys$ the way we described previously. We can then merge all of the blocks together with code multiplying the output elements to form a valid loop computing the desired result:
 
-\begin{lstlisting}[mathescape]
+\begin{loopcode}
 init:
   -- xs
   -- id 0: [1..10]
-  $len_0$ = 10
-  $i_0$ = 0
+  len_0 = 10
+  i_0 = 0
   -- id 1: map (+10)
-  $f_1$ = (+10)
+  f_1 = (+10)
 
   -- ys
   -- id 2: [100..101]
-  $len_2$ = 10
-  $i_0$ = 0
+  len_2 = 10
+  i_0 = 0
   -- id 3: map (*3)
-  $f_3$ = (*3)
+  f_3 = (*3)
 
   -- id 4: zipWith (*)
-  $f_4$ = (*)
+  f_4 = (*)
 
   -- Default control flow
   goto guard
 
 guard:
-  $pred_0$ = $i_0$ < $len_0$
-  guard $pred_0$ done
+  pred_0 = i_0 < len_0
+  guard pred_0 done
 
-  $pred_2$ = $i_2$ < $len_2$
-  guard $pred_2$ done
+  pred_2 = i_2 < len_2
+  guard pred_2 done
 
   -- Default control flow
   goto body
@@ -668,18 +668,18 @@ guard:
 body:
   -- xs
   -- id 0: [1..10]
-  $elt_0$ = 1 + $i_0$
+  elt_0 = 1 + i_0
   -- id 1: map (+10)
-  $elt_1$ = $f_1$ $elt_0$
+  elt_1 = f_1 elt_0
 
   -- ys
   -- id 2: [100..110]
-  $elt_2$ = 100 + $i_2$
+  elt_2 = 100 + i_2
   -- id 3: map (*3)
-  $elt_3$ = $f_3$ $elt_2$
+  elt_3 = f_3 elt_2
 
   -- zipWith (*) xs ys
-  $elt_4$ = $f_4$ $elt_1$ $elt_3$
+  elt_4 = f_4 elt_1 elt_3
 
   -- Default control flow
   goto write
@@ -690,23 +690,23 @@ write:
   goto bottom
 
 bottom:
-  $i_0$ = $i_0$ + 1                     -- goto next iteration
+  i_0 = i_0 + 1                     -- goto next iteration
   -- Default control flow
   goto guard
 
 done:
 
-\end{lstlisting}
+\end{loopcode}
 
 **The Problem**
 
 The code generated in the previous step will produce correct results for the specific problem. However, it will not work in the general case. Suppose we introduce a filter into `xs':
 
-\begin{lstlisting}[language=haskell]
+\begin{hscode}
 let xs = filter odd \$ map (+10) [1..10]
     ys = map (*3)  [100..110]
 in  zipWith (*) xs ys
-\end{lstlisting}
+\end{hscode}
 
 While \|zipWith| is supposed to consume elements from $xs$ and $ys$ in a lockstep, producing both those elements will not always happen in the same iteration. $ys$ array does not pose a problem, it is guaranteed to produce one element in each iteration. However, the addition of \|filter| into the equation for $xs$ will mean that the loop for $xs$ may need more than one iteration to produce an element. If the \|filter| skips an element the loop for $ys$ must wait.
 
@@ -718,57 +718,57 @@ We know that the length of $ys$ is fixed and is 10. We also know that the length
 
 Let us look at the resulting loops
 
-\begin{lstlisting}[mathescape]
+\begin{loopcode}
 
 ----------------- INIT OF OUTER LOOP --------------------
 init:
   -- xs
   -- id 0: [1..10]
-  $len_0$ = 10
-  $i_0$ = 0
+  len_0 = 10
+  i_0 = 0
   -- id 1: map (+10)
-  $f_1$ = (+10)
+  f_1 = (+10)
   -- id 6: filter odd
-  $p_6$ = odd
-  $i_6$ = 0   -- output index of filter
+  p_6 = odd
+  i_6 = 0   -- output index of filter
 
   -- ys
   -- id 2: [100..101]
-  $len_2$ = 10
-  $i_2$ = 0
+  len_2 = 10
+  i_2 = 0
   -- id 3: map (*3)
-  $f_3$ = (*3)
+  f_3 = (*3)
 
   -- id 4: zipWith (*)
-  $f_4$ = (*)
+  f_4 = (*)
 
   -- Default control flow
   goto guard_0
 
 guard:
-  -- Check that we haven't exhausted $ys$
-  $pred_2$ = $i_2$ < $len_2$
-  guard $pred_2$ done
+  -- Check that we haven't exhausted ys
+  pred_2 = i_2 < len_2
+  guard pred_2 done
 
   -- Go to nested loop
   goto guard_0
 
 ---------------- BEGIN NESTED LOOP ---------------------
--- Nested loop for $xs$
+-- Nested loop for xs
 guard_0:
-  $pred_0$ = $i_0$ < $len_0$
-  guard $pred_0$ done_0
+  pred_0 = i_0 < len_0
+  guard pred_0 done_0
 
 body_0:
   -- xs
   -- id 0: [1..10]
-  $elt_0$ = 1 + $i_0$
+  elt_0 = 1 + i_0
   -- id 1: map (+10)
-  $elt_1$ = $f_1$ $elt_0$
+  elt_1 = f_1 elt_0
   -- id 6: filter odd
-  $elt_6$ = $elt_1$
-  $pred_6$ = $p_6$ $elt_1$
-  guard $pred_6$ bottom_0   -- predicate if false, skip
+  elt_6 = elt_1
+  pred_6 = p_6 elt_1
+  guard pred_6 bottom_0   -- predicate if false, skip
 
   -- Default control flow
   goto yield_0
@@ -778,11 +778,11 @@ yield_0:
   goto guard
 
 bottom_0:
-  $i_0$ := $i_0$ + 1
-  -- Move on to next element in $ys$
+  i_0 := i_0 + 1
+  -- Move on to next element in ys
 
 done_0:
-  -- We have exhausted all elements in $ys$
+  -- We have exhausted all elements in ys
 ----------------- END NESTED LOOP ------------------------
 
 ------------------ CONTINUE OUTER LOOP --------------------
@@ -791,12 +791,12 @@ done_0:
 body:
   -- ys
   -- id 2: [100..110]
-  $elt_2$ = 100 + $i_2$
+  elt_2 = 100 + i_2
   -- id 3: map (*3)
-  $elt_3$ = $f_3$ $elt_2$
+  elt_3 = f_3 elt_2
 
   -- zipWith (*) xs ys
-  $elt_4$ = $f_4$ $elt_1$ $elt_3$
+  elt_4 = f_4 elt_1 elt_3
 
   -- Default control flow
   goto write
@@ -807,14 +807,14 @@ write:
   goto bottom
 
 bottom:
-  $i_0$ = $i_0$ + 1                     -- goto next iteration
+  i_0 = i_0 + 1                     -- goto next iteration
   -- Default control flow
   goto guard
 
 -------------------- BOTTOM OF NESTED LOOP --------------------------------
 done:
 
-\end{lstlisting}
+\end{loopcode}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% OK, this is incomplete. We need to implement basic rate inference for this to work. Everything is figured out on paper but describing it and then rewriting would take double the amount of work.
