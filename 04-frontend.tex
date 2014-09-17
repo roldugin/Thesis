@@ -6,34 +6,136 @@
 
 \chapter{Delaying array computations}
 
-\section{On Embedded Domain Specific Languages}
-In its essence LiveFusion takes the approach of deeply embedded domain specific languages (EDSLs). The principle idea of deep embedding is the introduction of an abstract syntax tree (AST) which is separate from the host language AST but is rather presented as a tree structure in the host language. The difference with the AST found in compilers is that it allows one to analyse, optimise and compile or interpret the EDSL's AST at runtime using the host language in the library code, without the difficulties of writing a complete standalone optimising compiler. The added benefit of the approach is that the EDSL code can interact with the other code in the language. \todo{separate EDSL discussion from deep embedding}
+This chapter describes \LiveFusion - the new array language that I designed. It offers a library of fusible array combinators and is able to exploit more fusion opportunities than equational fusion frameworks\ieqfusion (see Appendix \ref{sec:Equational-Fusion-Systems})
 
-\section{Array EDSL by example}
-The fundamental concept by which LiveFusion makes fusion possible is constructing an AST of pending array operations at runtime and compiling that AST to fast code when the result in required in the host program. An AST defined in the host language (Haskell in this case) is what makes the delaying of computations possible. It is the topmost layer of LiveFusion system in that most of the library's user-facing combinators discussed in Section \todo{ref} are for the most part just constructing the nodes of the AST. This way an AST representing the core of QuickHull example discussed previously becomes the following \todo{ref}.
+In its essence LiveFusion takes the approach of \*deeply embedded domain specific languages* (EDSLs)\iedsl{}.
 
-% \begin{hscode2}{%
-%     caption={farAndAbove function, core of QuickHull.},%
-%     label=lst:farAndAbove
-% }
-% farAndAbove :: (Point,Point) -> Array Point -> (Array Point, Point)
-% farAndAbove line points
-%   = let distances = map (dist line) points
 
-%         -- Find maximum point
-%         indexed     = zip (indices distances) distances
-%         farthest_ix = fst $$ fold maxSnd 0 distances
-%         farthest    = points !! farthest_ix
-%         maxSnd x y  = if snd x >. snd y
-%                       then x
-%                       else y
+\section{On Embedded Domain-Specific Languages}
+\iedsl{}
 
-%         -- Find all points above the line
-%         positive    = map (>. 0) distances
-%         above       = packByTag positive points
+The term \term{domain-specific language} (DSL) describes a computer language designed for solving problems is a particular application domain.
 
-%     in  (above, farthest)
-% \end{hscode2}
+Examples of DSLs include \name{HTML} for webpages markup \cite{HTML}, \name{SQL} for relational database queries \cite{SQL} and \name{Verilog} for hardware description \cite{Verilog}.
+
+In contrast, \Haskell \cite{Pey03} is a \*general purpose language* and is more widely applicable across domains.
+
+On the other hand, an \term{embedded domain-specific language} (EDSL) is a domain-specific language which is designed to be used from within another language, called \*host* language. It is implemented as a library for the host language and can reuse its syntax, compiler and the runtime system.
+
+The added benefit of the approach is that the EDSL code can interact with the rest of the code in the host language. This way the programmers do not have to leave the familiar environment and can write EDSL programs which are seamlessly integrated with their programs.
+
+There exist two types of embedding:
+\begin{description}
+\item \term{Shallow embedding}
+
+Shallowly embedded DSLs directly translate their constructs to expressions in the host language. They offer a fixed interpretation of their operations.
+
+\name{Parsec}\footnote{parsec: Monadic parser combinators - http://hackage.haskell.org/package/parsec} library of parsing combinators is an example of a shallow EDSL for \Haskell.
+
+\item \term{Deep embedding} 
+
+The principle idea behind \term{deeply embedded DSLs} is that all operations of such an EDSL construct a tree of operations, or an \term{abstract syntax tree} (AST)\iast{}. This new AST is a data structure in the host language. It is separate from the host language's AST and is rather presented as a tree-like structure in the host language's runtime.
+
+The difference from the ASTs found in compilers is that it allows for analysis, optimisation and compilation (or interpretation) of the EDSL's AST at runtime. The complete process is taken care by the library written in the host language. This avoids the difficulties of writing a complete standalone optimising compiler.
+
+\name{Accelerate} language for functional programming on GPUs \cite{CKL+11} is a vivid example of a deeply embedded DSL.
+\end{description}
+
+\LiveFusion EDSL that I developed falls under the category of deeply embedded domain-specific languages. The process of embedding is described in this chapter.
+
+
+\section{LiveFusion EDSL by example}
+
+\LiveFusion EDSL offers a library of flat and segmented\isegmented{} array combinators\icomb{} some of which are presented in Listing \ref{lst:LiveFusion-interface}.
+
+\begin{hscode2}{%
+    caption={\LiveFusion interface functions. Typeclass constraints on array elements have been omitted for brevity.},%
+    label=lst:LiveFusion-interface}
+type Array a = ArrayAST a
+
+-- * Flat array combinators
+map      :: (Term a -> Term b) -> Array a -> Array b
+filter   :: (Term a -> Term Bool) -> Array a -> Array a
+zipWith  :: (Term a -> Term b -> Term c) -> Array a -> Array b -> Array c
+zip      :: Array a -> Array b -> Array (a,b)
+fold     :: (Term a -> Term a -> Term a) -> Term a -> Array a -> a
+scan     :: (Term a -> Term a -> Term a) -> Term a -> Array a -> Array a
+
+-- * Segmented array combinators
+scan_s   :: (Term a -> Term a -> Term a) -> Term a
+         -> Array Int -> Array a -> Array a
+fold_s   :: (Term a -> Term a -> Term a) -> Term a
+         -> Array Int -> Array a -> Array a
+\end{hscode2}
+
+
+\begin{hscode2}{%
+    caption={\LiveFusion AST (incomplete).},%
+    label=lst:LiveFusion-AST}
+type ArrayAST a = AST (Vector a)
+type ScalarAST a = AST a
+
+data AST t where
+  Map      :: (Elt a, Elt b)
+           => (Term a -> Term b)
+           -> ArrayAST a
+           -> ArrayAST b
+
+  Filter   :: Elt a
+           => (Term a -> Term Bool)
+           -> ArrayAST a
+           -> ArrayAST a
+
+  Fold     :: Elt a
+           => (Term a -> Term a -> Term a)
+           -> Term a
+           -> ArrayAST a
+           -> AST a
+
+  Scan     :: Elt a
+           => (Term a -> Term a -> Term a)
+           -> Term a
+           -> ArrayAST a
+           -> ArrayAST a
+
+  Scan_s   :: Elt a
+           => (Term a -> Term a -> Term a)
+           -> Term a
+           -> ArrayAST Int
+           -> ArrayAST a
+           -> ArrayAST a
+
+  Manifest :: Elt a
+           => Vector a
+           -> ArrayAST a
+\end{hscode2}
+
+The fundamental concept by which \LiveFusion makes fusion possible is constructing an AST\iast{} of pending array operations at runtime and compiling that AST to fast code when the result in required in the host program.
+
+An AST defined \Haskell is the topmost layer of \LiveFusion system. Most of the library's user-facing combinators are just constructing the nodes of the AST. Parts of \LiveFusion AST are presented in Listing \ref{lst:LiveFusion-AST}. Is it easy to see the correspondence
+
+\begin{hscode2}{%
+    caption={farAndAbove function, core of QuickHull.},%
+    label=lst:farAndAbove}
+
+farAndAbove :: (Point,Point) -> Array Point -> (Array Point, Point)
+farAndAbove line points
+  = let distances = map (dist line) points
+
+        -- Find maximum point
+        indexed     = zip (indices distances) distances
+        farthest_ix = fst $$ fold maxSnd 0 distances
+        farthest    = points !! farthest_ix
+        maxSnd x y  = if snd x >. snd y
+                      then x
+                      else y
+
+        -- Find all points above the line
+        positive    = map (>. 0) distances
+        above       = packByTag positive points
+
+    in  (above, farthest)
+\end{hscode2}
 
 \begin{figure}
 \includegraphics[width=0.4\textwidth,center]{img/QuickHull-flat-but-true}
@@ -45,38 +147,6 @@ The above example uses six array combinators: @map@, @zip@, @indices@, @pack@, @
 It is now time to show the AST node constructors these combinators correspond to. LiveFusion AST is a Generalised Algebraic Data Type (GADT) \todo{ref} whose individual constructors correspond to delayed array operations. In principle, given an interpreting function such as @eval :: AST t -> t@ an value of type @t@ encoded in the @AST@ language can be computed. Nowhere does it specify that @t@ is an array. In fact we know not all of the array combinators return an array: it has been discussed that @fold@, @(!!)@ and several others return a scalar value. To express the dimensionality of the result we introduce @type ArrData a@ which in our implementation is represented by @Vector a@ from @vector@ package\todo{ref}. We introduce type synonyms @ArrayAST a@ and @ScalarAST a@ to distinguish between the two.
 
 
-\begin{hscode2}{%
-    caption={LiveFusion AST.},%
-    label=lst:LiveFusion-AST}
-type ArrayAST a = AST (ArrData a)
-type ScalarAST a = AST a
-
-data AST t where
-  Map      :: (Elt a, Elt b)
-           => Exp (a -> b)
-           -> ArrayAST a
-           -> ArrayAST b
-
-  Zip      :: (Elt a, Elt b)
-           -> ArrayAST a
-           -> ArrayAST b
-           -> ArrayAST (a,b)
-
-  Fold     :: Elt a
-           => Exp (a -> a -> a)
-           -> ScalarAST a
-           -> ArrayAST a
-           -> ScalarAST a
-
-  PackByTag :: Elt a
-            => ArrayAST Bool
-            -> ArrayAST a
-            -> ArrayAST a
-
-  Indices   :: Elt a
-            => ArrayAST a
-            => ArrayAST Int
-\end{hscode2}
 
 
 
