@@ -76,9 +76,6 @@
 
 \def\compose{$\circ$ }
 
-% a round-about way of saying $_{#1}$ without the use of underscore
-\newcommand\sub[1]{\textsubscript{$#1$}}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Minimal syntax for supporting Markdown style \*italic*, \|fixed-width|, \$mathit$
@@ -95,8 +92,7 @@
 
 \newtcbox{\roundedbox}{
   nobeforeafter,
-  %colframe=someblue!50!white,
-  colframe=someblue!10!white,
+  colframe=someblue!50!white,
   colback=someblue!10!white,
   boxrule=0.5pt,
   arc=4pt,
@@ -107,8 +103,7 @@
   bottom=5pt,
   tcbox raise base}
 
-\def\lbl#1{\roundedbox{\texttt{#1}}}
-\def\[#1]{\lbl{#1}}
+\def\[#1]{\roundedbox{\texttt{#1}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Emphasising stuff
@@ -326,8 +321,6 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% lstlisting environments for floating and fixed Haskell, C and Loop code
-%\input{loopcode}
-\input{loopcode}
 
 %% C code block without a figure box
 \lstnewenvironment{ccode}
@@ -372,11 +365,10 @@
     {}
 
 %% Loop code block without a figure box
-\lstnewenvironment{loopcode}[1][\unskip]
+\lstnewenvironment{loopcode}
     {
         \minipage{\linewidth}
-        \lstset{style=lfloop}
-        #1
+        \lstset{style=haskell}
     }
     {
         \endminipage
