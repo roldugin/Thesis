@@ -48,11 +48,14 @@ splitP       :: [:Bool:] -> [:a:] -> ([:a:], [:a:])
 
 
 
-Collective operations on parallel arrays are executed in parallel when the hardware supports it. The framework is targeting shared memory architectures and currently uses \Haskell threads \cite{Jones08atutorial} to achieve parallelism.
+Collective operations on parallel arrays are executed in parallel when the hardware supports it. The framework is targeting shared memory architectures and uses \Haskell threads \cite{Jones08atutorial} to achieve parallelism.
 
-By design the computation is split evenly across processing elements even for highly irregular parallel programs. The next section will outline the library structure, cover the basics of vectorisation and describe the current stages of fusion in \DPH.
+By design the computation is split evenly across processing elements even for highly irregular parallel programs. The next sections will \todo{outline the library structure,} cover the basics of vectorisation and describe the current stages of fusion in \DPH.
 
 
+\todo{\section{DPH structure}}
+
+\clearpage
 
 \section{Vectorisation}
 \label{sec:Vectorisation}
@@ -186,6 +189,8 @@ Vectorisation is more thoroughly covered in the tutorial-style paper \cite{PLKC0
 \todo{Maybe talk about double-lifting something like @scanP 0 (\z xs -> mapP f x)@.}
 
 
+\clearpage
+
 \section{Data Representation}
 \label{sec:DPH-Data-Representation}
 
@@ -228,6 +233,8 @@ In \DPH the values constructed by the \*same constructor* are stored in the same
 Having multiple arrays, each storing only the relevant values wrapped by the same constructor, not only avoids the cost of unboxing but also facilitates pattern matching on constructors.
 
 
+\clearpage
+
 \section{Backend and Fusion}
 
 By the time the backend is reached in the compilation pipeline the nested data parallelism\index{data parallelism: nested}{} in the original user program has been completely transformed to flat data parallelism:
@@ -246,16 +253,18 @@ Thus the backend, or the library of array combinators\icomb{}, only needs to sup
 \DPH system originally introduced fusion at two levels:
 \begin{description}
 \label{list:DPH-fusion-levels}
-\item Removing synchronisation points \hfill \\
+\item \textbf{Removing synchronisation points}
 
 Due to the use of \Haskell threads \cite{Jones08atutorial}, the code responsible for distributing the processing across the processing elements\ipe{} introduces many thread @fork/join@ points. This prohibits the application of array fusion that we discussed in the previous chapter. Thus if there is no processing to be done between the @join@ and the next @fork@, these are fused together using the rewrite rules\irwrules{} \cite{PTH01}.
 
-\item Stream Fusion \hfill \\
+\item \textbf{Stream Fusion}
 
-\name{Stream Fusion}\istreamfusion{} receives the most attention as far as the fusion in \DPH goes. It not only considerably affects the internal implementation of collective array operations in \DPH and in the underlying \name{Vector} library\footnote{http://hackage.haskell.org/package/vector}, but also relies on a certain set of optimisations in the compiler. A description of \name{Stream Fusion} is given in Appendix \ref{sec:Stream-Fusion}. Just like the fusion that removes superfluous synchronisation points, Stream Fusion one also heavily relies on inlining and rewriting to work.
+When I started\name{Stream Fusion}\istreamfusion{} receives the most attention as far as the fusion in \DPH goes. It not only considerably affects the internal implementation of collective array operations in \DPH and in the underlying \name{Vector} library\footnote{http://hackage.haskell.org/package/vector}, but also relies on a certain set of optimisations in the compiler. A description of \name{Stream Fusion} is given in Appendix \ref{sec:Stream-Fusion}. Just like the fusion that removes superfluous synchronisation points, \name{Stream Fusion} also heavily relies on inlining and rewriting to work.
 \end{description}
 
-Unfortunately, the common point of failure of all of the above fusion types is that they rely on the consecutive operations being inlined and being adjacent to each other for the rewrite rules to fire.
+Unfortunately, the common point of failure of all of the above fusion types is that they rely on the consecutive operations being inlined and being adjacent to each other for the rewrite rules to fire. \todo{They are subject to the shortcomings of equational fusion systems I discussed in Section ref}
+
+Over the following several chapters I will present my own replacement backend for \name{Data Parallel Haskell} which enables the fusion in more cases than was possible with previous fusion systems.
 
 
 \IfNotCompilingAll{\bibliography{bib}}
