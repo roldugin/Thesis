@@ -255,7 +255,7 @@ In the previous section we have established how each of the combinators of the $
 \begin{loopcode2}{%
     caption={Final loop for a call of aboveThreshold Function.}%
     label=lst:aboveThreshold-final-loop}
-  -- Loop: force $ filter (> 100) $ map f $ Manifest xs
+  -- Loop: force $\char36$ filter (> 100) $\char36$ map f $\char36$ Manifest xs
   init:
     len_xs = arrayLength xs          -- From \|Manifest|
     i_xs = 0                         -- From \|Manifest|
@@ -333,7 +333,7 @@ While the use of \texttt{goto}'s is considered bad practive in modern software e
 
 We have discussed that our loop clauses are being populated by combinators that do not know how many other combinators are in the pipeline or what these combinators are. And yet, once all of the combinators have filled in their parts, we end up with just one loop in which those combinators operate on the shared state. We will now discuss the approach by which those combinators cooperate with each other inside a single loop and how the state produced by one combinator is passed on to the combinators in the subsequent parts of the pipeline.
 
-Let's look a simple example of what shared state a pipleline of two combinators \inlc{map g \$ map f \$ xs} is.
+Let's look a simple example of what shared state a pipleline of two combinators @map g $ map f $ xs@ is.
 
 
 \subsection{Intermediate values}
