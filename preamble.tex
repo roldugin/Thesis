@@ -105,6 +105,18 @@
 
 \def\[#1]{\roundedbox{\texttt{#1}}}
 
+% A prettier :=
+\makeatletter
+\newcommand*{\shifttext}[2]{%
+  \settowidth{\@tempdima}{#2}%
+  \makebox[\@tempdima]{\hspace*{#1}#2}%
+}
+\newcommand*{\coleq}{\mathrel{\rlap{%
+                     \shifttext{0.6ex}{\raisebox{0.3ex}{$\m@th\cdot$}}}%
+                     \shifttext{0.6ex}{\raisebox{-0.2ex}{$\m@th\cdot$}}}%
+                     \shifttext{-0.6ex}{\text{\ttfamily{=}}}}
+\makeatother
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Emphasising stuff
 
@@ -365,10 +377,14 @@
     {}
 
 %% Loop code block without a figure box
-\lstnewenvironment{loopcode}
+\lstnewenvironment{loopcode}[1][\noskip]
     {
         \minipage{\linewidth}
-        \lstset{style=haskell}
+        \lstset{
+            style=haskell,
+            literate=
+                {:=}{{$\coleq$}}2
+        }
     }
     {
         \endminipage
@@ -376,7 +392,13 @@
 
 %% Loop code block with a figure box
 \lstnewenvironment{loopcode2}[1]
-    {\lstset{style=haskell-float, float=htpb, #1}}
+    {
+        \lstset{
+            style=haskell-float,
+            float=htpb,
+            #1
+        }
+    }
     {}
 
 % Sample usage of ccode2, hscode2 and loopcode2
