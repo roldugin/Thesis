@@ -15,7 +15,7 @@
 
 <id>   $\rightarrow$ (unique integer\footnotemark)
 
-<impl> $\rightarrow$ (backend specific code, e.g. TemplateHaskell Expression)
+<impl> $\rightarrow$ (backend specific code, e.g. TemplateHaskell expression)
 
 <lit>  $\rightarrow$ (Haskell value supported by the language (Int, Float, Bool, Tuple, etc..)
 
@@ -48,8 +48,7 @@
       \alt $term$
       \alt $lit$
 
-<term> ::= $impl$
-      \alt $lit$
+<term> ::= $impl_{t}$
       \alt $term_{s} \rightarrow term_{t}$
       \alt $term_{s \rightarrow t}\ term_{s}$
 
