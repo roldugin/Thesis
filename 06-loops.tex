@@ -6,23 +6,26 @@
 
 \chapter{Loop representation: The Loop Language}
 
-LiveFusion at the top level presents a library of high level array combinators, with each one representing a particualar array operation. Many of them conceptually represent a loop. However, we would like to be able to perform several such operations in one loop, whenever possible. Such fusible loops arise in the case where the result of one combinator is consumed as input by another. In the LiveFusion AST constructed at runtime this would correspond to a child producer node and its parent consumer node. How do we know whether two combinators can be fused? We discussed in Section (TODO ref) that just it is impractical for libraries with a large number of combinators to define rewrite rules for how each potential pair of combinators is fused together. We need to be more general than that. In principle, two combinators can be fused whenever you can write a loop by hand which would give the same result for the same input. We need a way to programmatically determine whether a given pair of combinators can be replace with a semantically equivalent loop.
+\LiveFusion at the top level is a library of high level array combinators. Most of these conceptually represent a loop. Indeed, the user of the library can reason about the individual combinators as loops and consider the result of each to be an array.
 
-The focus of this chapter is to establish the requirements for fusible combinators and define a loop representation to which such fusible combinators can be mapped.
+However, when running the user's program, we are aiming to perform the required operations in as few loops as possible\footnote{This may increase register pressure. However, unless register spilling poses a problem in the future we favour the decreased memory traffic which is attained by array fusion.}. \todo{We have discussed the conditions for fusible combinators in Section ... In general, however...} Subject to certain restrictions, two combinators in \LiveFusion are fusible when the output array \*produced* by one combinator is \*consumed* as input by another combinator one element at a time from beginning to end.
 
+In the \LiveFusion AST discussed in the previous chapter, this relationship is usually seen between a child node (the producer) and its parent node (the consumer). This is not true for \*random access* combinators like @backpermute@ which we discuss separately\todo{in Section }.
 
+\todo{How do we know whether two combinators can be fused?}Intuitively, two combinators can be fused whenever one could write a loop by hand which would give the same final result for the same input as the two separate loops would.
+%We need a way to programmatically determine whether a given pair of combinators can be replace with a semantically equivalent loop.
 
-%% \section{Nature of fast loops}
+%The focus of this chapter is to establish the requirements for fusible combinators and define a loop representation to which such fusible combinators can be mapped.
+The focus of this chapter is to establish a common loop representation to which fusible combinators can be mapped.
 
-%% + inherently procedural
-%% + several combinators fuse to a single loop
-%% + must generate parts of the same loop
-
+In the following sections we will look more closely at what a loop really is and then present the core of our fusion optimisation.
 
 
 \section{Anatomy of a loop}
 
-Despite the purely functional, combinatorial interface to the library, looking at a loop in a purely procedural way is the approach we opted for in the middle layer. It is represented by the Loop language. The loops we generate can be viewed as similar to those in the mainsteam procedural languages such as C, however there are two important differences. One positions our Loop language a step above the simple C loops while the other one, sadly, is what C programers are trying to avoid.
+Despite the purely functional, combinatorial interface to the library, looking at a loop in a procedural way is the approach I have opted for in the middle layer of the system. It is represented by the \Loop language.
+
+The loops \LiveFusion generates can be viewed as similar to those in the mainstream procedural languages such as C, however there are two important differences. One positions our Loop language a step above the simple C loops while the other one, sadly, is what C programers are trying to avoid.
 
 On the positive side, we offer a language that logically separates sections of a loop such as initialisation, body and update. It makes it more clear which variables carry mutable state of the loop and which are immutable.
 
@@ -51,7 +54,7 @@ Let us take a simple function which adjusts elements of an array by applying a c
 \label{fig:Loops:aboveThreshold}
 \end{figure}
 
-We will now present a corresponding C solution and try to pull it apart into its constituent parts. This is not canonical code most C programmers would write. However, it does, like the Haskell example above, run each combinator in a separate loop and allocates all intermediate arrays\footnote{Function pointer syntax is not one of C's strengths, so we omitted it from the list of arguments}.
+We will now present a corresponding C solution and try to pull it apart into its constituent parts. This is not idiomatic code most C programmers would write. However, it does, like the Haskell example above, run each combinator in a separate loop and allocates all intermediate arrays\footnote{Function pointer syntax is not one of C's strengths, so we omitted it from the list of arguments}.
 
 % {numbers=left}
 \begin{ccode} 
@@ -252,9 +255,13 @@ We have essentially given the complete Loop representation for \|Manifest|, \|ma
 
 In the previous section we have established how each of the combinators of the $aboveThreshold$ function contribute to each loop. Each of those loops has \|init|, \|guard|, \|body|, \|yield|, \|bottom| and \|done| code blocks which are connected by \|goto|s. We can now simpy merge the respective sections of all loops to give a loop in Figure . The statements of \|Manifest| array itteration preceed those of the \|map|, which in turn preceed those of the \|filter|. The statements of physical array creation come last.
 
-\begin{loopcode2}{%
-    caption={Final loop for a call of aboveThreshold Function.}%
-    label=lst:aboveThreshold-final-loop}
+\begin{loopcode2}[%
+    caption={Final loop for a call of aboveThreshold Function.},
+    label=lst:aboveThreshold-final-loop,
+    literate=
+      {_xs}{{\sub{xs}}}3
+      {_abv}{{\sub{abv}}}4
+]
   -- Loop: force $\char36$ filter (> 100) $\char36$ map f $\char36$ Manifest xs
   init:
     len_xs = arrayLength xs          -- From \|Manifest|
@@ -293,26 +300,20 @@ An important difference however, is that while in the C version there were two s
 
 
 
-% section more_on_ (end)
-+ Init
-+ Guard
-+ Body
-+ Bottom
-+ Done
-+ Proceed by showing an exaple, slowly populating the loop
-+ Identify problem of identifying common variables
-+ Identify the problem of naming conventions
-
 \section{More on \|goto|'s}
 
-While the use of \texttt{goto}'s is considered bad practive in modern software engineering we note several reasons for using them in our intermediate language:
-+ It is completely hidden from the library user. Given a well behaving Loop code generator the produced code will always be valid if the user program is valid. This is akin to using \|unsafePerformIO| and similar combinators within the guts of the library for performance reasons. They can lead to bad code but with careful use give very noticeable advantages to purely functional programs.
-+ The library was designed with pluggable backend in mind. It was assumed that assembly-like Loop language would be easier to connect with any backend. Specifically for Haskell backend, \|goto| statements are translated to tail-recursive function calls.
-+ The \|goto|-based design seemed to be the most flexible and the easiest to implement. None-the-less, the Loop language may be extended to support a safer and more advanced implementation where individual *blocks* become functions.
+While the use of \|goto|'s is considered bad practice in modern software engineering we note several reasons for using them in our intermediate language:
+
+\begin{itemize}
+  \item It is completely hidden from the library user. Given a well behaving Loop code generator the produced code will always be valid if the user program is valid. This is akin to using \|unsafePerformIO| and similar combinators within the guts of the library for performance reasons. They can lead to bad code but with careful use give very noticeable advantages to purely functional programs.
+
+  \item The library was designed with pluggable backend in mind. It was assumed that assembly-like Loop language would be easier to connect with any backend. Specifically for Haskell backend, \|goto| statements are translated to tail-recursive function calls.
+
+  \item The \|goto|-based design seemed to be the most flexible and the easiest to implement. None-the-less, the Loop language may be extended to support a safer and more advanced implementation where individual *blocks* become functions.
+\end{itemize}
 
 
 \section{Block names}
-
 
 + Many of the combinators use a similar set of variables, e.g. both Map and Scan produce a value at each iteration which they assign to an intermediate variable in the body of the loop, say elt
 + Thus if there are two maps one after the other, we need to distinguish between the two
@@ -816,10 +817,6 @@ done:
 
 \end{loopcode}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% OK, this is incomplete. We need to implement basic rate inference for this to work. Everything is figured out on paper but describing it and then rewriting would take double the amount of work.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 \subsection{Random access combinators}
 
@@ -828,13 +825,13 @@ done:
 \subsection{Array generators: Enumeration and Replication}
 
 
+\subsection{Segmented array combinators}
 
-\section{Procedural code: Imperator Language}
+Two types
 
-+ Loop still carries the common structure of having a guard, body, etc..
-+ How do we generalise it to a procedural language
-+ Identify relaxed constructs
-+ Introduce simple liveness analysis
+\subsection{Segmented scan}
+
+\subsection{Segmented fold}
 
 
 \IfNotCompilingAll{\bibliography{bib}}

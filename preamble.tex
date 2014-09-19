@@ -76,6 +76,7 @@
 
 \def\compose{$\circ$ }
 
+\newcommand\sub[1]{\large\textsubscript{$#1$}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Minimal syntax for supporting Markdown style \*italic*, \|fixed-width|, \$mathit$
@@ -377,13 +378,14 @@
     {}
 
 %% Loop code block without a figure box
-\lstnewenvironment{loopcode}[1][\noskip]
+\lstnewenvironment{loopcode}[1][]
     {
         \minipage{\linewidth}
         \lstset{
             style=haskell,
             literate=
                 {:=}{{$\coleq$}}2
+            #1
         }
     }
     {
@@ -391,10 +393,10 @@
     }
 
 %% Loop code block with a figure box
-\lstnewenvironment{loopcode2}[1]
+\lstnewenvironment{loopcode2}[1][]
     {
-        \lstset{
-            style=haskell-float,
+        \lstset{%
+            style=haskell,
             float=htpb,
             #1
         }
