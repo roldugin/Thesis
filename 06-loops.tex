@@ -25,13 +25,231 @@ In the following sections we will look more closely at what a loop really is and
 
 Despite the purely functional, combinatorial interface to the library, looking at a loop in a procedural way is the approach I have opted for in the middle layer of the system. It is represented by the \Loop language.
 
-The loops \LiveFusion generates can be viewed as similar to those in the mainstream procedural languages such as C, however there are two important differences. One positions our Loop language a step above the simple C loops while the other one, sadly, is what C programers are trying to avoid.
+The loops \LiveFusion generates can be viewed as similar to those one might write in an Assembly language. It uses labelled basic blocks and has explicit control flow using @goto@ statements\footnote{The formal grammar of the \Loop language is introduced much later in the chapter. It is presented in Figure \ref{fig:Loop-grammar} on \pageref{fig:Loop-grammar}}.
 
-On the positive side, we offer a language that logically separates sections of a loop such as initialisation, body and update. It makes it more clear which variables carry mutable state of the loop and which are immutable.
+However, as we will see later, they are often even more structured than loops in \C and other mainstream procedural languages. As such I urge the reader to think of them as being high-level and treat the explicit control flow as implementation details.
 
-The downside, however, is that our loop relies on \|goto|-like statements whose use is almost always considered bad practice in modern software engineering.
+%The downside, however, is that our loop relies on \|goto|-like statements whose use is almost always considered bad practice in modern software engineering.
 
-Without further delaying the discussion of the matter we will now look are the stucture of a typical loop and gradually extend it to what we need.
+Without further delaying the discussion of the matter we will now look are the structure of a typical @for@ loop in a language like \C in an attempt to shape our own loop structure.
+
+\subsection{Structure of a \code{for} loop}
+
+Consider the following fragment of a \C program that creates a new array @ys@, by applying some function @f@ to those elements of array @xs@ that satisfy some predicate function @p@ (in \Haskell this could be expressed as @ys = (filter p . map f) xs)@):
+
+\begin{ccode}[numbers=left]
+int *ys = malloc(10 * sizeof(int)); // result array
+int i = 0;                          // output index
+for(int i = 0; i < 10; i++) {
+    if(p(xs[i])) {
+        ys[j] = f (xs[i]);
+        j++;
+    }
+}
+ys = realloc(ys, o * sizeof(int));
+\end{ccode}
+
+A @for@ loop in \C has four sections:
+
+\begin{enumerate}
+\singlespacing
+\item \*initialisation* section (@i = 0@),
+\item \*guard* section (@i < 10@),
+\item the main \*body* (@if(){ $...$ }@), and finally
+\item the \*update* section (@i++@).
+\end{enumerate}
+
+Compared to free-formed @while@ loops which only have a @guard@ and a @body@, the @for@ loops are already much more structured.
+
+However, as we will now show, further structural elements could be introduced which will ultimately assist us when composing loops from array combinators.
+
+
+\subsubsection{Initialisation}
+
+The very first observation to make is that both the result array @ys@ and the output index @j@ were declared and initialised outside the @for@ loop.
+
+In pursuit of a more structured and composable approach to looping the \Loop language all statements executed \*once* before the loop begins are placed in the \[init] basic block of the loop.nn
+
+The initialisation code corresponds to the following in the \Loop language:
+
+\begin{loopcode}
+init:
+  ys = newArray 10
+  i = 0
+  j = 0
+  goto guard
+\end{loopcode}
+
+
+\subsubsection{Guard}
+
+The @guard@ of a @for@ loop corresponds to a \[guard] block of in the \Loop language. It can contain arbitrary statements but usually contains at least one statement of the same name:
+
+\begin{loopcode}
+guard:
+  guard i < 10 | done
+  goto body
+\end{loopcode}
+
+The @guard@ \*statement* transfers the control to a different block if the condition is \*false* (to \[done] in this case).
+
+
+\subsubsection{Update}
+
+The @update@ equivalent of a @for@ loop in the \Loop language is the basic block called \[bottom]:
+
+\begin{loopcode}
+bottom:
+  i := i + 1
+  goto guard
+\end{loopcode}
+
+The block so called because it is executed \*unconditionally* at the end of each iteration.
+
+As seen in the code above \Loop language supports destructive updates through using @assignment@ (@:=@).
+
+
+\subsubsection{Finalisation}
+
+The @filter@ results in a shorter array in the general case. Hence, after the @for@ loop finishes, the resulting array is \texttt{realloc}'ated to free the unused memory (in practice the array is unlikely to be copied).
+
+This is one of the use cases for what is called a \[done] block of the loop. \todo{As we will see later it is not only useful for trimming and returning the final array but also for scheduling other loops such as in @append@ combinator.}.
+
+The done blocks for the above arrays would look like the following:
+
+\begin{loopcode}
+done:
+  ys' = frezeArray ys j   -- resize to length j
+  return ys'
+\end{loopcode}
+
+As seen from the code, every loop has a result which it returns explicitly.
+
+
+\subsection{``Dissecting the bodies'' of loops}
+
+We will now attempt to categorise the types of operations that all belong to the bodies of conventional @for@ and @while@ loops.
+
+\subsubsection{Reading and writing arrays}
+
+Line 5 of the @for@ presented above (@ys[j] = f (xs[i]);@) is actually doing three things:
+\begin{enumerate}
+\singlespacing
+\item \*reading* an element from array @xs@,
+\item \*producing* a new element by applying @f@ to it, and
+\item \*writing* the new element into array @ys@.
+\end{enumerate}
+
+Consider, however, that we are trying to devise a loop representation for an application of fusion. When several combinators are fused into a single loop and produce no intermediate arrays, such reading and writing only happens at the beginning and at the end of a combinator pipeline.
+
+Hence we want to separate the notion of \*producing* a new element from the fact that it came from an array, a list or just another computation. Likewise, we do not need to be concerned with how the new element is going to be consumed. It may or may not be written into a new array. It may or may not be used by a consuming combinator. However, it should not up to an individual combinator to decide.
+
+In fact, an element may not even be produced as we discuss next.
+
+
+\subsubsection{Skip producing an element}
+
+Combinators like @filter@ may not produce a new element in every iteration. This was the case with the example above where only elements satisfying predicate @p@ were used. The \*guard* of the @if@ was serving as a predicate check which its body was the code that produced the element.
+
+The \Loop language attempts to be more precise about where the element is produced. The code is split across two blocks: \[body] and \[yield]:
+
+\begin{loopcode}
+body:
+  x = readArray xs i
+  guard (p x) | bottom  -- end iteration if the predicate is not satified
+  y = f x
+  goto yield
+
+yield:
+  writeArray ys j y
+  j := j + 1
+  goto bottom
+\end{loopcode}
+
+The \[body] block deals with all the code that is concerned with producing an element, however an element is known to have been produced only if it the control reaches the \[yield] block.
+
+This allows us to make assumptions about the behaviour of a loop without knowing what the loop is doing internally. As we will see later, the code that introduces @writeArray@ statements into the loop is oblivious to how the element has been produced. It knows that an element has definitely been produced if the control enters the \[yield] block.
+
+\subsection{The complete example}
+
+We have now constructed a complete loop in the internal \Loop language which corresponds to the \C code at the beginning of the section. The \C code in turn corresponds to \Haskell program @ys = (map f . filter p) xs@.
+
+Both the original program and the resulting loop are given in Figure~\ref{fig:MapFilter}.
+
+
+\begin{figure}
+
+\begin{subfigure}{.5\textwidth}
+\begin{loopcode}
+init:
+  ys = newArray 10
+  i = 0
+  j = 0
+  goto guard
+
+guard:
+  guard i < 10 | done
+  goto body
+
+body:
+  x = readArray xs i
+  guard (p x) | bottom
+  y = f x
+  goto yield
+
+yield:
+  writeArray ys j y
+  j := j + 1
+  goto bottom
+
+bottom:
+  i := i + 1
+  goto guard
+
+done:
+  ys' = frezeArray ys j
+  return ys'   
+\end{loopcode}
+\end{subfigure}%
+%
+\begin{subfigure}{.5\textwidth}
+\begin{ccode}
+int *ys = malloc(10 * sizeof(int));
+int i = 0;
+for(int i = 0; i < 10; i++) {
+    if(p(xs[i])) {
+        ys[j] = f (xs[i]);
+        j++;
+    }
+}
+ys = realloc(ys, o * sizeof(int));
+\end{ccode}
+\end{subfigure}
+
+\caption{Computation \code{ys = (map f . filter p) xs} in \C (right) and internal \Loop language (left).}
+\label{fig:MapFilter}
+\end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Let us take a simple function which adjusts elements of an array by applying a certain function $f$ and then picks out elements which are above a certain threshold, say 100. In Haskell the function would have looked something like the following:
 
@@ -259,8 +477,9 @@ In the previous section we have established how each of the combinators of the $
     caption={Final loop for a call of aboveThreshold Function.},
     label=lst:aboveThreshold-final-loop,
     literate=
-      {_xs}{{\sub{xs}}}3
-      {_abv}{{\sub{abv}}}4
+      {_xs}{{\sub{xs}}}2
+      {_abv}{{\sub{abv}}}3
+      {_adj}{{\sub{abv}}}3
 ]
   -- Loop: force $\char36$ filter (> 100) $\char36$ map f $\char36$ Manifest xs
   init:
@@ -311,6 +530,15 @@ While the use of \|goto|'s is considered bad practice in modern software enginee
 
   \item The \|goto|-based design seemed to be the most flexible and the easiest to implement. None-the-less, the Loop language may be extended to support a safer and more advanced implementation where individual *blocks* become functions.
 \end{itemize}
+
+
+
+
+\begin{cfigure}{\label{fig:Loop-grammar}Grammar of \Loop language.}
+\input{loop-grammar.tex}
+\end{cfigure}
+\todo{Put the footnotetext on the same page where the grammar ends up}\footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings instead.}
+
 
 
 \section{Block names}

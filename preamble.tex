@@ -76,6 +76,8 @@
 
 \def\compose{$\circ$ }
 
+\def\dol{\char36}
+
 \newcommand\sub[1]{\large\textsubscript{$#1$}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -239,7 +241,7 @@
     flexiblecolumns=false,
 %   basewidth={0.5em,0.45em},           % default {0.6,0.45}
     escapechar={\%},
-    texcl=true                          % tex comment lines
+    texcl=true,                         % tex comment lines
 }
 
 
@@ -298,13 +300,6 @@
         {^}{{$^\uparrow$}}1 % WARNING: lifted function, not exponent
 }
 
-\lstdefinestyle{haskell-float}{%
-    style=haskell,
-%    frame=single,
-%    numbers=left,
-    float
-}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Shorthand for inline code fragments
@@ -336,13 +331,15 @@
 %% lstlisting environments for floating and fixed Haskell, C and Loop code
 
 %% C code block without a figure box
-\lstnewenvironment{ccode}
+\lstnewenvironment{ccode}[1][]
     {
         \minipage{\linewidth}
         \lstset{
             basicstyle=\singlespacing\ttfamily,
             language=C, 
-            tabsize=4
+            tabsize=4,
+            numberstyle=\normalsize\color{gray}\ttfamily,
+            #1
         }
     }
     {
@@ -350,13 +347,14 @@
     }
 
 %% C code block with a figure box
-\lstnewenvironment{ccode2}[1]
+\lstnewenvironment{ccode2}[1][]
     {
         \lstset{
             basicstyle=\singlespacing\ttfamily,
             language=C,
             tabsize=4,
             float,
+            numberstyle=\normalsize\color{gray}\ttfamily,
             #1
         }
     }
