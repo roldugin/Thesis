@@ -266,11 +266,9 @@ We also note that each label and variable in the language is postfixed with a un
 
 In the previous section we have seen the first example of the \Loop EDSL which computed at @filter@ of an array followed by a @map@. We have also identified five main \*sections* of a loop, represented by \*basic blocks* in the \Loop language: \[init], \[guard], \[body], \[yield], \[bottom] and \[done].
 
-We will now revisit the example from the previous section and introduce the process by which a \Loop is generated:
+We shall revisit the example from the previous section and introduce the process by which a \Loop is generated.
 
-This time we extend the example that specifies the user functions with which the @map@ and @filter@ combinators are instantiated. The function @toPercents@ presented on converts an array fractions to their percentage equivalents, filtering out those below $0.01$ (or $1\%$)
-
-passed to the combinators. Let us take a simple function which adjusts elements of an array by applying a certain function $f$ and then picks out elements which are above a certain threshold, say 100. In Haskell the function would have looked something like the following: $>= 0.01$
+This time we extend the example with specific functions passed to @map@ and @filter@ combinators. The function @toPercentages@ shown on Figure~\ref{fig:toPercentages} (left) converts an array fractions to their percentage equivalents, filtering out those below $0.01$ (or $1\%$).
 
 \begin{figure}
 \begin{subfigure}{.65\textwidth}
@@ -291,95 +289,79 @@ toPercentages fractions
   \includegraphics[height=10em]{img/toPercentages-ast}
 \end{subfigure}
 \caption{\code{toPercentages} function (left) and its \LiveFusion AST (right).}
-\label{fig:toPercents}
+\label{fig:toPercentages}
 \end{figure}
 
-We will now present a corresponding C solution and try to pull it apart into its constituent parts. This is not idiomatic code most C programmers would write. However, it does, like the Haskell example above, run each combinator in a separate loop and allocates all intermediate arrays\footnote{Function pointer syntax is not one of C's strengths, so we omitted it from the list of arguments}.
 
-% {numbers=left}
-\begin{ccode} 
-double* aboveThreshold (double xs[], int len, int *result_len ) {
+\subsection{Start with an AST}
 
-  /* Adjust all values by mapping function f over each element */
-  double* adjusted = malloc(len * sizeof(double)); // Intermediate array
-  for(int i=0; i<len; i++) {
-      adjusted[i] = f(xs[i]);
-  }
+The @toPercentages@ function internally uses a pipeline of to combinators: the output array of @filter@ (@significant@) becomes the input array of @map@. Remembering that @Array Double@ is the type synonym for @AST (Vector Double)@, each combinator constructs a node in an AST representing a \*delayed array computation*.
 
-  double* above = malloc(len * sizeof(double));     // Final result array
-  int o = 0; // result array index
-  for(int i=0; i<len; i++) {
-      double a = adjusted[i];
-      if(a > 100) {
-          above[j] = a;
-          o++;
-      }
-  }
-  above = realloc(above, o * sizeof(double));
-  free(adjusted);
+It is impossible possible to know statically whether the input @fraction@ array is computed by a long pipeline of combinators or is a @Manifest@ array stored in memory. Likewise, it is not known before the runtime if the resulting @percents@ array is consumed by another combinator and the pipeline of delayed operation will continue to grow after @toPercentages@ function returns.
 
-  // return results
-  *result_len = o
-  return above;
-}
-\end{ccode}
+For the purposes of illustration we will assume that the @toPercentage@ function is called with a @Manifest@ array as argument and the result is immediately \*forced* to be computed (e.g. to be printed out or to be consumed in a random access fashion).
+
+In this case the AST shown on Figure~\ref{fig:toPercentages} (right) is constructed at the runtime of the program:
+
+\begin{hscode}
+ast :: AST (Vector Double)
+ast = Map (* 100) $ Filter (>=. 0.01) $ Manifest vec
+\end{hscode}
+
+% After sharing recovery each AST node (or rather ASG node) is assigned a unique value
+
+\begin{hscode2}
+init_1:
+init_2:
+init_3:
+  let ix_3 = 0
+  let len_3 = lengthArray arr_3
+  let len_2 = len_3
+  let ix_2 = 0
+  let len_1 = len_2
+  arr_1 = newArray len_1
+  goto guard_1
+
+guard_1:
+guard_2:
+guard_3:
+  guard on (<) ix_3 len_3 | onFail: done_1
+  goto body_1
+
+body_1:
+body_2:
+body_3:
+  elt_3 = arr_3[ix_3]
+  let elt_2 = elt_3
+  let f_1 = <Code>
+  let elt_1 = f_1 elt_2
+  guard on <Code> elt_3 | onFail: bottom_1
+  goto yield_1
+
+yield_1:
+yield_2:
+yield_3:
+  ix_2 := (+) ix_2 1
+  let ix_1 = ix_2
+  arr_1[ix_1] := elt_1
+  goto bottom_1
+
+bottom_1:
+bottom_2:
+bottom_3:
+  ix_3 := (+) ix_3 1
+  goto guard_1
+
+done_1:
+done_2:
+done_3:
+  let ix_1 = ix_2
+  result = sliceArray arr_1 ix_1
+  return result
+\end{hscode2}
 
 
-\subsection{Sections of \|for| loop}
-Each \|for|-loop in C has four sections: \|initialisation| ($i=0$), \|guard| ($i<len$), the main \|body| and finally, the \|update| section ($++i$). Compared to free-formed \|while|-loops which only have the \|guard| and the \|body|, the \|for|-loops are already more stuctured. However, as we will now show, futher structural elements could be introduced to assist fusion.
 
-\subsubsection{Initialisation}
-The very first observation to make is that the allocation of intermediate and result arrays was done by statements outside the \|for|-loops. The same was done for the output index variable $o$ (which is different from input index $i$ because \|filter| can skip elements). In our loop language all statements executed *once* before the loop begins are placed in the \|init| block of the loop.
-
-The \|init|-code for both loops would have looked like the following (we also included \|guard| code for clarity):
-
-\begin{loopcode}
-  init_1:
-    len_1 = arrayLength xs
-    adjusted_1 = newArray len_1
-    i_1 = 0
-    goto guard_1
-
-  guard_1:
-    guard (i_1 < len_1) done_1
-    goto body_1
-
-  init_2:
-    len_2 = arrayLength adjusted_1
-    i_2 = 0
-    o_2 = 0
-    goto guard_2
-
-  guard_2
-    guard (i_2 < len_2) done_2
-    goto body_2
-\end{loopcode}
-
-As we will soon see the above code is only illustrative. Even though it is valid, the combinators in the $aboveThreshold$ example do not generate precisely that code.
-
-\subsubsection{Finalisation}
-We also note that after the second \|for|-loop finishes, the resulting array is reallocated to free the unused memory since the filter results in a shorter array in the general case (in practice the array is unlikely to be copied). This is one of the use cases for what we call a \|done| block, which every array has. As we will see later it is not only useful for trimming and returning the final array but also for scheduling other loops such as in $append$ combinator.
-
-The done blocks for the arrays would look like the following:
-
-\begin{loopcode}
-  done_1:
-    <empty>
-
-  done_2:
-    above := freezeArray above o  -- resize to length `o'
-\end{loopcode}
-
-\subsubsection{Reading and writing arrays}
-We will now attempt to categorise the types of operations that all belong to the bodies of conventional \|for| and \|while| loops.
-
-Line 5 of the first \|for|-loop (@adjusted[i] = f(xs[i]);@)is actually doing three things: *reading* an element from an array, *producing* a new element and *writing* it into a separate array. Likewise, Lines 12 and 14 of the second \|for|-loop are also concerned with *reading* and *writing* arrays.
-
-Consider, however, that when several combinators are fused into a sigle loop and produce no intermediate arrays, such reading and writing only happens at the beginning and at the end of a combinator pipeline. Thus we want to separate the notion of computing a new element from from the fact that it came from an array, a list or just another computation. Likewise we do not need to be concerned with whether the how the new element is going to be consumed. It may or may not be written into a new array. However, it is not up to an individual combinator to decide.
-
-We will now in turn describe how we deal with reading, writing and computing elements.
-
-\subsubsubsection{Reading and writing arrays in LiveFusion}
 
 It is now time to remember the \|Manifest| combinator of LiveFusion language that we used to bring a physical array in memory and create a LiveFusion language term out of it. As it turns out, \thesis{all the reading of physical arrays is performed by the code generated by the \|Manifest| combinator}. What this means is that, while the reading is still performed in the \|body| code block of of the loop, the code for it is only generated once at the beginning of each combinator pipeline.
 

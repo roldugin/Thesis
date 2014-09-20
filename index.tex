@@ -4,6 +4,13 @@
 \providecommand{\indexe}[1]{\index{#1}\emph{#1}}
 \providecommand{\indext}[1]{\index{#1}#1}
 
+
+% Languages
+\providecommand{\ilanguage}[1][]{\index{language!#1}}
+\providecommand{\iedsl}[1][]{\ilanguage{embedded!#1}}
+\providecommand{\idsl}[1][]{\ilanguage{domain-specific!#1}}
+
+
 % LiveFusion AST, ASG, frontend, etc..
 \providecommand{\iast}[1][]{\index{AST (abstract syntax tree)!#1}}
 \providecommand{\iasg}[1][]{\index{ASG (abstract semantic graph)!#1}}
@@ -14,13 +21,14 @@
 
 
 % Scalar language
+\providecommand{\iscalarlang}[1][]{\ilanguage{scalar!#1}}
 \providecommand{\ihoas}[1][]{\index{HOAS (higher-order abstract syntax)!#1}}
 \providecommand{\idebruijn}[1][]{\index{De Bruijn!#1}}
 
 
 % Fusion talk
 \providecommand{\ifusion}[1][]{\index{fusion, loop fusion, array fusion!#1}}
-\providecommand{\ieqfusion}[1][]{\index{Equational fusion!#1}}
+\providecommand{\ieqfusion}[1][]{\index{equational fusion!#1}}
 \providecommand{\iintermediate}[1][]{\index{intermediate value!#1}}
 \providecommand{\irate}[1][]{\index{rate!#1}}
 \providecommand{\istreamfusion}[1][]{\index{Stream Fusion!#1}}
@@ -59,10 +67,6 @@
 % Misc
 \providecommand{\ipe}[1][]{\index{processing element!#1}}
 
-% Language
-\providecommand{\ilanguage}[1][]{\index{language!#1}}
-\providecommand{\iedsl}[1][]{\index{language!embedded!#1}}
-\providecommand{\idsl}[1][]{\index{language!domain-specific!#1}}
 
 \index{DSL|see {language!domain-specific}}
 \index{EDSL|see {language!embedded}}

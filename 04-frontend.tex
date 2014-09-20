@@ -163,12 +163,14 @@ farAndAbove line points
 
 
 \section{Parametrising higher-order combinators}
+\label{sec:Scalar-language}
+\iscalarlang
 
 Another notable feature of the interface to note here is the type of functions that parametrise higher-order combinators:
 
 \begin{hscode}
 map    :: (Term a -> Term b) -> Array a -> Array b
-filter :: (@Term a -> Term Bool@) -> Array a -> Array Bool
+filter :: (Term a -> Term Bool) -> Array a -> Array Bool
 \end{hscode}
 
 The corresponding Haskell list functions or array libraries like @Vector@ or @Repa@ \cite{KCL+10} accept as arguments vanilla Haskell functions like @a -> b@ or @a -> a -> a@ as long as the types match.
