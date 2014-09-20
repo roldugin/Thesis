@@ -38,9 +38,9 @@ Without further delaying the discussion of the matter we will now look are the s
 Consider the following fragment of a \C program that creates a new array @ys@, by applying some function @f@ to those elements of array @xs@ that satisfy some predicate function @p@ (in \Haskell this could be expressed as @ys = (filter p . map f) xs)@):
 
 \begin{ccode}[numbers=left]
-int *ys = malloc(10 * sizeof(int)); // result array
+int *ys = malloc(len * sizeof(int)); // result array
 int i = 0;                          // output index
-for(int i = 0; i < 10; i++) {
+for(int i = 0; i < len; i++) {
     if(p(xs[i])) {
         ys[j] = f (xs[i]);
         j++;
@@ -54,7 +54,7 @@ A @for@ loop in \C has four sections:
 \begin{enumerate}
 \singlespacing
 \item \*initialisation* section (@i = 0@),
-\item \*guard* section (@i < 10@),
+\item \*guard* section (@i < len@),
 \item the main \*body* (@if(){ $...$ }@), and finally
 \item the \*update* section (@i++@).
 \end{enumerate}
@@ -74,7 +74,8 @@ The initialisation code corresponds to the following in the \Loop language:
 
 \begin{loopcode}
 init:
-  ys = newArray 10
+  len = arrayLength xs
+  ys = newArray len
   i = 0
   j = 0
   goto guard
@@ -87,7 +88,7 @@ The @guard@ of a @for@ loop corresponds to a \[guard] block of in the \Loop lang
 
 \begin{loopcode}
 guard:
-  guard i < 10 | done
+  guard i < len | done
   goto body
 \end{loopcode}
 
@@ -119,7 +120,7 @@ The done blocks for the above arrays would look like the following:
 
 \begin{loopcode}
 done:
-  ys' = frezeArray ys j   -- resize to length j
+  ys' = freezeArray ys j   -- resize to length j
   return ys'
 \end{loopcode}
 
@@ -182,13 +183,14 @@ Both the original program and the resulting loop are given in Figure~\ref{fig:Ma
 \begin{subfigure}{.5\textwidth}
 \begin{loopcode}
 init:
-  ys = newArray 10
+  len = arrayLength xs
+  ys = newArray len
   i = 0
   j = 0
   goto guard
 
 guard:
-  guard i < 10 | done
+  guard i < len | done
   goto body
 
 body:
@@ -207,16 +209,16 @@ bottom:
   goto guard
 
 done:
-  ys' = frezeArray ys j
+  ys' = freezeArray ys j
   return ys'   
 \end{loopcode}
 \end{subfigure}%
 %
 \begin{subfigure}{.5\textwidth}
 \begin{ccode}
-int *ys = malloc(10 * sizeof(int));
+int *ys = malloc(len * sizeof(int));
 int i = 0;
-for(int i = 0; i < 10; i++) {
+for(int i = 0; i < len; i++) {
     if(p(xs[i])) {
         ys[j] = f (xs[i]);
         j++;
@@ -256,12 +258,12 @@ Let us take a simple function which adjusts elements of an array by applying a c
 \begin{figure}
 \begin{subfigure}{.7\textwidth}
   \begin{hscode}
-  aboveThreshold :: (Double -> Double)
+  adjusted :: (Term Double -> Term Double)
                  -> Array Double
                  -> Array Double
   aboveThreshold xs f
     = let adjusted = map f xs
-          above    = filter (> 100) adjusted
+          above    = filter (>. 100) adjusted
       in  above
   \end{hscode}
 \end{subfigure}%
