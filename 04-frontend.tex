@@ -52,7 +52,7 @@ The difference from the ASTs found in compilers is that it allows for analysis, 
 
 \begin{hscode2}[%
     caption={\LiveFusion interface functions. Typeclass constraints on array elements have been omitted for brevity.},%
-    label=lst:LiveFusion-interface
+    label=lst:LiveFusion-interface,%
 ]
 type Array a = ArrayAST a
 
@@ -74,7 +74,7 @@ fold_s   :: (Term a -> Term a -> Term a) -> Term a
 
 \begin{hscode2}[%
     caption={\LiveFusion AST (incomplete).},%
-    label=lst:LiveFusion-AST
+    label=lst:LiveFusion-AST,%
 ]
 type ArrayAST a = AST (Vector a)
 type ScalarAST a = AST a
@@ -131,7 +131,7 @@ I will now present a simple user program that can be written using \LiveFusion l
 
 \begin{hscode2}[%
     caption={\code{farAndAbove} function, core of QuickHull.},%
-    label=lst:farAndAbove
+    label=lst:farAndAbove,%
 ]
 farAndAbove :: (Point,Point) -> Array Point -> (Array Point, Point)
 farAndAbove line points
@@ -215,7 +215,7 @@ It is a term in our scalar expression language \name{Term}, representing a funct
 
 \begin{hscode2}[%
     caption={Term language for HOAS representation.},%
-    label=lst:HOAS
+    label=lst:HOAS,%
 ]
 data Term t where
   -- Function of constant suitable for code generation

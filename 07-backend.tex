@@ -56,7 +56,7 @@ I will now present the translation of the \Loop EDSL to Haskell. The definition 
 %\begin{minipage}{\linewidth}
 \begin{hscode2}[%
     caption={Generated Haskell code for \code{toPercentile} function.},%
-    label=lst:toPercentile-hs
+    label=lst:toPercentile-hs,%
 ]
 entry :: [Dynamic] -> Dynamic
 entry [!arr_xs] = toDyn (run (fd arr_xs))
@@ -142,7 +142,7 @@ Array is the fundamental data structure the \Loop language works with. As such t
 
 \begin{hscode2}[%
     caption={Array primitives implementation in \Haskell backend.},%
-    label=lst:array-primitives
+    label=lst:array-primitives,%
 ]
 import Data.Vector.Unboxed as V
 import Data.Vector.Unboxed.Mutable as MV
