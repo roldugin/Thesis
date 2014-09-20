@@ -7,6 +7,8 @@
 \renewcommand{\syntright}{}
 \renewcommand{\litleft}{\ttfamily} %% `for'
 \renewcommand{\litright}{}
+\newcommand{\many}{\overline} %% draws a bar over the top of a symbol
+
 
 \setlength{\grammarparsep}{0pt} % tight rule separation
 
@@ -15,9 +17,9 @@
 
 <id>   $\rightarrow$ (unique integer\footnotemark)
 
-<impl> $\rightarrow$ (backend specific code, e.g. TemplateHaskell expression)
+<impl> $\rightarrow$ (backend specific code, e.g. \name{Template Haskell} expression)
 
-<lit>  $\rightarrow$ (Haskell value supported by the language (Int, Float, Bool, Tuple, etc..)
+<lit>  $\rightarrow$ (\Haskell value of a supported type (Int, Float, Bool, tuple, etc..)
 
 <var>  ::= $name$ $id$
 
@@ -27,9 +29,9 @@
 
 \setlength{\grammarparsep}{10pt plus 1pt minus 1pt} % large rule separation
 \begin{grammar}
-<loop> ::= [$block$] $label_{entry}$
+<loop> ::= $\many{block}$ $label_{entry}$
 
-<block> ::= [$label$] [$stmt$] $stmt_{final}$
+<block> ::= $\many{label}$ $\many{stmt}$ $stmt_{final}$
 
 <stmt> ::= $var$ `=' $expr$
       \alt $var$ `:=' $expr$
