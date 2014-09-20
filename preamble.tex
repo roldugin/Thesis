@@ -80,6 +80,8 @@
 
 \newcommand\sub[1]{\large\textsubscript{$#1$}}
 
+\def\halfspacing{\setstretch{0.5}} % Not sure how this works, but it's smaller than 1.0
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Minimal syntax for supporting Markdown style \*italic*, \|fixed-width|, \$mathit$
 
@@ -235,9 +237,10 @@
     keywordstyle=[3]\color{Bittersweet},
     keywordstyle=[4]\color{RoyalPurple},
     captionpos=b,
-%   aboveskip=2\medskipamount,          % this overrides \singlespacing ?
+    aboveskip=0\medskipamount,          % this overrides \singlespacing ?
 %   xleftmargin=0.5\parindent,
 %   xrightmargin=0.5\parindent,
+    belowskip=1.5\medskipamount,
     flexiblecolumns=false,
 %   basewidth={0.5em,0.45em},           % default {0.6,0.45}
     escapechar={\%},
