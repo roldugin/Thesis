@@ -50,9 +50,10 @@ The difference from the ASTs found in compilers is that it allows for analysis, 
 
 \LiveFusion EDSL offers a library of flat and segmented\isegmented{} array combinators\icomb{} some of which are presented in Listing \ref{lst:LiveFusion-interface}.
 
-\begin{hscode2}{%
+\begin{hscode2}[%
     caption={\LiveFusion interface functions. Typeclass constraints on array elements have been omitted for brevity.},%
-    label=lst:LiveFusion-interface}
+    label=lst:LiveFusion-interface
+]
 type Array a = ArrayAST a
 
 -- * Flat array combinators
@@ -71,9 +72,10 @@ fold_s   :: (Term a -> Term a -> Term a) -> Term a
 \end{hscode2}
 
 
-\begin{hscode2}{%
+\begin{hscode2}[%
     caption={\LiveFusion AST (incomplete).},%
-    label=lst:LiveFusion-AST}
+    label=lst:LiveFusion-AST
+]
 type ArrayAST a = AST (Vector a)
 type ScalarAST a = AST a
 
@@ -127,9 +129,10 @@ I will now present a simple user program that can be written using \LiveFusion l
 \todo{TODO}
 \textsc{TODO: Offer a simple flat version of QuickHull and elaborate it into a proper segmented one. Aternatively give dotp as example.}
 
-\begin{hscode2}{%
+\begin{hscode2}[%
     caption={\code{farAndAbove} function, core of QuickHull.},%
-    label=lst:farAndAbove}
+    label=lst:farAndAbove
+]
 farAndAbove :: (Point,Point) -> Array Point -> (Array Point, Point)
 farAndAbove line points
   = let distances = map (dist line) points
@@ -210,9 +213,10 @@ So what is an expression of type @Term a -> Term b@?
 
 It is a term in our scalar expression language \name{Term}, representing a function from type @a@ to type @b@. The AST for the \name{Term} language is given in Listing \ref{lst:HOAS}.
 
-\begin{hscode2}{%
+\begin{hscode2}[%
     caption={Term language for HOAS representation.},%
-    label=lst:HOAS}
+    label=lst:HOAS
+]
 data Term t where
   -- Function of constant suitable for code generation
   Con :: Impl t -> Term t

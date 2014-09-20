@@ -374,8 +374,14 @@
     }
 
 %% Haskell code block with a figure box
-\lstnewenvironment{hscode2}[1]
-    {\lstset{style=haskell-float, #1}}
+\lstnewenvironment{hscode2}[1][]
+    {
+        \lstset{%
+            style=haskell,
+            float=htpb,
+            #1
+        }
+    }
     {}
 
 %% Loop code block without a figure box

@@ -25,9 +25,10 @@ In a nested data parallel program parallel computations can call further data pa
 In essence \DPH reimplements the familiar list interface in terms of seamlessly parallelised arrays. Listing \ref{lst:DPH-interface} shows some of the most important functions in the \DPH interface. Since \DPH has language support, the bracket notation for parallel arrays closely resembles that for \Haskell lists: @[:a:]@ denotes a parallel array of type @a@, while @[:[:a:]:]@ is a nested parallel array. The counterpart of \Haskell's list comprehensions is also present and is called \*parallel array comprehensions*.
 
 
-\begin{hscode2}{%
+\begin{hscode2}[%
 	caption={Type signatures for parallel array operations.},%
-	label=lst:DPH-interface}
+	label=lst:DPH-interface
+]
 (!:)         :: [:a:] -> Int -> a
 sliceP       :: [:a:] -> (Int,Int) -> [:a:]
 replicateP   :: Int -> a -> [:a:]
