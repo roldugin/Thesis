@@ -4,11 +4,125 @@
 
 \ThisULCornerWallPaper{1}{img/lst-toPercentages-overlay}
 
-\begin{hscode2}[%
-    literate=
-        {_1}{{\sub{filt}}}2 % percentages
-        {_2}{{\sub{map}}}3 % significant
-        {_3}{{\sub{mfst}}}3 % fractions
+
+
+
+\begin{loopcode}[% toPercentages: Manifest (3)
+    %literate=
+    %    {_1}{{\sub{filt}}}2 % percentages
+    %    {_2}{{\sub{map}}}3 % significant
+    %    {_3}{{\sub{mfst}}}3 % fractions
+    %    {\\}{{$\labmda$}}1
+]
+init_3:
+  let ix_3 = 0
+  let len_3 = arrayLength arr_3
+  goto guard_3
+
+guard_3:
+  unless ix_3 < len_3 | done_3
+  goto body_3
+
+body_3:
+  let elt_3 = readArray arr_3 ix_3
+  goto yield_3
+
+yield_3:
+  goto bottom_3
+
+bottom_3:
+  ix_3 := ix_3 + 1
+  goto guard_3
+
+done_3:
+\end{loopcode}
+
+\begin{loopcode}[% toPercentages: Filter (2)
+    %literate=
+    %    {_1}{{\sub{filt}}}2 % percentages
+    %    {_2}{{\sub{map}}}3 % significant
+    %    {_3}{{\sub{mfst}}}3 % fractions
+    %    {\\}{{$\labmda$}}1
+]
+init_2:
+  let len_2 = len_3 -- same length as $\mathit{mfst}$
+  let ix_2 = 0      -- but independent index
+  goto guard_2
+
+guard_2:
+  goto body_2
+
+body_2:
+  let elt_2 = elt_3 -- same array element as $\mathit{mfst}$
+  unless elt_2 >= 0.01 | bottom_2
+  goto yield_2
+
+yield_2:
+  ix_2 := ix_2 + 1  -- predicate satisfied
+  goto bottom_2
+
+bottom_2:
+  goto guard_2
+
+done_2:
+\end{loopcode}
+
+\begin{loopcode}[% toPercentages: map (1)
+    %literate=
+    %    {_1}{{\sub{filt}}}2 % percentages
+    %    {_2}{{\sub{map}}}3 % significant
+    %    {_3}{{\sub{mfst}}}3 % fractions
+    %    {\\}{{$\labmda$}}1
+]
+init_1:
+  let len_1 = len_2 -- same maximum length as $\mathit{filt}$
+  goto guard_1
+
+guard_1:
+  goto body_1
+
+body_1:
+  let f_1 = \ a. a * 100
+  let elt_1 = f_1 elt_2
+  goto yield_1
+
+yield_1:
+  let ix_1 = ix_2  -- same index as $\mathit{filt}$
+  goto bottom_1
+
+bottom_1:
+  goto guard_1
+
+done_1:
+  let ix_1 = ix_2  -- same index as $\mathit{filt}$
+\end{loopcode}
+
+
+\begin{loopcode}[% toPercentages: write (1)
+    %literate=
+    %    {_1}{{\sub{filt}}}2 % percentages
+    %    {_2}{{\sub{map}}}3 % significant
+    %    {_3}{{\sub{mfst}}}3 % fractions
+    %    {\\}{{$\labmda$}}1
+]
+init_1:
+  let arr_1 = newArray len_1
+
+yield_1:
+  writeArray arr_1 ix_1 elt_1
+
+done_1:
+  let result = sliceArray arr_1 ix_1
+  return result
+\end{loopcode}
+
+
+\begin{loopcode}[% toPercentages: complete
+    %literate=
+    %    {_1}{{\sub{filt}}}2 % percentages
+    %    {_2}{{\sub{map}}}3 % significant
+    %    {_3}{{\sub{mfst}}}3 % fractions
+    %    {\\}{{$\labmda$}}1
 ]
 init_1:
 init_2:
@@ -24,7 +138,7 @@ init_3:
 guard_1:
 guard_2:
 guard_3:
-  unless (<) ix_3 len_3 | done_1
+  unless ix_3 < len_3 | done_1
   goto body_1
 
 body_1:
@@ -32,7 +146,7 @@ body_2:
 body_3:
   let elt_3 = readArray arr_3 ix_3
   let elt_2 = elt_3
-  let f_1 = \a. a * 100
+  let f_1 = \ a. a * 100
   let elt_1 = f_1 elt_2
   unless elt_3 >= 0.01 | bottom_1
   goto yield_1
@@ -57,7 +171,13 @@ done_3:
   let ix_1 = ix_2
   let result = sliceArray arr_1 ix_1
   return result
-\end{hscode2}
+\end{loopcode}
+
+
+%\caption{\code{toPercentages} loops.}
+%\label{fig:toPercentages-loops}
+%\end{figure}
+
 
 
 \end{document}
