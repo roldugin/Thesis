@@ -80,14 +80,49 @@
 
 \def\dol{\mathtt{\char36}}
 
-\newcommand\sub[1]{\large\itshape\rmfamily\textsubscript{#1}}
+\newcommand\sub[1]{\large\itshape\rmfamily\textsubscript{#1}\normalfont\normalsize}
 
 \def\halfspacing{\setstretch{0.5}} % Not sure how this works, but it's smaller than 1.0
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Automatically make code after underscore subscripted
+
+% \def\SubscriptWord#1 {\check#1\relax\sub{#1} }
+
+% % Check function parses world until space/newline
+% \def\check#1{%
+% \ifx\relax#1%
+% \else
+% \ifcat a#1%
+% \else
+% \typeout{illegal character #1}%
+% \fi
+% \expandafter\check
+% \fi}
+
+% To use:
+% \catcode`\_=\active
+% \def_{\SubscriptWord}
+% hello_world
+
+% How to define \AutoSubscriptOn and \AutoSubscriptOff ??
+%\def\AutoSubscriptOn{\def_{\SubscriptWord}}
+% Hello_World will result in world subscripted World
+% \_ will result in the usual underscore
+%\edef\AutoSubscriptOff{\noexpand\def_{\_}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Two part variable names
+\catcode`\_=\active
+\def\|#1_#2|{\texttt{#1}\sub{#2}}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Minimal syntax for supporting Markdown style \*italic*, \|fixed-width|, \$mathit$
 
-\def\|#1|{\texttt{#1}}
+%\def\|#1|{\texttt{#1}}
 \def\*#1*{\emph{#1}}
 \def\$#1${$\mathit{#1}$}
 
@@ -202,29 +237,6 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Automatically make code after underscore subscripted
-
-\def\SubscriptWord#1 {\check#1\relax\textsubscript{#1} }
-
-% Check function parses world until space/newline
-\def\check#1{%
-\ifx\relax#1%
-\else
-\ifcat a#1%
-\else
-\typeout{illegal character #1}%
-\fi
-\expandafter\check
-\fi}
-
-% How to define \AutoSubscriptOn and \AutoSubscriptOff ??
-%\def\AutoSubscriptOn{\def_{\SubscriptWord}}
-% Hello_World will result in world subscripted World
-% \_ will result in the usual underscore
-%\edef\AutoSubscriptOff{\noexpand\def_{\_}}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 %% C o d e   L i s t i n g s
 %%
@@ -256,7 +268,7 @@
     rulecolor={\color[gray]{0.7}},
     numbers=none,
     basicstyle=\singlespacing\ttfamily,
-    numberstyle=\color{Gray}\tiny\it,
+    numberstyle=\normalsize\color{gray}\ttfamily,
     commentstyle=\color{MidnightBlue}\it,
     stringstyle=\color{Maroon},
     keywordstyle=[1],
@@ -364,7 +376,6 @@
 
 \newcommand{\makeatcode}{\lstMakeShortInline[style=haskell-inline]@}
 \newcommand{\makeatchar}{\lstDeleteShortInline@}
-
 
 \makeatcode %% From now on code wrapped in @...@ will typeset as inline.
             %% Disable with \makeatchar
