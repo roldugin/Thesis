@@ -75,21 +75,21 @@ The initialisation code corresponds to the following in the \Loop language:
 
 \begin{loopcode}
 init:
-  len = arrayLength xs
-  ys = newArray len
-  i = 0
-  j = 0
+  let len = arrayLength xs
+  let ys = newArray len
+  let i = 0
+  let j = 0
   goto guard
 \end{loopcode}
 
 
 \subsubsection{Guard}
 
-The @guard@ of a @for@ loop corresponds to a \[guard] block of in the \Loop language. It can contain arbitrary statements but usually contains at least one statement of the same name:
+The @guard@ of a @for@ loop corresponds to a \[guard] block of in the \Loop language. It can contain arbitrary statements but usually contains at least one @unless@ statement:
 
 \begin{loopcode}
 guard:
-  guard i < len | done
+  unless i < len | done
   goto body
 \end{loopcode}
 
@@ -119,8 +119,8 @@ This is one of the use cases for what is called a \[done] block of the loop:\tod
 
 \begin{loopcode}
 done:
-  ys' = freezeArray ys j   -- resize to length j
-  return ys'
+  let result = freezeArray ys j   -- resize to length j
+  return result
 \end{loopcode}
 
 As seen from the code, every loop has a result which it returns explicitly.
@@ -155,9 +155,9 @@ The \Loop language attempts to be more precise about where the element is produc
 
 \begin{loopcode}
 body:
-  x = readArray xs i
-  guard (p x) | bottom  -- end iteration if the predicate is not satified
-  y = f x
+  let x = readArray xs i
+  unless (p x) | bottom  -- end iteration if the predicate is not satified
+  let y = f x
   goto yield
 
 yield:
@@ -183,20 +183,20 @@ Both the original program and the resulting loop are given in Figure~\ref{fig:Ma
 \begin{subfigure}{.5\textwidth}
 \begin{loopcode}
 init:
-  len = arrayLength xs
-  ys = newArray len
-  i = 0
-  j = 0
+  let len = arrayLength xs
+  let ys = newArray len
+  let i = 0
+  let j = 0
   goto guard
 
 guard:
-  guard i < len | done
+  unless i < len | done
   goto body
 
 body:
-  x = readArray xs i
-  guard (p x) | bottom
-  y = f x
+  let x = readArray xs i
+  unless (p x) | bottom
+  let y = f x
   goto yield
 
 yield:
@@ -209,8 +209,8 @@ bottom:
   goto guard
 
 done:
-  ys' = freezeArray ys j
-  return ys'   
+  let result = freezeArray ys j
+  return result
 \end{loopcode}
 \end{subfigure}%
 %
