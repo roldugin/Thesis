@@ -321,6 +321,26 @@
 }
 
 
+\lstdefinestyle{loop}{%
+    deletekeywords={case,class,data,default,deriving,do,in,instance,let,of,type,where,if,then,else,init,guard,unless,done,return},
+    %morekeywords={[4]init,guard,body,yield,bottom,done},
+    morekeywords={[3]let,goto,unless,return},
+    morekeywords={[4]newArray,readArray,writeArray,arrayLength,sliceArray},
+    literate=
+        {\\}{{$\lambda$}}1
+        {\\\\}{{\char`\\\char`\\}}1
+        {->}{{$\rightarrow$}}2
+        {>=}{{$\geq$}}2
+        {<-}{{$\leftarrow$}}2
+        {<=}{{$\leq$}}2
+        {=>}{{$\Rightarrow$}}2
+        {...}{{$\cdots$}}3
+        {:=}{{$\coleq$}}2
+        {|}{{$\mid$}}1,
+}
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Shorthand for inline code fragments
 
@@ -406,9 +426,7 @@
     {
         \minipage{\linewidth}
         \lstset{
-            style=haskell,
-            literate=
-                {:=}{{$\coleq$}}2,
+            style=loop,
             #1
         }
     }
@@ -420,7 +438,7 @@
 \lstnewenvironment{loopcode2}[1][]
     {
         \lstset{%
-            style=haskell,
+            style=loop,
             float=htpb,
             #1
         }
