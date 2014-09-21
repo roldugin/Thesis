@@ -223,6 +223,21 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Normally when specifying `literate' in multiple places, the old value is
+%% overwritten.
+%%
+%% However, in my case `loopcode' extends `haskell'. Additionally I need to be
+%% able to specify extra listing-specific literates.
+%%
+%% This hack was provided by Symbol 1 on TeX.SX:
+%% http://tex.stackexchange.com/a/202340/61985
+\makeatletter
+\def\lst@Literatekey#1\@nil@{\let\lst@ifxliterate\lst@if
+    \expandafter\def\expandafter\lst@literate\expandafter{\lst@literate#1}}
+\makeatother
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Styles
 %% TODO: Perhaps add aboveskip, belowcaptionskip and belowskip
 
