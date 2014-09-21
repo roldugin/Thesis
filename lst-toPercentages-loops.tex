@@ -1,0 +1,63 @@
+%% We use `subfiles' package
+\documentclass[preamble.tex]{subfiles}
+\begin{document}
+
+\ThisULCornerWallPaper{1}{img/lst-toPercentages-overlay}
+
+\begin{hscode2}[%
+    literate=
+        {_1}{{\sub{filt}}}2 % percentages
+        {_2}{{\sub{map}}}3 % significant
+        {_3}{{\sub{mfst}}}3 % fractions
+]
+init_1:
+init_2:
+init_3:
+  let ix_3 = 0
+  let len_3 = arrayLength arr_3
+  let len_2 = len_3
+  let ix_2 = 0
+  let len_1 = len_2
+  let arr_1 = newArray len_1
+  goto guard_1
+
+guard_1:
+guard_2:
+guard_3:
+  unless (<) ix_3 len_3 | done_1
+  goto body_1
+
+body_1:
+body_2:
+body_3:
+  let elt_3 = readArray arr_3 ix_3
+  let elt_2 = elt_3
+  let f_1 = \a. a * 100
+  let elt_1 = f_1 elt_2
+  unless elt_3 >= 0.01 | bottom_1
+  goto yield_1
+
+yield_1:
+yield_2:
+yield_3:
+  ix_2 := ix_2 + 1
+  let ix_1 = ix_2
+  writeArray arr_1 ix_1 elt_1
+  goto bottom_1
+
+bottom_1:
+bottom_2:
+bottom_3:
+  ix_3 := ix_3 + 1
+  goto guard_1
+
+done_1:
+done_2:
+done_3:
+  let ix_1 = ix_2
+  let result = sliceArray arr_1 ix_1
+  return result
+\end{hscode2}
+
+
+\end{document}

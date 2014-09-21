@@ -310,55 +310,6 @@ ast = Map (* 100) $ Filter (>=. 0.01) $ Manifest vec
 
 % After sharing recovery each AST node (or rather ASG node) is assigned a unique value
 
-\begin{hscode2}
-init_1:
-init_2:
-init_3:
-  let ix_3 = 0
-  let len_3 = lengthArray arr_3
-  let len_2 = len_3
-  let ix_2 = 0
-  let len_1 = len_2
-  arr_1 = newArray len_1
-  goto guard_1
-
-guard_1:
-guard_2:
-guard_3:
-  guard on (<) ix_3 len_3 | onFail: done_1
-  goto body_1
-
-body_1:
-body_2:
-body_3:
-  elt_3 = arr_3[ix_3]
-  let elt_2 = elt_3
-  let f_1 = <Code>
-  let elt_1 = f_1 elt_2
-  guard on <Code> elt_3 | onFail: bottom_1
-  goto yield_1
-
-yield_1:
-yield_2:
-yield_3:
-  ix_2 := (+) ix_2 1
-  let ix_1 = ix_2
-  arr_1[ix_1] := elt_1
-  goto bottom_1
-
-bottom_1:
-bottom_2:
-bottom_3:
-  ix_3 := (+) ix_3 1
-  goto guard_1
-
-done_1:
-done_2:
-done_3:
-  let ix_1 = ix_2
-  result = sliceArray arr_1 ix_1
-  return result
-\end{hscode2}
 
 
 
