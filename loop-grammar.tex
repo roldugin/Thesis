@@ -1,3 +1,7 @@
+%% We use `subfiles' package
+\documentclass[preamble.tex]{subfiles}
+\begin{document}
+
 %% IMPORTANT
 %% Put the following footnote after the figure on the same page where the figure ends up:
 %% \footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings instead.}
@@ -33,17 +37,17 @@
 
 <block> ::= $\many{label}$ $\many{stmt}$ $stmt_{final}$
 
-<stmt> ::= $var$ `=' $expr$
+<stmt> ::= `let' $var$ `=' $expr$
       \alt $var$ `:=' $expr$
-      \alt `case' $expr_{bool}$ $label_{true}$ $label_{false}$
-      \alt `guard' $expr_{bool}$ $label_{false}$
+      \alt `if' $expr_{bool}$ `|' $label_{true}$ $label_{false}$
+      \alt `unless' $expr_{bool}$ `|' $label_{false}$
       \alt `goto' $label$
       \alt `return' $var$
-      \alt $var$ `=' `newArray' $expr_{length}$
-      \alt $var$ `=' `readArray' $var_{array}$ $expr_{index}$
+      \alt `let' $var$ `=' `newArray' $expr_{length}$
+      \alt `let' $var$ `=' `readArray' $var_{array}$ $expr_{index}$
       \alt `writeArray' $var_{arr}$ $expr_{index}$ $expr_{element}$
-      \alt $var$ `=' `sliceArray' $var_{arr}$ $expr_{new\_length}$
-      \alt $var$ `=' `lengthArray' $var_{arr}$
+      \alt `let' $var$ `=' `sliceArray' $var_{arr}$ $expr_{new\_length}$
+      \alt `let' $var$ `=' `arrayLength' $var_{arr}$
 
 <expr> ::= $var$
       \alt $expr_{\mathit{f}}$ $exp_{arg}$
@@ -55,3 +59,5 @@
       \alt $term_{s \rightarrow t}\ term_{s}$
 
 \end{grammar}
+
+\end{document}
