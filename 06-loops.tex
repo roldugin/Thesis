@@ -22,10 +22,11 @@ In the following sections we will look more closely at what a loop really is and
 
 
 \section{Anatomy of a loop}
+\label{sec:anatomy}
 
 Despite the purely functional, combinatorial interface to the library, looking at a loop in a procedural way is the approach I have opted for in the middle layer of the system. It is represented by the \Loop language\iloop{}.
 
-The loops \LiveFusion generates can be viewed as similar to those one might write in an Assembly language. It uses labelled basic blocks and has explicit control flow using @goto@ statements\footnote{The formal grammar of the \Loop language is introduced much later in the chapter. It is presented in Figure \ref{fig:Loop-grammar} on \pageref{fig:Loop-grammar}}.
+The loops \LiveFusion generates can be viewed as similar to those one might write in an Assembly language. It uses labelled basic blocks and has explicit control flow using @goto@ statements\footnote{The formal grammar of the \Loop language is introduced later in the chapter. It is presented in Figure \ref{fig:Loop-grammar} on \pageref{fig:Loop-grammar}}.
 
 However, as we will see later, they are often even more structured than loops in \C and other mainstream procedural languages. As such I urge the reader to think of them as being high-level and treat the explicit control flow as implementation details.
 
@@ -119,7 +120,7 @@ This is one of the use cases for what is called a \[done] block of the loop:\tod
 
 \begin{loopcode}
 done:
-  let result = freezeArray ys j   -- resize to length j
+  let result = sliceArray ys j   -- resize to length j
   return result
 \end{loopcode}
 
@@ -209,7 +210,7 @@ bottom:
   goto guard
 
 done:
-  let result = freezeArray ys j
+  let result = sliceArray ys j
   return result
 \end{loopcode}
 \end{subfigure}%
@@ -245,7 +246,7 @@ In summary we have used the following features of the \Loop language in the prev
 \item Explicit control transfer (@goto body@)
 \item Conditional control transfer (@guard i < len | done@)
 \item Returning values from loop (@return ys'@)
-\item A number of built-in array primitives: (@newArray@, @readArray@, @writeArray@, @arrayLength@ and @freezeArray@).
+\item A number of built-in array primitives: (@newArray@, @readArray@, @writeArray@, @arrayLength@ and @sliceArray@).
 \end{enumerate}
 
 All of the above are \*statements*, which are grouped into labelled \*basic blocks*\iblock.
@@ -299,20 +300,35 @@ The @toPercentages@ function internally uses a pipeline of to combinators: the o
 
 It is impossible possible to know statically whether the input @fraction@ array is computed by a long pipeline of combinators or is a @Manifest@ array stored in memory. Likewise, it is not known before the runtime if the resulting @percents@ array is consumed by another combinator and the pipeline of delayed operation will continue to grow after @toPercentages@ function returns.
 
-For the purposes of illustration we will assume that the @toPercentage@ function is called with a @Manifest@ array as argument and the result is immediately \*forced* to be computed (e.g. to be printed out or to be consumed in a random access fashion).
+For the purposes of illustration we will assume that the @toPercentagee@ function is called with a @Manifest@ array as argument and the result is immediately \*forced* to be computed (e.g. to be printed out or to be consumed in a random access fashion).
 
-In this case the AST shown on Figure~\ref{fig:toPercentages} (right) is constructed at the runtime of the program:
+In this case the AST shown on Figure~\ref{fig:toPercentages} (right) is constructed and \*forced* to a @Manifest@ array at the runtime of the program:
 
-\begin{hscode}
+\begin{hscode}[mathescape]
+-- AST that may be generated for a call to toPercentages
 ast :: AST (Vector Double)
-ast = Map (* 100) $ Filter (>=. 0.01) $ Manifest vec
+ast = force $\dol$ Map (* 100) $\dol$ Filter (>=. 0.01) $\dol$ Manifest vec
+
+-- LiveFusion library functions
+force :: Elt a => AST (Vector a) -> AST (Vector a)
+force = Manifest . evalArrayAST
+
+evalArrayAST :: Elt a => AST (Vector a) -> Vector a
+evalArrayAST = $...\ compile\ AST\ and\ compute\ result ...$
 \end{hscode}
 
+The three fusible combinators (@Manifest@, @Filter@ and @Map@) are followed by the call to an evaluator, which processes them individually as shown next.
 % After sharing recovery each AST node (or rather ASG node) is assigned a unique value
 
 
+\subsection{Generate loops for individual combinatos}
 
+In order to generate the \Loop code for an AST of combinators, the evaluator first processes them individually. For each combinator it populates the parts of the loop that were identified in Section~\ref{sec:anatomy}. It does so by inserting new statements into the corresponding basic blocks thus instantiating the loop template.
 
+\subfile{lst-toPercentages-loops}
+
+The left of Figure~\ref{fig:toPercentages-loops} presents
+Recalling
 
 It is now time to remember the \|Manifest| combinator of LiveFusion language that we used to bring a physical array in memory and create a LiveFusion language term out of it. As it turns out, \thesis{all the reading of physical arrays is performed by the code generated by the \|Manifest| combinator}. What this means is that, while the reading is still performed in the \|body| code block of of the loop, the code for it is only generated once at the beginning of each combinator pipeline.
 
@@ -415,7 +431,7 @@ What happens is that two new loops are generated: one for \|Manifest| $xs$ and o
     goto guard_force
 
   done_force:
-    result := freezeArray result o
+    result := sliceArray result o
 \end{loopcode}
 
 The \|Manifest| loop is the only one of the four ``loops'' presented so far that actually resembles a runnable loop. Out of the four it is the only one that introduces a source array counter $i_{xs}$ in the \|init| block which it compares against the length of $xs$ in the \|guard|. It also increments it in the \|bottom| block.
@@ -465,7 +481,7 @@ In the previous section we have established how each of the combinators of the $
     goto guard
 
   done:
-    result := freezeArray result o   -- From forcing result
+    result := sliceArray result o   -- From forcing result
 \end{loopcode2}
 
 Talk about loop merging........

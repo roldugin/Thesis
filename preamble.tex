@@ -97,20 +97,20 @@
 
 \definecolor{someblue}{rgb}{0.122, 0.435, 0.698}
 
-\newtcbox{\roundedbox}{
-  nobeforeafter,
-  colframe=someblue!50!white,
-  colback=someblue!10!white,
-  boxrule=0.5pt,
-  arc=4pt,
-  boxsep=0pt,
-  left=5pt,
-  right=5pt,
-  top=5pt,
-  bottom=5pt,
-  tcbox raise base}
+% \newtcbox{\roundedbox}{
+%   nobeforeafter,
+%   colframe=someblue!50!white,
+%   colback=someblue!10!white,
+%   boxrule=0.5pt,
+%   arc=4pt,
+%   boxsep=0pt,
+%   left=5pt,
+%   right=5pt,
+%   top=5pt,
+%   bottom=5pt,
+%   tcbox raise base}
 
-\def\[#1]{\roundedbox{\texttt{#1}}}
+\def\[#1]{\texttt{#1}}
 
 % A prettier :=
 \makeatletter
