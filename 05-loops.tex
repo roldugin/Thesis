@@ -284,6 +284,9 @@ We also note that each label and variable in the language is postfixed with a un
 
 Being a flexible assembly-style language the \Loop language is not limited by the basic block structure discussed in Section~\ref{sec:anatomy} and summarised in Section~\ref{sec:anatomy-summary}. However, as seen in the rest of this chapter this structure has proven to be a useful common base for many types of arrays combinators. Thus we assume this to be the common pattern of using the \Loop language.
 
+Semantically, the \Loop language does not presume a fixed order of evaluating @let@ bound variables. However, all statements affecting control flow (@goto@, @unless@, @if@) are executed in the order they appear in the block.
+
+Lastly, the new value of assigned variables ($\coleq$) is not available until the next block the control is transferred to. This is an implementation side-effect of the \*liveness analysis* pass (Section~\ref{sec:Liveness-analysis}) which however is helpful in implementing fused loops.
 
 
 \clearpage
@@ -344,7 +347,7 @@ evalArrayAST :: Elt a => AST (Vector a) -> Vector a
 evalArrayAST = $...\ compile\ AST\ and\ compute\ result ...$
 \end{hscode}
 
-The three fusible combinators (@Manifest@, @Filter@ and @Map@) are followed by the call to an evaluator, which processes them individually as shown next.
+The three fusible combinators represented by @Manifest@, @Filter@ and @Map@ AST nodes are followed by the call to an evaluator, which processes them individually as shown next.
 % After sharing recovery each AST node (or rather ASG node) is assigned a unique value
 
 
@@ -393,7 +396,7 @@ These are examples of \*naming conventions* used to facilitate communication bet
 \item Variable \|ix_id| contains the index of the element being produced.
 \end{itemize}
 
-Rebinding the three variables in every combinator ensures that this information is \*propagated* upwards through the pipeline of combinators. In particular, the @Filter@ only required to know the \*id* of @Manifest@ combinator below it to infer these variables.
+Rebinding the three variables in every combinator ensures that this information is \*propagated* upwards through the pipeline of combinators. In particular, the @filter@ only required to know the \*id* of @Manifest@ combinator below it to infer these variables.
 
 \begin{bluebox}
 By design the combinators know the unique identifiers of the combinators they are referencing and nothing else.
@@ -402,72 +405,46 @@ By design the combinators know the unique identifiers of the combinators they ar
 
 \subsubsection{Map}
 
-Populating the loop with @Map@-specific statements is straight-forward.
+Populating the loop with @map@-specific statements is straight-forward.
 
-Since the length \|len_map| and the iteration index \|ix_map| are always the same as those of the input array (output of @Filter@), they are simply rebound. This means that @Manifest@ combinator uses one index, while both @Filter@ and @Map@ are using another. This supports the \*rate*-changing\irate{} nature of @filter@.
+Since the length \|len_map| and the iteration index \|ix_map| are always the same as those of the input array (output of @filter@), they are simply rebound. This means that @Manifest@ combinator uses one index, while both @filter@ and @map@ are using another. This supports the \*rate*-changing\irate{} nature of @filter@.
 
 Again, the user specified function $(* 100)$ is inlined to facilitate generation of fast code.
 
 
 \subsubsection{Physical array creation}
 
-For the @toPercentages@ example we said the pipeline of combinators will be forced to a @Manifest@ array immediately after the @Map@.
+For the @toPercentages@ example we said the pipeline of combinators will be forced to a @Manifest@ array immediately after the @map@.
 
 The statements required to allocate, populate, slice and return the new array are self-explanatory.
 
 It is worthy of note that the design decision to transfer control to \[yield] block whenever an element is produced has made it very easy to introduce the array write.
 
-\subsubsubsection{Merging loops}
 
 
-We have essentially given the complete Loop representation for @Manifest@, @map@ and @filter@ combinators together with the code that actually deals with writing out physical arrays. However, it all came in separate loops none of which was very useful by itself. We will now show how these loops can be turned into a runnable loop.
+\subsection{Merging loops}
 
-In the previous section we have established how each of the combinators of the $aboveThreshold$ function contribute to each loop. Each of those loops has \[init], \[guard], \[body], \[yield], @bottom@ and \[done] code blocks which are connected by @goto@s. We can now simpy merge the respective sections of all loops to give a loop in Figure . The statements of @Manifest@ array itteration preceed those of the @map@, which in turn preceed those of the @filter@. The statements of physical array creation come last.
+We have given the \Loop language representations for @Manifest@, @map@ and @filter@ combinators as well as the code that writes out physical arrays.
 
-\begin{loopcode2}[%
-    caption={Final loop for a call of aboveThreshold Function.},
-    label=lst:aboveThreshold-final-loop,
-    literate=
-      {_xs}{{\sub{xs}}}2
-      {_abv}{{\sub{abv}}}3
-      {_adj}{{\sub{abv}}}3
-]
-  -- Loop: force $\char36$ filter (> 100) $\char36$ map f $\char36$ Manifest xs
-  init:
-    len_xs = arrayLength xs          -- From @Manifest@
-    i_xs = 0                         -- From @Manifest@
-    o_abv = 0                        -- From @filter@
-    result = newArray len_xs         -- From forcing result
-    goto guard
+In order a create one succinct loop, these individual loops are merged into one loop as they are being created. Each combinator has access to the loop composed by all of the combinators below it. For example, when fusing the @map@ the cumulative loop of both @filter@ and @Manifest@ is available for it to be merged with.
 
-  guard:
-    guard (i_xs < len_xs) done       -- From @Manifest@
-    goto body
+For combinators as simple as @map@ and @filter@ merging loops means to simply merge the statements of the corresponding blocks blocks in no particular order.
 
-  body:
-    elt_xs = readArray xs i_xs       -- From @Manifest@
-    elt_adj = f elt_xs               -- From @map@
-    elt_abv = elt_adj                -- From @filter@     
-    guard (elt_abv > 100) bottom     -- From @filter@
-    goto yield
+As seen from the final loop on Figure~\ref{fig:toPercentages-loops} (right), not only the block statement lists have been merged together, but also the block labels: each block can now be identified by any of the three identifiers (\*mfst*, \*filt*, \*map*).
 
-  yield:
-    o_abv := o_abv + 1               -- From @filter@
-    writeArray result o_abv elt_abv  -- From forcing the result
-    goto bottom
+This is done in order to support fusing complex ASTs with lots of shared nodes. The benefit of this may appear much clearer when we introduce nested combinators\todo{in Section}.
+\todo{Elaborate.}
 
-  bottom:
-    i_xs := i_xs                     -- From @Manifest@
-    goto guard
 
-  done:
-    result := sliceArray result o   -- From forcing result
-\end{loopcode2}
+\subsubsection{Managing label sets with AliasMap}
 
-Talk about loop merging........
+In order to achieve the flexibility of having multiple labels associated with the same block I have implemented a new type of associations @Map@ called \name{AliasMap}.
 
-An important difference however, is that while in the C version there were two separate loops with separate counters ...
+It offers a familiar interface (Listing~\ref{lst:AliasMap-interface}) similar to that of \Haskell's @Data.Map@. The difference is that it allows for a \*set* of keys to be associated with one value. In addition to the usual functions found in @Data.Map@ one will allow to query the map using \*synonyms*. That is, it will produce a given any one keys associated with the value.
 
+The notion of \*key synonyms* is used throughout \name{AliasMap} interface which greatly facilitates managing and merging loops where blocks are associated with multiple labels.
+
+\lstinputlisting[style=haskell, float, caption={\name{AliasMap} interface (partial). \code{Ord k} constraints omitted for brevity.}, label=lst:AliasMap-interface]{listings/AliasMap-interface.hs}
 
 
 \section{More on gotos}
