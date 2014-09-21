@@ -21,6 +21,8 @@ The focus of this chapter is to establish a common loop representation to which 
 In the following sections we will look more closely at what a loop really is and then present the core of our fusion optimisation.
 
 
+\clearpage
+
 \section{Anatomy of a loop}
 \label{sec:anatomy}
 
@@ -127,7 +129,7 @@ done:
 As seen from the code, every loop has a result which it returns explicitly.
 
 
-\subsection{``Dissecting the bodies'' of loops}
+\subsection{``Dissecting loop bodies''}
 
 We will now attempt to categorise the types of operations that all belong to the bodies of conventional @for@ and @while@ loops.
 
@@ -236,17 +238,20 @@ ys = realloc(ys, o * sizeof(int));
 
 \subsection{Summary of Loop structure}
 \label{sec:anatomy-summary}
-In summary the common loop structure to be used throughout this chapter comprises the following 6 parts (represented by basic blocks in the \Loop language):
+
+In summary the common loop structure to be used throughout this chapter comprises the following 6 parts (represented by basic blocks in the \Loop language):\iblock{}
 \begin{enumerate}
-\halfsacing
+\halfspacing
 \item \[init] block is the main entry into the loop and contains statements which need to execute only once for the whole loop. New array allocation, index and length variable initialisation all belong here.
 \item \[guard] block performs looping condition tests before every iteration of the loop.
 \item \[body] block contains all statements concerned with reading arrays and computing elements.
 \item \[yield] block is entered only if a \*new element* has been produced by the loop in the current iteration. It is not entered is the loop's logic has skipped to the next iteration without producing an element (e.g. in @filter@ combinator). This is the place to write the produced element in the resulting array if required.
 \item \[bottom] block is entered unconditionally at the end of every iteration whether of not an element has been produced. It roughly corresponds to the \*update* section of a @for@ loop in procedural languages. Uses beyond simple index advancement will be seen later in this chapter.
-\item \[done] block is performing any remaining operations after the loop has run. In particular it processes and returns the final result from the loop. Unlike the loops in the majority of procedural languages the @return@ of a value from a loop in the \Loop language is explicit.
+\item \[done] block performs any remaining operations after the loop has finished. In particular it returns the final result from the loop. Unlike the loops in the majority of procedural languages the @return@ of a value from a loop in the \Loop language is explicit.
 \end{enumerate}
 
+
+\clearpage
 
 \section{The \Loop language more formally}
 \label{sec:The-Loop-language}
@@ -265,20 +270,26 @@ In summary we have used the following features of the \Loop language in the prev
 
 All of the above are \*statements*, which are grouped into labelled \*basic blocks*\iblock.
 
-The grammar of the \Loop language is presented formally in Figure~\ref{fig:Loop-grammar}. The syntax seen in the examples throughout this thesis is the same as used by the pretty printer for the language and it faithfully reproduces the internal representation of \Loop programs.
+The grammar of the \Loop language is presented formally in Figure~\ref{fig:Loop-grammar}. The syntax seen in the examples throughout this thesis is the same as used by the pretty printer for the language and it faithfully\footnote{I have taken the liberty of rewriting operators in infix notation and omitting explicit literal conversions such as \code{fromInteger 1}.} reproduces the internal representation of \Loop programs. 
 
-\begin{cfigure}{\label{fig:Loop-grammar}Grammar of \Loop language.}
+\begin{figure}[htpb]
 \subfile{loop-grammar}
-\end{cfigure}
-\todo{Put the footnotetext on the same page where the grammar ends up}\footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings.}
+\caption{\label{fig:Loop-grammar}Grammar of \Loop language.}
+\end{figure}
+\todo{Put the footnotetext on the same page where the grammar ends up}
+\footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings. \*(Footnote for listing \ref{fig:Loop-grammar})*}
 
 If the grammar is studied more carefully one would note two each basic block may have multiple associated labels. As we will see in the next section this is a vital feature of the language which allows for easy fusion of loops.
 
 We also note that each label and variable in the language is postfixed with a unique value which has so far been omitted from the listings.
 
-Being a fairly flexible assembly-style language the \Loop language is not limited by the basic block structure discussed in Section~\ref{sec:anatomy}\todo{and summarised in }. However, as seen in the rest of this chapter this structure has proven to be a useful common base for many types of arrays combinators. Thus we assume this to be the common pattern of using the \Loop language.
+Being a flexible assembly-style language the \Loop language is not limited by the basic block structure discussed in Section~\ref{sec:anatomy}\todo{and summarised in }. However, as seen in the rest of this chapter this structure has proven to be a useful common base for many types of arrays combinators. Thus we assume this to be the common pattern of using the \Loop language.
+
+
+\clearpage
 
 \section{Loop generation}
+\label{sec:loop-generation}
 
 In the previous section we have seen the first example of the \Loop EDSL which computed at @filter@ of an array followed by a @map@. We have also identified five main \*sections* of a loop, represented by \*basic blocks* in the \Loop language: \[init], \[guard], \[body], \[yield], \[bottom] and \[done].
 
@@ -307,6 +318,7 @@ toPercentages fractions
 \caption{\code{toPercentages} function (left) and its \LiveFusion AST (right).}
 \label{fig:toPercentages}
 \end{figure}
+
 
 
 \subsection{Start with an AST}
