@@ -31,13 +31,13 @@ The main data structure \LiveFusion is ultimately working with is an array. To a
 
 We have just established that the looping in Haskell is done through recursive functions. We will now look at how this can be applied to array computation.
 
-The internal \Loop language has \|writeArray| statement which hints the need for \*mutable* arrays. The use of mutable values is not typical in \Haskell and is discouraged. However, for performance reasons there are mechanisms by which this can be done.
+The internal \Loop language has @writeArray@ statement which hints the need for \*mutable* arrays. The use of mutable values is not typical in \Haskell and is discouraged. However, for performance reasons there are mechanisms by which this can be done.
 
-In \Haskell all variable are immutable by default. To achieve mutability one must leave the pure context and use one that supports mutable state. In Haskell this usually amounts to using \|IO| or \|ST| monads.
+In \Haskell all variable are immutable by default. To achieve mutability one must leave the pure context and use one that supports mutable state. In Haskell this usually amounts to using @IO@ or @ST@ monads.
 
-The \|IO| monad lets the programmer alter the global state of the program and perform any desired side-effecting computations. On the other hand, \|ST| monad only allows to work with mutable memory. The memory is thread-local and must be allocated inside the monad in order to be used. The return value from the \|ST| monad is the pure \Haskell value. Stateful computations performed inside the monad are not visible outside the monadic context. The compiler ensures that no mutable state escapes the \|ST| computation. This means that for all intents and purposes an \|ST| computation can be considered pure, despite the fact that it may use side-effects internally (usually for efficiency reasons).
+The @IO@ monad lets the programmer alter the global state of the program and perform any desired side-effecting computations. On the other hand, @ST@ monad only allows to work with mutable memory. The memory is thread-local and must be allocated inside the monad in order to be used. The return value from the @ST@ monad is the pure \Haskell value. Stateful computations performed inside the monad are not visible outside the monadic context. The compiler ensures that no mutable state escapes the @ST@ computation. This means that for all intents and purposes an @ST@ computation can be considered pure, despite the fact that it may use side-effects internally (usually for efficiency reasons).
 
-Mutable arrays in \Haskell can be used from both inside \|IO| and \|ST| monads. There are several implementations that provide similar interfaces to fast mutable arrays. I used the \name{vector}\footnote{http://hackage.haskell.org/package/vector} package in my development, and its use in the examples in this chapter should be quite self-explanatory.\footnote{The choice of \name{vector} library is mostly due to historical reasons. It has been first implemented by Roman Leshchinskiy in the research group I belong to and is currently providing array functionality to \name{Data Parallel Haskell}, \name{Repa} and \name{Accelerate}, all of which originate from this group.\todo{Accelerate uses Vector?}} Since we do not require to do any side-effecting computations in our loops except allocating and working with memory, arrays in \|ST| monad will suffice for us.
+Mutable arrays in \Haskell can be used from both inside @IO@ and @ST@ monads. There are several implementations that provide similar interfaces to fast mutable arrays. I used the \name{vector}\footnote{http://hackage.haskell.org/package/vector} package in my development, and its use in the examples in this chapter should be quite self-explanatory.\footnote{The choice of \name{vector} library is mostly due to historical reasons. It has been first implemented by Roman Leshchinskiy in the research group I belong to and is currently providing array functionality to \name{Data Parallel Haskell}, \name{Repa} and \name{Accelerate}, all of which originate from this group.\todo{Accelerate uses Vector?}} Since we do not require to do any side-effecting computations in our loops except allocating and working with memory, arrays in @ST@ monad will suffice for us.
 
 \todo{Perhaps give a simple example of looping using vector if the translation code from Loop to Haskell is hard to understand.}
 
@@ -107,18 +107,18 @@ To demonstrate the workings of the code generator we will use the source program
 
 A \Loop is essentially a group of labelled code blocks with a predefined entry block. Every code block becomes its own function in the generated code. We see in the example that each code block like \[body] became $body$ function. Each code block has a unique identifier associated with it (in our case $ys$), which distinguishes it from similarly named blocks of any nested loops which may be present.
 
-A \*block* becomes a \*function* in the generated code. Consequently, the \|goto| statements become *function calls*. Each \|goto| statement specifies which block to transfer the control to.
+A \*block* becomes a \*function* in the generated code. Consequently, the @goto@ statements become *function calls*. Each @goto@ statement specifies which block to transfer the control to.
 
 Blocks of the internal \Loop language do not explicitly specify what loop state they require or declare. A loop's state is implicit and global. As will be discussed later in Section \todo{ref} the state of the loop is passed as function arguments in the generated code. This is the reason for a large number of arguments to functions generated from blocks. The process for generating the arguments from loop variables will be outlined in Section \todo{ref}.
 
 
 \subsection{Guards and Cases}
 
-The \Loop language offers two conditional statements: \|guard| and \|case|. Given a boolean expression the \|case| statement transfers control to one of the two specified blocks. A \|guard| is a simplified \|case| statement which only transfers control to a different block if the predicate is \*false*, but stays in the same block otherwise. The \|guard| is used to preempt execution of a block if a condition is not met.
+The \Loop language offers two conditional statements: @guard@ and @case@. Given a boolean expression the @case@ statement transfers control to one of the two specified blocks. A @guard@ is a simplified @case@ statement which only transfers control to a different block if the predicate is \*false*, but stays in the same block otherwise. The @guard@ is used to preempt execution of a block if a condition is not met.
 
-Both \|case| and \|guard| are translated to \Haskell's \|if| expression in the generated code. It can be seen in the provided example, that the \[guard] block as well as the \[body] contain a \|guard|. The former performs the bounds check of the loop index while the latter is the guard of the \|filter| combinator.
+Both @case@ and @guard@ are translated to \Haskell's @if@ expression in the generated code. It can be seen in the provided example, that the \[guard] block as well as the \[body] contain a @guard@. The former performs the bounds check of the loop index while the latter is the guard of the @filter@ combinator.
 
-% One important thing to note is that the \|case| and the \|guard| must come after all variable bindings and updates. Maybe give an example of (map . filter). But then it is unclear what to do with (map (1/) . filter (/= 0)) The eager evaluation will not short circuit the filter and the division will be performed.
+% One important thing to note is that the @case@ and the @guard@ must come after all variable bindings and updates. Maybe give an example of (map . filter). But then it is unclear what to do with (map (1/) . filter (/= 0)) The eager evaluation will not short circuit the filter and the division will be performed.
 
 
 \subsection{Variable initialisation and update}
@@ -127,11 +127,11 @@ In the \Loop language every local variable must be initialised before use. Since
 
 The bound variables can be mutable as well as immutable. In fact the \Loop language does not make a distinction between the two in the way they are initialised and used.
 
-A variable \*binding* appears as a \*strict* \|let| binding in the generated \Haskell code. The exclamation marks, called \*bang patterns*, ensure that every bound variable is evaluated to WHNF and no thunks are created when evaluating the code. In most cases this is not necessary since the subsequent strictness analysis determines most variables to be strict anyway. However there are cases, especially in the presence of @filter@ combinators, where forcing strict evaluation is required for maintaining high performance of the generated code. \todo{See if not seq'ing post-filter variables results in thunks}
+A variable \*binding* appears as a \*strict* @let@ binding in the generated \Haskell code. The exclamation marks, called \*bang patterns*, ensure that every bound variable is evaluated to WHNF and no thunks are created when evaluating the code. In most cases this is not necessary since the subsequent strictness analysis determines most variables to be strict anyway. However there are cases, especially in the presence of @filter@ combinators, where forcing strict evaluation is required for maintaining high performance of the generated code. \todo{See if not seq'ing post-filter variables results in thunks}
 
 Whenever a new variable binding is encountered in a block of the loop it is assumed to be a fresh variable and it shadows any previous bindings of that variable in the environment. In practice this is useful for the cases where the block is entered multiple times throughout loop execution. For example, the \[body] block binds variables @elt_xs@ and @elt_filt@ on every iteration. They are subsequently read in \[body] and \[yield] but are not required afterwards. A simple liveness analysis described in section \todo{ref} allows us to only pass those variables from \[body] to \[yield] and disregard them everywhere else.
 
-The situation with mutable variable is slightly more complex. For example, the loop index @i_xs@ is bound like a regular variable in the \[init] block. However, once it has been \*assigned to* in \[bottom], it is given a fresh name @i'_xs@ in the generated code. This is because variable in \Haskell are immutable. While there are ways to have mutable variables in \|ST| or \|IO| monads, it is less efficient as discussed further in Section \todo{ref}.
+The situation with mutable variable is slightly more complex. For example, the loop index @i_xs@ is bound like a regular variable in the \[init] block. However, once it has been \*assigned to* in \[bottom], it is given a fresh name @i'_xs@ in the generated code. This is because variable in \Haskell are immutable. While there are ways to have mutable variables in @ST@ or @IO@ monads, it is less efficient as discussed further in Section \todo{ref}.
 
 During liveness analysis mutable variable are treated the same way as their immutable counterparts. Technically it is possible to have a mutable variable that lives during one loop iteration but is not carried over to the next iteration but the author have not yet seen a combinator that would require that.
 
@@ -175,7 +175,7 @@ The \*immutable* vectors are the ones passed around as @Manifest@ arrays in the 
 \subsubsection*{Mutable vectors}
 The \*mutable* vectors on the other hand are only used internally by the generated code to create and fill a new array which would represent the result of the loop. The mutability of the vector is indicated in its type and the type of functions that operate on it.
 
-% For example, the type of @unsafeWrite@\footnote{The \|unsafe| prefix of functions used indicates that no bound checks are performed on the indices passed. to avoid runtime overhead.} function which is used to write an element into a mutable array is actually quite a bit more general than that of our own @writeArray@ wrapper around it:
+% For example, the type of @unsafeWrite@\footnote{The @unsafe@ prefix of functions used indicates that no bound checks are performed on the indices passed. to avoid runtime overhead.} function which is used to write an element into a mutable array is actually quite a bit more general than that of our own @writeArray@ wrapper around it:
 
 % -- IO/ST generic unsafeWrite
 % unsafeWrite :: (Unbox a, PrimMonad m)
