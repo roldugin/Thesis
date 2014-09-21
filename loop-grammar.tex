@@ -11,7 +11,7 @@
 \renewcommand{\syntright}{}
 \renewcommand{\litleft}{\ttfamily} %% `for'
 \renewcommand{\litright}{}
-\newcommand{\many}{\overline} %% draws a bar over the top of a symbol
+\newcommand{\many}[1]{\overline{#1\vphantom{dummy}}} %% draws a bar over the top of a symbol
 
 
 \setlength{\grammarparsep}{0pt} % tight rule separation
@@ -33,7 +33,7 @@
 
 \setlength{\grammarparsep}{10pt plus 1pt minus 1pt} % large rule separation
 \begin{grammar}
-<loop> ::= $\many{block}$ $label_{entry}$
+<loop> ::= $\many{block}$ $\many{var_{arg}}$ $label_{entry}$
 
 <block> ::= $\many{label}$ $\many{stmt}$ $stmt_{final}$
 
