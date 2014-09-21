@@ -40,7 +40,7 @@
 \usepackage{hyperref} % for clickable refs
 \usepackage[toc,page]{appendix}
 \usepackage{makeidx} % for index
-\usepackage{wallpaper} % to have background image (to prettify merging loops)
+\usepackage{tikz}
 
 %% Packages included in this distribution
 \usepackage{subsections}
@@ -78,7 +78,7 @@
 
 \def\compose{$\circ$ }
 
-\def\dol{\char36}
+\def\dol{\mathtt{\char36}}
 
 \newcommand\sub[1]{\large\itshape\rmfamily\textsubscript{#1}}
 
@@ -160,6 +160,16 @@
     \bgroup
 }{%
     \egroup
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Full-page backgrounds
+\newcommand{\myback}[1]{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \node[anchor=north west,inner sep=0pt,outer sep=0pt] at (current page.north west)
+        {\includegraphics[width=\paperwidth,height=\paperheight]{#1}};
+  \end{tikzpicture}
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -401,10 +411,13 @@
     {}
 
 %% Haskell code block without a figure box
-\lstnewenvironment{hscode}
+\lstnewenvironment{hscode}[1][]
     {
         \minipage{\linewidth}
-        \lstset{style=haskell}
+        \lstset{
+            style=haskell,
+            #1
+        }
     }
     {
         \endminipage
