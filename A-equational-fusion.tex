@@ -16,7 +16,7 @@ A major problem with this approach is that it cannot fuse a producer into multip
 \section{\name{build/foldr} fusion}
 \label{sec:build-foldr}
 
-\name{foldr/build} short cut fusion \cite{GLP93} is one of the most referenced techniques for fusion in Haskell. It has been developed for use in \GHC to fuse pipelined list operations. It employs two combinators, $foldr$ and $build$, and a single rewrite rule to eliminate adjacent occurrences of the combinators. It is suitable for use in the cases when the functions to be fused can be defined in terms of these combinators. The definition of $foldr$ is reused from Prelude, Haskell's standard library:
+\name{foldr/build} short cut fusion \cite{GLP93} is one of the most referenced techniques for fusion in \Haskell. It has been developed for use in \GHC to fuse pipelined list operations. It employs two combinators, $foldr$ and $build$, and a single rewrite rule to eliminate adjacent occurrences of the combinators. It is suitable for use in the cases when the functions to be fused can be defined in terms of these combinators. The definition of $foldr$ is reused from \name{Prelude} -- \Haskell's standard library:
 
 \begin{hscode}
 foldr :: (a -> b -> b) -> b -> [a] -> b
@@ -35,26 +35,26 @@ build g = g (:) []
 
 To illustrate the approach a $map$ could be defined in terms of $build/foldr$ as follows:
 
-\begin{hscode}
+\begin{hscode}[mathescape]
 map f xs = build (\c n -> foldr (c . f) n xs)
--- c is (:), n is []
+-- c is $\mathtt{(:)}$, n is $\mathtt{[\ ]}$
 \end{hscode}
 
 
 In the above code the list is being folded into another list. With the help of a rewrite rule
 
-$\langle foldr/build\, fusion \rangle\forall g\, k\, z.foldr\, k\, z\,(build\, g)\mapsto g\, k\, z$
+$\langle \mathit{foldr/build\ fusion} \rangle\forall g\, k\, z.\mathit{foldr}\, k\, z\,(build\, g)\mapsto g\, k\, z$
 
 the two consecutive $map$s could be reduced to as in the following:
 
-\begin{hscode}
+\begin{hscode}[mathescape]
 map h (map f xs)
  -- inline
  = build(\c n -> foldr (c.h) n 
   (build (\c n -> foldr (c.f) n xs)))
  -- apply rewrite rule
  = build(\c n -> ((\c n -> foldr (c.f) n xs) (c.h) n)
- -- beta reduce
+ -- $\beta$-reduce
  = build(\c n -> foldr (c.h.f) n xs)
 \end{hscode}
 
@@ -153,13 +153,13 @@ Again, the user-facing filter function @stream@s the list before passing it to t
 
 Given the above definitions of @map@ and @filter@ the fusion opportunity such as @map f . filter p@ may now be exploited with the following rewrite rule
 
-$\langle stream/unstream\, fusion\rangle\,\forall stream(unstream\, s)\mapsto s$
+$\langle \mathit{stream/unstream\ fusion}\rangle\,\forall stream\, (unstream\, s)\mapsto s$
 
 \begin{hscode}
 (map f . filter p) xs
   -- inline definitions of map and filter
   = (unstream . mapS f . stream . unstream . filterS p) xs
-  -- apply stream/unstrem rewrite rule
+  -- apply stream/unstream rewrite rule
   = (unstream . mapS f . filterS p . stream) xs
 \end{hscode}
 
@@ -167,7 +167,7 @@ The fusion is not complete at this point but the stream processing functions @ma
 
 A more thorough description list combinator fusion using Stream Fusion can be found in \cite{CLS07}.
 
-\name{Stream Fusion} has proven to be very potent for array processing and is successfully employed in the \name{Vector} library. It can fuse more types of combinators than \name{build/foldr} and \name{Functional Array Fusion} and has recently been extended to support vectorised CPU instructions \cite{VectorStreamFusion}.
+\name{Stream Fusion} has proven to be very potent for array processing and is successfully employed in the \name{Vector} library. It can fuse more types of combinators than \name{forldr/build} and \name{Functional Array Fusion} and has recently been extended to support vectorised CPU instructions \cite{VectorStreamFusion}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
