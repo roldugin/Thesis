@@ -13,6 +13,7 @@
 \renewcommand{\litright}{}
 \newcommand{\many}[1]{\overline{#1\vphantom{dummy}}} %% draws a bar over the top of a symbol
 
+\renewcommand\t[1]{\mathit{#1}}
 
 \setlength{\grammarparsep}{0pt} % tight rule separation
 
@@ -35,12 +36,12 @@
 \begin{grammar}
 <loop> ::= $\many{block}$ $\many{var_{arg}}$ $label_{entry}$
 
-<block> ::= $\many{label}$ $\many{stmt}$ $stmt_{final}$
+<block> ::= $\many{label}$ $\many{stmt}$ $stmt_\t{final}$
 
 <stmt> ::= `let' $var$ `=' $expr$
       \alt $var$ `:=' $expr$
-      \alt `if' $expr_{bool}$ `|' $label_{true}$ $label_{false}$
-      \alt `unless' $expr_{bool}$ `|' $label_{false}$
+      \alt `if' $expr_{bool}$ `|' $label_{true}$ $label_\t{false}$
+      \alt `unless' $expr_{bool}$ `|' $label$
       \alt `goto' $label$
       \alt `return' $var$
       \alt `let' $var$ `=' `newArray' $expr_{length}$
@@ -56,7 +57,7 @@
 
 <term> ::= $impl_{t}$
       \alt $term_{s} \rightarrow term_{t}$
-      \alt $term_{s \rightarrow t}\ term_{s}$
+      \alt $term_{s\, \rightarrow\, t}\ term_{s}$
 
 \end{grammar}
 
