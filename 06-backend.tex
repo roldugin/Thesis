@@ -7,37 +7,49 @@
 \chapter{Imperative Code Generation}
 \label{ch:Code-Generation}
 
-In the previous chapter we discussed how a graph of array combinators is turned into imperative loops. We first showed a generic loop structure consisting of \[init], \[guard], \[body], \[yield], \[bottom] and \[done] blocks. These loop sections represented a skeleton which every combinator would populate with relevant statements that would eventually be merged into a single loop.
+The previous chapter introduced the process of translating a graph of delayed array combinators to an assembly-like EDSL for expressing array computations.
 
-We then looked at the translation of several of such combinators into loop language and showed how the populated loop skeletons would be merged together into ``runnable'' loops. While the sections of the loops did resemble imperative style code with some assembly-style labels attached to them, it was never mentioned just what makes a loop ``runnable''. After all, the presented code did not look like anything one would or could write in Haskell.
+We first identified a generic loop structure consisting of \[init], \[guard], \[body], \[yield], \[bottom] and \[done] section represented by \*basic blocks* in the \Loop language. These loop sections ultimately represented a skeleton which every combinator would populate with relevant \*statements* that would eventually be merged into a single loop.
 
-In this chapter we will see how the \Loop language is used to generate runnable code. We will also give its translation to one of the possible backends (and the only one currently available). This backend is targeting (perhaps unexcitingly) Haskell source language, which means that the code generated is Haskell.
+We then looked at the translation of a large number of combinators into the \Loop language and showed how the partial loops would be merged together into ``runnable'' loops.
 
+While the sections of the loops did resemble imperative style code with some assembly-style labels attached to them, it was never mentioned just what makes a loop ``runnable''.
+
+In this chapter we will see how the \Loop language programs can be used to generate runnable code. We will show \Loop's translation to one possible backend which is currently available. This backend is targeting (perhaps unexcitingly) \Haskell source language, which means that the code generated is \Haskell.
+
+
+
+\clearpage
 
 \section{Approaches to looping}
 
-There are many ways a loop can be represented in code. In the surface \LiveFusion language the loops are note explicit. However, most of the array combinators eventually form part of loops expressed in the internal \Loop language. We have discussed this language at length in the previous chapter.
+In the surface \LiveFusion language loops are not explicit. However, most of the array combinators eventually form part of loops expressed in the internal \Loop language. We have discussed this language at length in the previous chapter.
 
-When it comes to expressing loops there is a fundamental difference between the vast majority of general purpose languages (even functional ones) and Haskell. In procedural languages the loop statements are usually built onto the language. Down at the machine level when the program is compiled to \name{Assembly} code, these loops become a collection of instructions with a $label$ and $jump$ instructions to go to either the top of the loop body or break out of the loop.
+When it comes to expressing loops there is a fundamental difference between the vast majority of general purpose languages (even functional ones) and \Haskell. In procedural languages the loop statements are usually built into the language. Further down, at the machine level, these loops become a collection of instructions with labels/addresses and @jump@ instructions to transfer control between parts of the loop.
 
-The situation is very different in Haskell however. Haskell does not have an explicit construct for loops. All looping is expressed in the form of recursion. \todo{Perhaps elaborate on this if you have time}
+The situation is very different in \Haskell however. \Haskell does not offer an explicit construct for loops. All looping is expressed in the form of recursion.
 
-If we are to generate \Haskell code that loops over arrays we need a way to express the conceptual loops we outlined in the previous chapter as recursive functions in our generated code.
+If we are to generate \Haskell code that loops over arrays we need a way to express the loops we outlined in the previous chapter as recursive functions in the generated code.
 
 
-\section{Fast mutable arrays in Haskell}
 
-The main data structure \LiveFusion is ultimately working with is an array. To achieve high performance we must be able to generate code that loops effectively over arrays in memory.
+\clearpage
 
-We have just established that the looping in Haskell is done through recursive functions. We will now look at how this can be applied to array computation.
+\section{Fast mutable arrays in \Haskell}
+
+The principle data structure \LiveFusion is ultimately working with is an array. To achieve high performance generated code must be able to efficiently loops over arrays in memory which includes both reading an writing.
+
+We have established that the looping in \Haskell is done through recursive functions. We will now look at how this can be applied to array computation.
 
 The internal \Loop language has @writeArray@ statement which hints the need for \*mutable* arrays. The use of mutable values is not typical in \Haskell and is discouraged. However, for performance reasons there are mechanisms by which this can be done.
 
-In \Haskell all variable are immutable by default. To achieve mutability one must leave the pure context and use one that supports mutable state. In Haskell this usually amounts to using @IO@ or @ST@ monads.
+In \Haskell all variable are immutable by default. To achieve mutability one must leave the pure context and use one that supports mutable state. In \Haskell this usually amounts to using @IO@ or @ST@ monads \cite{StateInHaskell}.
 
-The @IO@ monad lets the programmer alter the global state of the program and perform any desired side-effecting computations. On the other hand, @ST@ monad only allows to work with mutable memory. The memory is thread-local and must be allocated inside the monad in order to be used. The return value from the @ST@ monad is the pure \Haskell value. Stateful computations performed inside the monad are not visible outside the monadic context. The compiler ensures that no mutable state escapes the @ST@ computation. This means that for all intents and purposes an @ST@ computation can be considered pure, despite the fact that it may use side-effects internally (usually for efficiency reasons).
+The @IO@ monad lets the programmer alter the global state of the program and perform any desired side-effecting computations. On the other hand, @ST@ monad only allows one to work with thread-local mutable memory. This memory is completely local to a monadic computation in that it's allocated, used and destroyed before the monad returns to the pure context.
 
-Mutable arrays in \Haskell can be used from both inside @IO@ and @ST@ monads. There are several implementations that provide similar interfaces to fast mutable arrays. I used the \name{vector}\footnote{http://hackage.haskell.org/package/vector} package in my development, and its use in the examples in this chapter should be quite self-explanatory.\footnote{The choice of \name{vector} library is mostly due to historical reasons. It has been first implemented by Roman Leshchinskiy in the research group I belong to and is currently providing array functionality to \name{Data Parallel Haskell}, \name{Repa} and \name{Accelerate}, all of which originate from this group.\todo{Accelerate uses Vector?}} Since we do not require to do any side-effecting computations in our loops except allocating and working with memory, arrays in @ST@ monad will suffice for us.
+The return value from the @ST@ monad is a pure \Haskell value. Thus, stateful computations performed inside the monad are not visible outside of the monadic context. The compiler ensures that no mutable state escapes the @ST@ computation. This means that for all intents and purposes an @ST@ computation can be considered pure, despite the fact that it may use side-effects internally (usually for efficiency reasons).
+
+In \Haskell mutable arrays can be used from both @IO@ and @ST@ monads. There are several implementations available and they mostly provide similar interfaces to fast mutable arrays. Specifically \LiveFusion internally uses those provided by the \name{vector}\footnote{http://hackage.haskell.org/package/vector} package. Its use in the examples in this chapter should be quite self-explanatory.\footnote{The choice of \name{vector} library is mostly due to historical reasons. It has been first implemented by Roman Leshchinskiy in the research group I belong to and is currently providing array functionality to \name{Data Parallel Haskell} and \name{Repa} both of which originate from this group.} Since we do not require to do any side-effecting computations in our loops except allocating and working with memory, arrays in @ST@ monad will suffice for us.
 
 \todo{Perhaps give a simple example of looping using vector if the translation code from Loop to Haskell is hard to understand.}
 
