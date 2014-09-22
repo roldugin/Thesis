@@ -6,17 +6,17 @@
 \label{sec:Equational-Fusion-Systems}
 \ieqfusion{}
 
-This section will review three of the previous approaches to fusion in \Haskell: Shortcut Fusion, Stream Fusion and Functional Array Fusion (which was originally developed for \DPH but subsequently replaced by Stream Fusion). They are all \*equational* fusion systems meaning that they rely on compiler \*rewrite rules* in order for them to work.
+This section will review two approaches to compile-time fusion in \Haskell: \name{foldr/build} short cut fusion and \name{Stream Fusion}. They both fall into the category of \*equational* fusion systems meaning that they rely on compiler's \*rewrite rules* for them to work.
 
 A major problem with this approach is that it cannot fuse a producer into multiple consumers which is vital for \name{Data Parallel Haskell}.\todo{as discussed in Section.}
 
 
 \clearpage
 
-\section{Shortcut Fusion}
-\label{sec:Shortcut-Fusion}
+\section{\name{build/foldr} fusion}
+\label{sec:build-foldr}
 
-Shortcut Fusion \cite{GLP93} is one of the most referenced techniques for fusion in Haskell. It has been developed for use in \GHC to fuse pipelined list operations. It employs two combinators, $foldr$ and $build$, and a single rewrite rule to eliminate adjacent occurrences of the combinators. It is suitable for use in the cases when the functions to be fused can be defined in terms of these combinators. The definition of $foldr$ is reused from Prelude, Haskell's standard library:
+\name{foldr/build} short cut fusion \cite{GLP93} is one of the most referenced techniques for fusion in Haskell. It has been developed for use in \GHC to fuse pipelined list operations. It employs two combinators, $foldr$ and $build$, and a single rewrite rule to eliminate adjacent occurrences of the combinators. It is suitable for use in the cases when the functions to be fused can be defined in terms of these combinators. The definition of $foldr$ is reused from Prelude, Haskell's standard library:
 
 \begin{hscode}
 foldr :: (a -> b -> b) -> b -> [a] -> b
@@ -25,7 +25,7 @@ foldr f z (x:xs) = f x z : (foldr f z xs)
 \end{hscode}
 
 
-To understand the motivation behind shortcut fusion one may think of $foldr$ as of replacing each $Cons$ of a list with a binary operator and $Nil$ with the neutral element. The other combinator, $build$, takes a second order function which in turn takes an operator to be used as $Cons$, and a value to be used as $Nil$. Since we are building a list, these immediately become \texttt{(:)} and \texttt{{[} {]}}.
+To understand the motivation behind short cut fusion one may think of $foldr$ as of replacing each $Cons$ of a list with a binary operator and $Nil$ with the neutral element. The other combinator, $build$, takes a second order function which in turn takes an operator to be used as $Cons$, and a value to be used as $Nil$. Since we are building a list, these immediately become \texttt{(:)} and \texttt{{[} {]}}.
 
 \begin{hscode}
 build :: ((a -> b -> b) -> b -> b) -> [a]
@@ -59,9 +59,11 @@ map h (map f xs)
 \end{hscode}
 
 
-While this leads to the desired results in many cases, it requires the programmer to define the functions in a not very readable form. This may be acceptable for some of the code in the standard library but is not likely to be widely accepted among client programmers. Thus the fusion breaks for the parts of the code that do not use the explicit $build/foldr$ definitions. To solve this, Chitil proposed a type inference algorithm to automatically infer the $build/foldr$ definitions \cite{Chi99}.
+While this leads to the desired results in many cases, it requires the programmer to define the functions in a less readable form. This may be acceptable for some of the code in the standard library but is not likely to be widely accepted among client programmers. Thus the fusion breaks for the parts of the code that do not use the explicit $foldr/build$ definitions. To solve this, Chitil proposed a type inference algorithm to automatically infer the $foldr/build$ definitions \cite{Chi99}.
 
-Some of the other limitations of the Shortcut Fusion include the inability to effectively fuse left folds and zips. These shortcomings make this approach less attractive for DPH.
+The above limiting factor is critical to the application of the fusion system to lists but is less relevant to \LiveFusion system since the number of combinators is fixed.
+
+However, the limitations that do make it unattractive are the inability to effectively fuse left $fold$s and $zip$s which are both crucial to \DPH. The inability to fuse into multiple consumers is likewise very considerable for such application of the technique as \DPH.
 
 
 \clearpage
@@ -70,7 +72,7 @@ Some of the other limitations of the Shortcut Fusion include the inability to ef
 \label{sec:Stream-Fusion}
 \istreamfusion{}
 
-Stream Fusion \cite{CLS07,CSL06} is originally employed in the \DPH backend library at one of the two levels of fusion discussed in Section \vref{list:DPH-fusion-levels}.
+\name{Stream Fusion} \cite{CLS07,CSL06} is originally employed in the \DPH backend library at one of the two levels of fusion discussed in Section \vref{list:DPH-fusion-levels}.
 
 It introduces two data types: a \term{stream} and a \term{stepper}.
 
@@ -165,7 +167,7 @@ The fusion is not complete at this point but the stream processing functions @ma
 
 A more thorough description list combinator fusion using Stream Fusion can be found in \cite{CLS07}.
 
-Stream Fusion has proven to be very potent for array processing and is successfully employed in the \name{Vector} library. It can fuse more types of combinators than \name{build/foldr} and \name{Functional Array Fusion} and has recently been extended to support vectorised CPU instructions \cite{VectorStreamFusion}.
+\name{Stream Fusion} has proven to be very potent for array processing and is successfully employed in the \name{Vector} library. It can fuse more types of combinators than \name{build/foldr} and \name{Functional Array Fusion} and has recently been extended to support vectorised CPU instructions \cite{VectorStreamFusion}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
