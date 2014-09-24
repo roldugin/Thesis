@@ -49,17 +49,20 @@ The @IO@ monad lets the programmer alter the global state of the program and per
 
 The return value from the @ST@ monad is a pure \Haskell value. Thus, stateful computations performed inside the monad are not visible outside of the monadic context. The compiler ensures that no mutable state escapes the @ST@ computation. This means that for all intents and purposes an @ST@ computation can be considered pure, despite the fact that it may use side-effects internally (usually for efficiency reasons).
 
-In \Haskell mutable arrays can be used from both @IO@ and @ST@ monads. There are several implementations available and they mostly provide similar interfaces to fast mutable arrays. Specifically \LiveFusion internally uses those provided by the \name{vector}\footnote{http://hackage.haskell.org/package/vector} package. Its use in the examples in this chapter should be quite self-explanatory.\footnote{The choice of \name{vector} library is mostly due to historical reasons. It has been first implemented by Roman Leshchinskiy in the research group I belong to and is currently providing array functionality to \name{Data Parallel Haskell} and \name{Repa} both of which originate from this group.} Since we do not require to do any side-effecting computations in our loops except allocating and working with memory, arrays in @ST@ monad will suffice for us.
+In \Haskell mutable arrays can be used from both @IO@ and @ST@ monads. There are several implementations available and they mostly provide similar interfaces to fast mutable arrays. Specifically \LiveFusion internally uses those provided by the \name{vector}\footnote{\url{http://hackage.haskell.org/package/vector}} package.\footnote{The choice of \name{vector} library is mostly due to historical reasons. It has been first implemented by Roman Leshchinskiy in the research group I belong to and is currently providing array functionality to \name{Data Parallel Haskell} and \name{Repa} \cite{KCL+10} both of which originate from this group.} Its use in the examples in this chapter should be quite self-explanatory. Since we do not require to do any side-effecting computations in our loops except allocating and working with memory, arrays in @ST@ monad will suffice for us.
 
 \todo{Perhaps give a simple example of looping using vector if the translation code from Loop to Haskell is hard to understand.}
 
 
+
+\clearpage
+
 \section{Compiling \Loop language to \Haskell loops}
 
-I will now present the translation of the \Loop EDSL to Haskell. The definition of \Loop language is given once again in Figure \ref{fig:7-loop-grammar}. We will go over the code generation for this language using a simple example. \todo{Describe example}
+In this section the translation of the \Loop EDSL to \Haskell will be presented. The grammar of \Loop language is given once again in Figure~\ref{fig:Loop-grammar-again}. We will go over the code generation for this language using a simple example. \todo{Describe example}
 
 
-\begin{cfigure}{\label{fig:7-loop-grammar}\Loop language grammar.}
+\begin{cfigure}{\label{fig:Loop-grammar-again}\Loop language grammar.}
 \subfile{loop-grammar}
 \end{cfigure}
 \todo{Put the footnotetext on the same page where the grammar ends up}\footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings.}
@@ -160,7 +163,7 @@ import Data.Vector.Unboxed as V
 import Data.Vector.Unboxed.Mutable as MV
 import Control.Monad.ST
 
-arrayLength :: Unbox a => V.Vector a -> Int
+arrayLength :: V.Unbox a => V.Vector a -> Int
 arrayLength = V.length
 
 readArray :: V.Unbox a => V.Vector a -> Int -> a
