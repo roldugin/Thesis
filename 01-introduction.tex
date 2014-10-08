@@ -7,25 +7,25 @@
 \chapter{Introduction}
 \label{ch:introduction}
 
-The past decade has seen a rise in development of increasingly sophisticated multi-core and multi-processor computer systems. From the early hyperthreaded solutions to the modern architectures comprising of a number of independent processing cores, the horsepower for demanding applications is now available even in the most affordable consumer systems. To offer a large amount of parallelism the high grade systems may have multiple multi-core processors, where each of the cores can run a number of hardware scheduled threads.
+The past decade has seen a rise in development of increasingly sophisticated multi-core and multi-processor computer systems. From the early hyperthreaded solutions to the modern architectures comprising a number of independent processing cores, the horsepower for demanding applications is now available even in the most affordable consumer grade systems. To offer a large amount of parallelism, the high grade systems may have multiple multi-core processors, where each core can run a number of hardware scheduled threads.
 
-While the hardware for running highly parallel computations is available and is improving at a high pace, the development of such applications targeting an arbitrary number of processing elements\ipe{}\footnote{A processing element is taken to be a processor, a processor's core, a hardware thread or a combination of the above.} is often a challenging task. The problems involved are finding an appropriate parallel implementation of the task at hand, implementing it such that the computations are evenly distributed across processing elements and synchronising parallel computations when necessary. The latter two require a substantial programmer's intervention to get the algorithm running fast.
+While the hardware for running highly parallel computations is readily available and is improving at a high pace, the development of applications that make use of this capability is often a challenging task. The problems involved are finding an appropriate parallel implementation of the task at hand, implementing it so that the computations are evenly distributed across processing elements and synchronising parallel computations when necessary. The latter two require a substantial programmer's intervention to get the algorithm running fast.
 
 % It is not uncommon for the initial parallel implementation to run only slightly faster than the sequential version.
 
 The resulting application is a mixture of the actual algorithm and the implementation specific code, dealing with concurrency and parallelism. This obscures code clarity and may generally be error-prone.
 
-One alternative to this practice of explicit parallelisation is to provide a common set of collective operations\icollop{} on large data structures. Programs implemented in terms of these operations would be automatically parallelised across the available processing elements. This approach is successfully exercised by a multitude of frameworks covering many host languages, target architectures and suitable applications domains \cite{PLKC08,KCL+10,CKL+11,AS07}.
+One alternative to this practice of explicit parallelisation is to provide a common set of collective operations\icollop{} on large data structures. Programs implemented in terms of these operations would be automatically parallelised across the available processing elements. This approach is successfully exercised by a multitude of frameworks covering many host languages, target architectures and suitable application domains \cite{PLKC08,KCL+10,CKL+11,AS07}.
 
 However, in the pursuit of a high level approach to programming a major inefficiency is introduced. Having provided a number of collective operations, the problem of multiple traversals arises. In each program there is likely to be a number of such operations composed together in some way to compute the desired result. With each collective operation potentially traversing a large data structure, the memory traffic is considerably increased.
 
 In a program written by hand without the use of collective operations the programmer would naturally recognise all the operation that could be performed in one pass over the data structure. The program would only traverse the data structure as few times as required, keeping the memory traffic to the necessary minimum and utilising cache correctly.
 
-On the other hand using a straight-forward implementation of a high level library of collective operations would result in code that traverses data which performing only a small change in each pass. For large data structures this may lead to poor cache utilisation and high memory traffic, noticeably reducing the overall performance.
+On the other hand, using a straight-forward implementation of a high level library of collective operations would result in code that traverses data many times while potentially performing only a small change in each pass. For large data structures this may lead to poor cache utilisation and high memory traffic, noticeably reducing the overall performance.
 
 Additionally, each operation may need to store its result in a new data structure, which is especially true for languages where values are immutable by default. Allocating temporary data structures to store the intermediate results\index{intermediate value}{} leads to further memory and runtime penalties.
 
-Optimising out the superfluous data structure traversals and allocations is collectively referred to as \term{Loop Fusion}\ifusion{}. It allows to transform a program expressed in terms of high level operations into a program that would be comparable to a handwritten one in operation and speed.
+Optimising out the superfluous data structure traversals and allocations is collectively referred to as \term{Loop Fusion}\ifusion{}. It allows a program expressed in terms of high level operations to be transformed into a program that would be comparable to a handwritten one in operation and speed.
 
 In this thesis I explore the problem of loop fusion in the context of purely functional data parallel programs. % I explore DPH I identify SF, DPH
 
@@ -47,7 +47,7 @@ In the following I summarise the areas of my contribution, explicitly noting whi
 % \item I develop a suite of invariants in the form of \name{QuickCheck} \*properties* for automatic testing of individual combinators.
 \end{itemize}
 
-I shall begin by introducing the reader to the problem of fusion and context of my work. In the next chapter I will outline the problem finding a solution to which, has motivated my work in the prior years.
+I shall begin by introducing the reader to the problem of fusion and the context of my work. In the next chapter I will outline the challenges of array fusion finding a solution to which has motivated my work in the prior years.
 
 % The work described in this thesis is aimed at introducing a new fusion mechanism in \name{Data Parallel Haskell (DPH)}\idph{} framework.
 
