@@ -195,7 +195,7 @@ Vectorisation is more thoroughly covered in \cite{PLKC08}. However, since some o
 \section{Data Representation}
 \label{sec:DPH-Data-Representation}
 
-\Haskell allows for a very high-level of expressiveness when it comes to user-defined types. \DPH attempts to support this expressiveness and allow the programmer to create and compose types to be used in \DPH programs. We have already an example of a recursive tree type in Section \ref{sec:Flattening} which is fully supported by \DPH.
+\Haskell allows for a very high-level of expressiveness when it comes to user-defined types. \DPH attempts to support this expressiveness and allow the programmer to create and compose types to be used in \DPH programs. We have already seen an example of a recursive tree type in Section \ref{sec:Flattening} which is fully supported by \DPH.
 
 Over the next several pages I will briefly outline how \DPH chooses the data representation.
 
@@ -217,7 +217,7 @@ This parametric representation is made possible through the use of type families
 
 \subsection{Sum types}
 
-One distinctive feature of \DPH is that is allows one to use user defined data types. We have already seen how a user could define a data type for @Tree@. Likewise we could define a new data type @Shape@ with two constructors:
+One distinctive feature of \DPH is that is allows one to use user defined data types. An example presenting a @Tree@ data type with \*one* constructor was given in Section~\ref{sec:Flattening}. Likewise one could define a new data type @Shape@ with \*two* constructors:
 
 \begin{hscode}
 data Shape = Circle Float
@@ -260,7 +260,7 @@ Due to the use of \Haskell threads \cite{Jones08atutorial}, the code responsible
 
 \item \textbf{Stream Fusion}
 
-When I started\name{Stream Fusion}\istreamfusion{} receives the most attention as far as the fusion in \DPH goes. It not only considerably affects the internal implementation of collective array operations in \DPH and in the underlying \name{Vector} library\footnote{http://hackage.haskell.org/package/vector}, but also relies on a certain set of optimisations in the compiler. A description of \name{Stream Fusion} is given in Appendix \ref{sec:Stream-Fusion}. Just like the fusion that removes superfluous synchronisation points, \name{Stream Fusion} also heavily relies on inlining and rewriting to work.
+\name{Stream Fusion}\istreamfusion{} receives the most attention as far as the fusion in \DPH goes. It not only considerably affects the internal implementation of collective array operations in \DPH and in the underlying \name{Vector} library\footnote{http://hackage.haskell.org/package/vector}, but also relies on a certain set of optimisations in the compiler. A description of \name{Stream Fusion} is given in Appendix \ref{sec:Stream-Fusion}. Just like the fusion that removes superfluous synchronisation points, \name{Stream Fusion} also heavily relies on inlining and rewriting to work.
 \end{description}
 
 Unfortunately, the common point of failure of all of the above fusion types is that they rely on the consecutive operations being inlined and being adjacent to each other for the rewrite rules to fire. \todo{They are subject to the shortcomings of equational fusion systems I discussed in Section ref}
