@@ -73,11 +73,11 @@ for(int i = 0; i < len; i++) {
 
 
 \begin{bluebox}
-The optimisation that removes the need for temporary arrays by replacing them with scalars is called \term{scalarisation}\index{scalarisation}{}.
+The optimisation that removes the need for temporary arrays by replacing them with scalars is called \term{scalarisation}\idx{scalarisation}{}.
 \end{bluebox}
 
 
-It is a special case of \term{array contraction}\index{array contraction}{}. Array contraction optimisation attempts to remove a \*dimension* from the array. In this particular case we contracted a one dimensional array to a scalar, hence \*scalarisation*. However, in the examples with arrays of higher dimensions the dimension could just be reduced, and not eliminated entirely. We will see examples of that in the upcoming chapters when we discuss \*segmented array combinators*\isegmented. This concept is taken even further in multi-dimensional array systems such as \name{Repa} \cite{KCL+10} and \name{Accelerate} \cite{CKL+11}.
+It is a special case of \term{array contraction}\idx{array contraction}{}. Array contraction optimisation attempts to remove a \*dimension* from the array. In this particular case we contracted a one dimensional array to a scalar, hence \*scalarisation*. However, in the examples with arrays of higher dimensions the dimension could just be reduced, and not eliminated entirely. We will see examples of that in the upcoming chapters when we discuss \*segmented array combinators*\isegmented. This concept is taken even further in multi-dimensional array systems such as \name{Repa} \cite{KCL+10} and \name{Accelerate} \cite{CKL+11}.
 
 
 \begin{bluebox}
@@ -85,7 +85,7 @@ It is a special case of \term{array contraction}\index{array contraction}{}. Arr
 \end{bluebox}
 
 
-Another term for this commonly encountered in literature is \term{deforestation}\index{deforestation}{}, first coined by Philip Wadler in \cite{Wad90}.
+Another term for this commonly encountered in literature is \term{deforestation}\idx{deforestation}{}, first coined by Philip Wadler in \cite{Wad90}.
 
 In following chapter I will introduce the reader to the \DPH project. I now identify some of the shortcomings of the previously available fusion systems which motivated the search for a fresh approach.
 

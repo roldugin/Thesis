@@ -23,7 +23,7 @@ In a program written by hand without the use of collective operations the progra
 
 On the other hand, using a straight-forward implementation of a high level library of collective operations would result in code that traverses data many times while potentially performing only a small change in each pass. For large data structures this may lead to poor cache utilisation and high memory traffic, noticeably reducing the overall performance.
 
-Additionally, each operation may need to store its result in a new data structure, which is especially true for languages where values are immutable by default. Allocating temporary data structures to store the intermediate results\index{intermediate value}{} leads to further memory and runtime penalties.
+Additionally, each operation may need to store its result in a new data structure, which is especially true for languages where values are immutable by default. Allocating temporary data structures to store the intermediate results\idx{intermediate value}{} leads to further memory and runtime penalties.
 
 Optimising out the superfluous data structure traversals and allocations is collectively referred to as \term{Loop Fusion}\ifusion{}. It allows a program expressed in terms of high level operations, also called \term{combinators}\icomb{}, to be transformed into a program that would be comparable to a handwritten one in operation and speed.
 

@@ -16,7 +16,7 @@ In this chapter I will introduce the reader to the context of my work - the \nam
 
 \name{Data Parallel Haskell (DPH)}\idph{} is a library for and an extension to the \Haskell programming language, providing high level access to \*nested data parallelism*.
 
-\term{Nested data parallelism}\index{data parallelism: nested}{} is a type of \name{SPMD}\index{data parallelism: SPMD (single program, multiple data)}{} parallelism (single program, multiple data) which operates on \*irregular*\index{data structure: irregular} data structures. Two examples of irregular data structures are \*sparse matrices*\index{data structure: sparse matrix} and \*unbalanced trees*\index{data structure: unbalanced tree}.
+\term{Nested data parallelism}\idx{data parallelism: nested}{} is a type of \name{SPMD}\idx{data parallelism: SPMD (single program, multiple data)}{} parallelism (single program, multiple data) which operates on \*irregular*\idx{data structure: irregular} data structures. Two examples of irregular data structures are \*sparse matrices*\idx{data structure: sparse matrix} and \*unbalanced trees*\idx{data structure: unbalanced tree}.
 
 In a nested data parallel program parallel computations can call further data parallel computations. For example when traversing an unbalanced tree each node may process each of its children in parallel. Without statically knowing the branching of the tree, it may be difficult to adequately parallelise the process. \DPH offers an elegant solution through its vectorisation process which will be discussed in Section \ref{sec:Vectorisation}.
 
@@ -64,7 +64,7 @@ By design the computation is split evenly across processing elements even for hi
 
 The principle idea behind \DPH was to allow the programmer write parallel programs without the additional effort of parallelising, scheduling, load balancing and low level optimisation.
 
-The work on \DPH was originally inspired by Blelloch's pioneering work on \name{NESL} \cite{BCH+}, a research language designed to explore the new approach to nested data parallelism\index{data parallelism: nested}{}.
+The work on \DPH was originally inspired by Blelloch's pioneering work on \name{NESL} \cite{BCH+}, a research language designed to explore the new approach to nested data parallelism\idx{data parallelism: nested}{}.
 
 At the core of \DPH is the vectoriser which is implemented in the \name{Glasgow Haskell Compiler}\footnote{Glasgow Haskell Compiler: http://www.haskell.org/ghc} (\GHC).
 
@@ -78,7 +78,7 @@ The two transforms are described in the following sections.
 
 \subsection{Flattening transform}
 \label{sec:Flattening}
-\index{flattening transform}{}
+\idx{flattening transform}{}
 
 
 \begin{figure}
@@ -88,7 +88,7 @@ The two transforms are described in the following sections.
 \end{figure}
 
 
-Suppose we wanted to store trees of an arbitrary shape\index{data structure: tree}{}. The following definition of a tree using parallel arrays is not unlike those a Haskell programmer would write using lists:
+Suppose we wanted to store trees of an arbitrary shape\idx{data structure: tree}{}. The following definition of a tree using parallel arrays is not unlike those a Haskell programmer would write using lists:
 
 \begin{hscode}
 data Tree = Tree Int [:Tree:]
@@ -113,7 +113,7 @@ Since the array of @children@ may be small, we are unlikely to gain any performa
 The \term{flattening transform} translates \*nested data* in user programs to \*flat data representation*.
 \end{bluebox}
 
-The right of Figure \ref{fig:TreeRepr} shows the same tree with each of its levels placed into a \term{nested parallel array}\index{nested: parallel array}{}.
+The right of Figure \ref{fig:TreeRepr} shows the same tree with each of its levels placed into a \term{nested parallel array}\idx{nested: parallel array}{}.
 
 At runtime a \*nested parallel array* (e.g. each level of a tree) is represented by a \term{data array} and a \term{segment descriptor}\isegd{}. The flat data array stores all the nodes' values, while the segment descriptor defines the partitioning to recreate the original nesting.
 
@@ -228,7 +228,7 @@ In \DPH the values constructed by the \*same constructor* are stored in the same
 \begin{itemize}
 \item An array @[:Float:]@ that stores radii of all circles
 \item A pair of arrays @([:Int:],[:Int:])@ that sore dimensions of all rectangles
-\item A \*selector*\index{selector}{} array [:Int:] which determines which of the two constructors has been used. The selector array allows to recreate the original interleaving of values constructed with different constructors.
+\item A \*selector*\idx{selector}{} array [:Int:] which determines which of the two constructors has been used. The selector array allows to recreate the original interleaving of values constructed with different constructors.
 \end{itemize}
 
 Having multiple arrays, each storing only the relevant values wrapped by the same constructor, not only avoids the cost of unboxing but also facilitates pattern matching on constructors.
@@ -238,7 +238,7 @@ Having multiple arrays, each storing only the relevant values wrapped by the sam
 
 \section{Backend and Fusion}
 
-By the time the backend is reached in the compilation pipeline the nested data parallelism\index{data parallelism: nested}{} in the original user program has been completely transformed to flat data parallelism:
+By the time the backend is reached in the compilation pipeline the nested data parallelism\idx{data parallelism: nested}{} in the original user program has been completely transformed to flat data parallelism:
 \begin{itemize}
 \item The program is now expressed in terms of flat and \*segmented array combinators*\isegmented{} that take the segment descriptor as an additional argument.\todo{Some of these segmented operations are shows in listing...}
 \item All data is now represented in terms of flat unboxed\iboxing{} data arrays and segment descriptors\isegd{}.
