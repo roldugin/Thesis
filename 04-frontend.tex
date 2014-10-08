@@ -8,13 +8,13 @@
 
 This chapter describes \LiveFusion - the new array language that I designed. It offers a library of fusible array combinators and is able to exploit more fusion opportunities than equational fusion frameworks\ieqfusion (see Appendix \ref{sec:Equational-Fusion-Systems})
 
-In its essence LiveFusion takes the approach of \*deeply embedded domain specific languages* (EDSLs)\iedsl{}.
+In its essence \LiveFusion takes the approach of \*deeply embedded domain specific languages* (EDSLs)\iedsl{}.
 
 
 \section{On Embedded Domain-Specific Languages}
 \iedsl{}
 
-The term \term{domain-specific language} (DSL) describes a computer language designed for solving problems is a particular application domain.
+The term \term{domain-specific language} (DSL) describes a computer language designed for solving problems in a particular application domain.
 
 Examples of DSLs include \name{HTML} for webpages markup \cite{HTML}, \name{SQL} for relational database queries \cite{SQL} and \name{Verilog} for hardware description \cite{Verilog}.
 
@@ -24,7 +24,7 @@ On the other hand, an \term{embedded domain-specific language} (EDSL) is a domai
 
 The added benefit of the approach is that the EDSL code can interact with the rest of the code in the host language. This way the programmers do not have to leave the familiar environment and can write EDSL programs which are seamlessly integrated with their programs.
 
-There exist two types of embedding:
+Two types of embedding exist:
 \begin{description}
 \item \term{Shallow embedding}
 
@@ -41,7 +41,7 @@ The difference from the ASTs found in compilers is that it allows for analysis, 
 \name{Accelerate} language for functional programming on GPUs \cite{CKL+11} is a vivid example of a deeply embedded DSL.
 \end{description}
 
-\LiveFusion EDSL that I developed falls under the category of deeply embedded domain-specific languages. In this chapter I describe the process of embedding array computations.
+\LiveFusion EDSL falls under the category of deeply embedded domain-specific languages. In this chapter I describe the process of embedding array computations.
 
 
 \clearpage
@@ -175,7 +175,7 @@ filter :: (Term a -> Term Bool) -> Array a -> Array Bool
 
 The corresponding Haskell list functions or array libraries like @Vector@ or @Repa@ \cite{KCL+10} accept as arguments vanilla Haskell functions like @a -> b@ or @a -> a -> a@ as long as the types match.
 
-Why cannot \LiveFusion do the same?
+The question that should be asked, however, is why cannot \LiveFusion do the same?
 
 %\LiveFusion AST is open to interpretation by several backends as discussed in Chapter \ref{ch:Code-Generation}.
 The answer lies in the approach to evaluating the AST. In order to be efficient the AST needs to be compiled into highly optimised code. During compilation (discussed in Chapter \ref{ch:Code-Generation}) the AST is compiled to one or more loops for which Haskell code is generated and written out to file.
@@ -259,7 +259,7 @@ data Impl t = HsImpl {
 \end{hscode}
 
 
-The \name{Template Haskell} expression is really the core part of the function representation, but this is what would later on allow us to easily produce \Haskell source code at the code generation step.
+The \name{Template Haskell} expression is really the core part of the function representation, but this is what would later on allow for an easy production of \Haskell source code at the code generation stage.
 
 The representation also includes the vanilla \Haskell function. At present this is just for completeness. However in the future it may be possible to avoid compiling certain parts of AST at runtime and run statically scheduled combinators. In this case this would be the function to inline into the loop.
 
