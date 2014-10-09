@@ -1,7 +1,8 @@
 % Simply \input{index} in preamble
 
-% \idx{} as most other commands introduces a space in its place even before punctuation. Let's fix this.
-\newcommand{\idx}[1]{\index{#1}\xspace}%
+% Be sure to put \idx after punctuation,\idx{foo} not before\idx{bar}
+% to avoid extra spaces. For some reason \xspace does not help.
+\newcommand{\idx}[1]{\index{#1}}
 
 
 \makeindex

@@ -6,7 +6,7 @@
 
 \chapter{Nested Data Parallelism}
 
-In this chapter I will introduce the reader to the context of my work - the \name{Data Parallel Haskell} (\DPH) project\idph{}.
+In this chapter I will introduce the reader to the context of my work - the \name{Data Parallel Haskell} (\DPH) project.\idph
 
 \DPH has very specific requirements for the fusion system to satisfy in order to be effective. While the fusion concepts I discuss in later chapters are widely applicable to areas of high performance computing beyond nested data parallelism, it did have a heavy influence on the fusion system I have developed.
 
@@ -14,9 +14,9 @@ In this chapter I will introduce the reader to the context of my work - the \nam
 \section{Data Parallel Haskell}
 \label{sec:DPH}
 
-\name{Data Parallel Haskell (DPH)}\idph{} is a library for and an extension to the \Haskell programming language, providing high level access to \*nested data parallelism*.
+\name{Data Parallel Haskell (DPH)}\idph is a library for and an extension to the \Haskell programming language, providing high level access to \*nested data parallelism*.
 
-\term{Nested data parallelism}\idx{data parallelism: nested}{} is a type of \name{SPMD}\idx{data parallelism: SPMD (single program, multiple data)}{} parallelism (single program, multiple data) which operates on \*irregular*\idx{data structure: irregular} data structures. Two examples of irregular data structures are \*sparse matrices*\idx{data structure: sparse matrix} and \*unbalanced trees*\idx{data structure: unbalanced tree}.
+\term{Nested data parallelism}\idx{data parallelism: nested} is a type of \name{SPMD}\idx{data parallelism: SPMD (single program, multiple data)} parallelism (single program, multiple data) which operates on \*irregular*\idx{data structure: irregular} data structures. Two examples of irregular data structures are \*sparse matrices*\idx{data structure: sparse matrix} and \*unbalanced trees*.\idx{data structure: unbalanced tree}
 
 In a nested data parallel program, parallel computations can call further data parallel computations. For example when traversing an unbalanced tree each node may process each of its children in parallel. Without statically knowing the branching of the tree, it may be difficult to adequately parallelise the process. \DPH offers an elegant solution through its vectorisation process which will be discussed in Section \ref{sec:Vectorisation}.
 
@@ -60,11 +60,11 @@ By design the computation is split evenly across the available processing elemen
 
 \section{Vectorisation}
 \label{sec:Vectorisation}
-\ivect{}
+\ivect
 
 The principle idea behind \DPH was to allow the programmer write parallel programs without the additional effort of parallelising, scheduling, load balancing and low level optimisation.
 
-The work on \DPH was originally inspired by Blelloch's pioneering work on \name{NESL} \cite{BCH+}, a research language designed to explore the new approach to nested data parallelism\idx{data parallelism: nested}{}.
+The work on \DPH was originally inspired by Blelloch's pioneering work on \name{NESL} \cite{BCH+}, a research language designed to explore the new approach to nested data parallelism.\idx{data parallelism: nested}
 
 At the core of \DPH is the vectoriser which is implemented in the \name{Glasgow Haskell Compiler}\footnote{Glasgow Haskell Compiler: http://www.haskell.org/ghc} (\GHC).
 
@@ -78,7 +78,7 @@ The two transforms are described in the following sections.
 
 \subsection{Flattening transform}
 \label{sec:Flattening}
-\idx{flattening transform}{}
+\idx{flattening transform}
 
 
 \begin{figure}
@@ -88,7 +88,7 @@ The two transforms are described in the following sections.
 \end{figure}
 
 
-Suppose we wanted to store trees of an arbitrary shape\idx{data structure: tree}{}. The following definition of a tree using parallel arrays is not unlike those a Haskell programmer would write using lists:
+Suppose we wanted to store trees of an arbitrary shape.\idx{data structure: tree} The following definition of a tree using parallel arrays is not unlike those a Haskell programmer would write using lists:
 
 \begin{hscode}
 data Tree = Tree Int [:Tree:]
@@ -113,9 +113,9 @@ Since the array of @children@ may be small, we are unlikely to gain any performa
 The \term{flattening transform} translates \*nested data* in user programs to \*flat data representation*.
 \end{bluebox}
 
-The right of Figure \ref{fig:TreeRepr} shows the same tree with each of its levels placed into a \term{nested parallel array}\idx{nested: parallel array}{}.
+The right of Figure \ref{fig:TreeRepr} shows the same tree with each of its levels placed into a \term{nested parallel array}.\idx{nested: parallel array}
 
-At runtime a \*nested parallel array* (e.g. each level of a tree) is represented by a \term{data array} and a \term{segment descriptor}\isegd{}. The flat data array stores all the nodes' values, while the segment descriptor defines the partitioning to recreate the original nesting.
+At runtime a \*nested parallel array* (e.g. each level of a tree) is represented by a \term{data array} and a \term{segment descriptor}.\isegd The flat data array stores all the nodes' values, while the segment descriptor defines the partitioning to recreate the original nesting.
 
 The following nested parallel array may have been the deepest level of the discussed tree:
 
@@ -174,7 +174,7 @@ f^ x = zipWith (+) (zipWith (*) x x)
   where n = length x
 \end{hscode}
 
-The above code is an example of the code which is compiled against the backend library of flat array combinators. One will notice that this code would produce two intermediate arrays\iintermediate{}. \DPH relies on subsequent fusion optimisation to remove these intermediate results and compute @f^@ in one traversal of the input array.
+The above code is an example of the code which is compiled against the backend library of flat array combinators. One will notice that this code would produce two intermediate arrays.\iintermediate \DPH relies on subsequent fusion optimisation to remove these intermediate results and compute @f^@ in one traversal of the input array.
 
 % If we return to the original tree example from the previous section, there we may need to apply @f@ to an array of arrays. The flat data representation we chose allows us to easily derive @f^^@ in terms of @f^@ like this:
 
@@ -201,7 +201,7 @@ Over the next several pages I will briefly outline how \DPH chooses the data rep
 
 
 \subsection{Unboxed values}
-\iboxing{}
+\iboxing
 
 Regular \Haskell values, such as @Int@s and @Float@s are stored as boxed values on the heap. This means that an array of such values would be stored as array of pointers to the heap allocated values which would be a major hit on performance. It would incur boxing/unboxing costs as well as make it impossible to cache multiple consecutive elements at a time.
 
@@ -228,7 +228,7 @@ In \DPH the values constructed by the \*same constructor* are stored in the same
 \begin{itemize}
 \item An array @[:Float:]@ that stores radii of all circles
 \item A pair of arrays @([:Int:],[:Int:])@ that sore dimensions of all rectangles
-\item A \*selector*\idx{selector}{} array [:Int:] which determines which of the two constructors has been used. The selector array allows to recreate the original interleaving of values constructed with different constructors.
+\item A \*selector*\idx{selector} array [:Int:] which determines which of the two constructors has been used. The selector array allows to recreate the original interleaving of values constructed with different constructors.
 \end{itemize}
 
 Having multiple arrays, each storing only the relevant values wrapped by the same constructor, not only avoids the cost of unboxing but also facilitates pattern matching on constructors.
@@ -238,14 +238,14 @@ Having multiple arrays, each storing only the relevant values wrapped by the sam
 
 \section{Backend and Fusion}
 
-By the time the backend is reached in the compilation pipeline the nested data parallelism\idx{data parallelism: nested}{} in the original user program has been completely transformed to flat data parallelism:
+By the time the backend is reached in the compilation pipeline the nested data parallelism\idx{data parallelism: nested} in the original user program has been completely transformed to flat data parallelism:
 \begin{itemize}
-\item The program is now expressed in terms of flat and \*segmented array combinators*\isegmented{} that take the segment descriptor as an additional argument.\todo{Some of these segmented operations are shows in listing...}
-\item All data is now represented in terms of flat unboxed\iboxing{} data arrays and segment descriptors\isegd{}.
+\item The program is now expressed in terms of flat and \*segmented array combinators*\isegmented that take the segment descriptor as an additional argument.\todo{Some of these segmented operations are shows in listing...}
+\item All data is now represented in terms of flat unboxed\iboxing data arrays and segment descriptors.\isegd
 \item As discussed in Section \ref{sec:DPH-Data-Representation} the vectoriser has also stripped out the product and sum types including those defined by the user and conveniently arranged them in flat arrays.
 \end{itemize}
 
-Thus the backend, or the library of array combinators\icomb{}, only needs to support the arrays of primitive types (@Int@, @Double@, @Bool@, etc. and tuples of these). This is where both the fusion and parallelisation occur.
+Thus the backend, or the library of array combinators,\icomb only needs to support the arrays of primitive types (@Int@, @Double@, @Bool@, etc. and tuples of these). This is where both the fusion and parallelisation occur.
 
 % The backend library implements a fixed interface that is called by the vectoriser. The support for any architectures other than multi-core systems can be added through reimplementing the primitive library interface, though the parallel programming model heavily relies on shared memory architectures for efficiency. The primitive library in its current state uses the Vector library\footnote{http://hackage.haskell.org/package/vector } to store arrays and Haskell threads to implement parallelism \cite{Jones08atutorial}. Essentially each thread is given a chunk of array(s) and a sequential operation to apply to it.
 
@@ -256,11 +256,11 @@ Thus the backend, or the library of array combinators\icomb{}, only needs to sup
 \label{list:DPH-fusion-levels}
 \item \textbf{Removing synchronisation points}
 
-Due to the use of \Haskell threads \cite{Jones08atutorial}, the code responsible for distributing the processing across the processing elements\ipe{} introduces many thread @fork/join@ points. This prohibits the application of array fusion that we discussed in the previous chapter. Thus if there is no processing to be done between the @join@ and the next @fork@, these are fused together using the rewrite rules\irwrules{} \cite{PTH01}.
+Due to the use of \Haskell threads \cite{Jones08atutorial}, the code responsible for distributing the processing across the processing elements\ipe introduces many thread @fork/join@ points. This prohibits the application of array fusion that we discussed in the previous chapter. Thus if there is no processing to be done between the @join@ and the next @fork@, these are fused together using the rewrite rules\irwrules \cite{PTH01}.
 
 \item \textbf{Stream Fusion}
 
-\name{Stream Fusion}\istreamfusion{} receives the most attention as far as the fusion in \DPH goes. It not only considerably affects the internal implementation of collective array operations in \DPH and in the underlying \name{Vector} library\footnote{http://hackage.haskell.org/package/vector}, but also relies on a certain set of optimisations in the compiler. A description of \name{Stream Fusion} is given in Appendix \ref{sec:Stream-Fusion}. Just like the fusion that removes superfluous synchronisation points, \name{Stream Fusion} also heavily relies on inlining and rewriting to work.
+\name{Stream Fusion}\istreamfusion receives the most attention as far as the fusion in \DPH goes. It not only considerably affects the internal implementation of collective array operations in \DPH and in the underlying \name{Vector} library\footnote{http://hackage.haskell.org/package/vector}, but also relies on a certain set of optimisations in the compiler. A description of \name{Stream Fusion} is given in Appendix \ref{sec:Stream-Fusion}. Just like the fusion that removes superfluous synchronisation points, \name{Stream Fusion} also heavily relies on inlining and rewriting to work.
 \end{description}
 
 Unfortunately, the common point of failure of all of the above fusion types is that they rely on the consecutive operations being inlined and being adjacent to each other for the rewrite rules to fire. \todo{They are subject to the shortcomings of equational fusion systems I discussed in Section ref}

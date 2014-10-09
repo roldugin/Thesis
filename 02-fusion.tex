@@ -13,13 +13,13 @@ Suppose we have the following computation to perform:
 sum (zipWith (*) xs ys)
 \end{hscode}
 
-A person familiar with the fundamentals of functional programming is likely to spot the computation of the dot product of two vectors in this snippet of \Haskell code. Indeed, the @zipWith@ list combinator\icomb{} will element-wise multiply the two vectors @xs@ and @ys@. Quite expectedly the @sum@ combinator will sum the elements of the resulting vector into a scalar value yielding the dot product of @xs@ and @ys@.
+A person familiar with the fundamentals of functional programming is likely to spot the computation of the dot product of two vectors in this snippet of \Haskell code. Indeed, the @zipWith@ list combinator\icomb will element-wise multiply the two vectors @xs@ and @ys@. Quite expectedly the @sum@ combinator will sum the elements of the resulting vector into a scalar value yielding the dot product of @xs@ and @ys@.
 
 This one-liner was an attempt to develop the motivation for the high-level view on numeric computations. It may seem reasonable to replace the lists with arrays and reimplement the same high-level interface in terms of traditional arrays to avoid random memory access penalties as in the case of lists.
 
-Providing an instantly familiar interface without compromising performance has been one of the goals of the \name{Data Parallel Haskell (DPH)}\idph{} project \cite{PLKC08,CLP+07}. The work described in this essay has been carried out in the context of this project. It will be discussed in more detail in section \ref{sec:DPH}.
+Providing an instantly familiar interface without compromising performance has been one of the goals of the \name{Data Parallel Haskell (DPH)}\idph project \cite{PLKC08,CLP+07}. The work described in this essay has been carried out in the context of this project. It will be discussed in more detail in section \ref{sec:DPH}.
 
-However, even if we replaced the lists with arrays and gave efficient implementations to @sum@ and @zipWith@, the resulting algorithm is still likely to be slower than one written by hand in a language such as \C. The @zipWith@ combinator \*produces* an \*intermediate array*\iintermediate{} containing the element-wise product of the two input vectors. It is immediately \*consumed* by @sum@, yielding the final (scalar) value. Thus the algorithm performs two traversals and allocates another array of the size of the input arrays.
+However, even if we replaced the lists with arrays and gave efficient implementations to @sum@ and @zipWith@, the resulting algorithm is still likely to be slower than one written by hand in a language such as \C. The @zipWith@ combinator \*produces* an \*intermediate array*\iintermediate containing the element-wise product of the two input vectors. It is immediately \*consumed* by @sum@, yielding the final (scalar) value. Thus the algorithm performs two traversals and allocates another array of the size of the input arrays.
 
 To illustrate the benefit of Array Fusion let us turn to the implementation of same algorithm expressed in \C:
 
@@ -41,7 +41,7 @@ double dotProduct (double xs[], double ys[], int len) {
 \end{ccode}
 
 
-We immediately notice that both loops iterate over the same \*range* of indices and we could hence perform it as one loop. The two loops are said to have the same \*rate*\irate{} (the term used more recently in the context of loop fusion in \Haskell \cite{BenLippmeier:2014jc}).
+We immediately notice that both loops iterate over the same \*range* of indices and we could hence perform it as one loop. The two loops are said to have the same \*rate*\irate (the term used more recently in the context of loop fusion in \Haskell \cite{BenLippmeier:2014jc}).
 
 
 \begin{ccode}
@@ -55,11 +55,11 @@ for(i = 0; i < len; i++) {
 
 
 \begin{bluebox}
-The process of finding and exploiting the opportunities for merging multiple loops into one is referred to as \term{loop fusion}\ifusion{}.
+The process of finding and exploiting the opportunities for merging multiple loops into one is referred to as \term{loop fusion}.\ifusion
 \end{bluebox}
 
 
-However, this does not completely bypass the allocation of an intermediate array\iintermediate{}. Clearly, the intermediate array is redundant and the intermediate value @temp@ could just be a \*scalar* as in the following:
+However, this does not completely bypass the allocation of an intermediate array.\iintermediate Clearly, the intermediate array is redundant and the intermediate value @temp@ could just be a \*scalar* as in the following:
 
 
 \begin{ccode}
@@ -73,11 +73,11 @@ for(int i = 0; i < len; i++) {
 
 
 \begin{bluebox}
-The optimisation that removes the need for temporary arrays by replacing them with scalars is called \term{scalarisation}\idx{scalarisation}{}.
+The optimisation that removes the need for temporary arrays by replacing them with scalars is called \term{scalarisation}.\idx{scalarisation}
 \end{bluebox}
 
 
-It is a special case of \term{array contraction}\idx{array contraction}{}. Array contraction optimisation attempts to remove a \*dimension* from the array. In this particular case we contracted a one dimensional array to a scalar, hence \*scalarisation*. However, in the examples with arrays of higher dimensions the dimension could just be reduced, and not eliminated entirely. We will see examples of that in the upcoming chapters when we discuss \*segmented array combinators*\isegmented. This concept is taken even further in multi-dimensional array systems such as \name{Repa} \cite{KCL+10} and \name{Accelerate} \cite{CKL+11}.
+It is a special case of \term{array contraction}.\idx{array contraction} Array contraction optimisation attempts to remove a \*dimension* from the array. In this particular case we contracted a one dimensional array to a scalar, hence \*scalarisation*. However, in the examples with arrays of higher dimensions the dimension could just be reduced, and not eliminated entirely. We will see examples of that in the upcoming chapters when we discuss \*segmented array combinators*.\isegmented This concept is taken even further in multi-dimensional array systems such as \name{Repa} \cite{KCL+10} and \name{Accelerate} \cite{CKL+11}.
 
 
 \begin{bluebox}
@@ -85,7 +85,7 @@ It is a special case of \term{array contraction}\idx{array contraction}{}. Array
 \end{bluebox}
 
 
-Another term for this commonly encountered in literature is \term{deforestation}\idx{deforestation}{}, first coined by Philip Wadler in \cite{Wad90}.
+Another term for this commonly encountered in literature is \term{deforestation},\idx{deforestation} first coined by Philip Wadler in \cite{Wad90}.
 
 In following chapter I will introduce the reader to the \DPH project. I now identify some of the shortcomings of the previously available fusion systems which motivated the search for a fresh approach.
 

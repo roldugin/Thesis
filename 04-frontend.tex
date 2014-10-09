@@ -8,11 +8,11 @@
 
 This chapter describes \LiveFusion - the new array language that I designed. It offers a library of fusible array combinators and is able to exploit more fusion opportunities than equational fusion frameworks\ieqfusion (see Appendix \ref{sec:Equational-Fusion-Systems})
 
-In its essence \LiveFusion takes the approach of \*deeply embedded domain specific languages* (EDSLs)\iedsl{}.
+In its essence \LiveFusion takes the approach of \*deeply embedded domain specific languages* (EDSLs).\iedsl
 
 
 \section{On Embedded Domain-Specific Languages}
-\iedsl{}
+\iedsl
 
 The term \term{domain-specific language} (DSL) describes a computer language designed for solving problems in a particular application domain.
 
@@ -34,7 +34,7 @@ Shallowly embedded DSLs directly translate their constructs to expressions in th
 
 \item \term{Deep embedding} 
 
-The principle idea behind \term{deeply embedded DSLs} is that all operations of such an EDSL construct a tree of operations, or an \term{abstract syntax tree} (AST)\iast{}. This new AST is a data structure in the host language. It is separate from the host language's AST and is rather presented as a tree-like structure in the host language's runtime.
+The principle idea behind \term{deeply embedded DSLs} is that all operations of such an EDSL construct a tree of operations, or an \term{abstract syntax tree} (AST).\iast This new AST is a data structure in the host language. It is separate from the host language's AST and is rather presented as a tree-like structure in the host language's runtime.
 
 The difference from the ASTs found in compilers is that it allows for analysis, optimisation and compilation (or interpretation) of the EDSL's AST at runtime. The complete process is taken care by the library written in the host language. This avoids the difficulties of writing a complete standalone optimising compiler.
 
@@ -48,7 +48,7 @@ The difference from the ASTs found in compilers is that it allows for analysis, 
 
 \section{LiveFusion AST}
 
-\LiveFusion EDSL offers a library of flat and segmented\isegmented{} array combinators\icomb{} some of which are presented in Listing \ref{lst:LiveFusion-interface}.
+\LiveFusion EDSL offers a library of flat and segmented\isegmented array combinators\icomb some of which are presented in Listing \ref{lst:LiveFusion-interface}.
 
 \begin{hscode2}[%
     caption={\LiveFusion interface functions. Typeclass constraints on array elements have been omitted for brevity.},%
@@ -114,7 +114,7 @@ data AST t where
            -> ArrayAST a
 \end{hscode2}
 
-The fundamental concept by which \LiveFusion makes fusion possible is constructing an AST\iast{} of pending array operations at runtime and compiling that AST to fast code when the result is required in the host program. By constructing an AST of a pipeline of array operations in a running program, the actual computations are \*delayed* to be performed at a later time.
+The fundamental concept by which \LiveFusion makes fusion possible is constructing an AST\iast of pending array operations at runtime and compiling that AST to fast code when the result is required in the host program. By constructing an AST of a pipeline of array operations in a running program, the actual computations are \*delayed* to be performed at a later time.
 
 The AST is the topmost layer of \LiveFusion system. Most of the library's user-facing functions are just constructing the nodes of the AST. Parts of \LiveFusion AST are presented in Listing \ref{lst:LiveFusion-AST}. Is it easy to spot the correspondence between the user-facing functions in Listing \ref{lst:LiveFusion-interface} and the constructors of the AST.
 

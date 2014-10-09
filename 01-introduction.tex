@@ -15,7 +15,7 @@ While the hardware for running highly parallel computations is readily available
 
 The resulting application is a mixture of the actual algorithm and the implementation specific code, dealing with concurrency and parallelism. This obscures code clarity and may generally be error-prone.
 
-One alternative to this practice of explicit parallelisation is to provide a common set of collective operations\icollop{} on large data structures. Programs implemented in terms of these operations would be automatically parallelised across the available processing elements. This approach is successfully exercised by a multitude of frameworks covering many host languages, target architectures and suitable application domains \cite{PLKC08,KCL+10,CKL+11,AS07}.
+One alternative to this practice of explicit parallelisation is to provide a common set of collective operations\icollop on large data structures. Programs implemented in terms of these operations would be automatically parallelised across the available processing elements. This approach is successfully exercised by a multitude of frameworks covering many host languages, target architectures and suitable application domains \cite{PLKC08,KCL+10,CKL+11,AS07}.
 
 However, in the pursuit of a high level approach to programming a major inefficiency is introduced. Having provided a number of collective operations, the problem of multiple traversals arises. In each program there is likely to be a number of such operations composed together in some way to compute the desired result. With each collective operation potentially traversing a large data structure, the memory traffic is considerably increased.
 
@@ -23,9 +23,9 @@ In a program written by hand without the use of collective operations the progra
 
 On the other hand, using a straight-forward implementation of a high level library of collective operations would result in code that traverses data many times while potentially performing only a small change in each pass. For large data structures this may lead to poor cache utilisation and high memory traffic, noticeably reducing the overall performance.
 
-Additionally, each operation may need to store its result in a new data structure, which is especially true for languages where values are immutable by default. Allocating temporary data structures to store the intermediate results\idx{intermediate value}{} leads to further memory and runtime penalties.
+Additionally, each operation may need to store its result in a new data structure, which is especially true for languages where values are immutable by default. Allocating temporary data structures to store the intermediate results\idx{intermediate value} leads to further memory and runtime penalties.
 
-Optimising out the superfluous data structure traversals and allocations is collectively referred to as \term{Loop Fusion}\ifusion{}. It allows a program expressed in terms of high level operations, also called \term{combinators}\icomb{}, to be transformed into a program that would be comparable to a handwritten one in operation and speed.
+Optimising out the superfluous data structure traversals and allocations is collectively referred to as \term{Loop Fusion}.\ifusion It allows a program expressed in terms of high level operations, also called \term{combinators},\icomb to be transformed into a program that would be comparable to a handwritten one in operation and speed.
 
 In this thesis I explore the problem of loop fusion in the context of purely functional data parallel programs. In particular I explore the challenges of fusing programs written for the \*nested data parallel* frameworks such as \name{Data Parallel Haskell (DPH)}.
 
@@ -49,7 +49,7 @@ In the following I summarise the areas of my contribution, explicitly noting whi
 
 I shall begin by introducing the reader to the problem of fusion and the context of my work. In the next chapter I will outline the challenges of array fusion finding a solution to which has motivated my work in the prior years.
 
-% The work described in this thesis is aimed at introducing a new fusion mechanism in \name{Data Parallel Haskell (DPH)}\idph{} framework.
+% The work described in this thesis is aimed at introducing a new fusion mechanism in \name{Data Parallel Haskell (DPH)}\idph framework.
 
 
 

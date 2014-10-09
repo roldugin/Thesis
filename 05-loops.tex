@@ -27,7 +27,7 @@ In the following sections we will look more closely at what a loop really is and
 \section{Anatomy of a loop}
 \label{sec:anatomy}
 
-Despite the purely functional, combinatorial interface to the library, looking at a loop in a procedural way is the approach I have opted for in the middle layer of the system. It is represented by the \Loop language\iloop{}.
+Despite the purely functional, combinatorial interface to the library, looking at a loop in a procedural way is the approach I have opted for in the middle layer of the system. It is represented by the \Loop language.\iloop
 
 The loops \LiveFusion generates can be viewed as similar to those one might write in an Assembly language. It uses labelled basic blocks and has explicit control flow using @goto@ statements\footnote{The formal grammar of the \Loop language is introduced later in the chapter. It is presented in Figure \ref{fig:Loop-grammar} on \pageref{fig:Loop-grammar}}.
 
@@ -240,7 +240,7 @@ ys = realloc(ys, j * sizeof(double));
 \subsection{Summary of Loop structure}
 \label{sec:anatomy-summary}
 
-In summary the common loop structure to be used throughout this chapter is comprised of the following 6 loop section (represented by basic blocks in the \Loop language):\iblock{}
+In summary the common loop structure to be used throughout this chapter is comprised of the following 6 loop section (represented by basic blocks in the \Loop language):\iblock
 \begin{enumerate}
 \item \[init] block is the main entry into the loop and contains statements which need to execute only once for the whole loop. New array allocation, index and length variable initialisation all belong here.
 \item \[guard] block performs looping condition tests before every iteration of the loop.
@@ -255,7 +255,7 @@ In summary the common loop structure to be used throughout this chapter is compr
 
 \section{The \Loop language more formally}
 \label{sec:The-Loop-language}
-\iloop{}
+\iloop
 
 In summary we have used the following features of the \Loop language in the previous example:
 \begin{enumerate}
@@ -268,7 +268,7 @@ In summary we have used the following features of the \Loop language in the prev
 \item A number of built-in array primitives: (@newArray@, @readArray@, @writeArray@, @arrayLength@ and @sliceArray@).
 \end{enumerate}
 
-All of the above are \*statements*, which are grouped into labelled \*basic blocks*\iblock.
+All of the above are \*statements*, which are grouped into labelled \*basic blocks*.\iblock
 
 The grammar of the \Loop language is presented formally in Figure~\ref{fig:Loop-grammar}. The syntax seen in the examples throughout this thesis is the same as used by the pretty printer for the language and it faithfully\footnote{I have taken the liberty of rewriting operators in infix notation and omitting explicit literal conversions such as \code{fromInteger 1}.} reproduces the internal representation of \Loop programs. 
 
@@ -408,7 +408,7 @@ By design the combinators know the unique identifiers of the combinators they ar
 
 Populating the loop with @map@-specific statements is straight-forward.
 
-Since the length \|len_map| and the iteration index \|ix_map| are always the same as those of the input array (output of @filter@), they are simply rebound. This means that @Manifest@ combinator uses one index, while both @filter@ and @map@ are using another. This supports the \*rate*-changing\irate{} nature of @filter@.
+Since the length \|len_map| and the iteration index \|ix_map| are always the same as those of the input array (output of @filter@), they are simply rebound. This means that @Manifest@ combinator uses one index, while both @filter@ and @map@ are using another. This supports the \*rate*-changing\irate nature of @filter@.
 
 Again, the user specified function $(* 100)$ is inlined to facilitate generation of fast code.
 
