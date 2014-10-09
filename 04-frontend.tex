@@ -220,7 +220,7 @@ It is a term in our scalar expression language \name{Term}, representing a funct
     label=lst:HOAS,%
 ]
 data Term t where
-  -- Function of constant suitable for code generation
+  -- Function or constant in backend-specific form
   Con :: Impl t -> Term t
 
   -- Lambda abstraction

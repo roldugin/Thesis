@@ -12,8 +12,8 @@
 
 % Languages
 \providecommand{\ilanguage}[1][]{\idx{language!#1}}
-\providecommand{\iedsl}[1][]{\ilanguage{embedded!#1}}
-\providecommand{\idsl}[1][]{\ilanguage{domain-specific!#1}}
+\providecommand{\iedsl}[1][]{\idx{language!embedded!#1}}
+\providecommand{\idsl}[1][]{\idx{language!domain-specific!#1}}
 
 
 % LiveFusion AST, ASG, frontend, etc..
@@ -21,12 +21,19 @@
 \providecommand{\iasg}[1][]{\idx{ASG (abstract semantic graph)!#1}}
 \providecommand{\icollop}[1][]{\idx{collective operation!#1}}
 \providecommand{\isegd}[1][]{\idx{segment descriptor!#1}}
-\providecommand{\isegmented}[1][]{\idx{segmented array combinator!#1}}
 \providecommand{\icomb}[1][]{\idx{combinator!#1}}
+\providecommand{\isegcomb}[1][]{\idx{combinator!segmented!#1}}
+\providecommand{\iflatcomb}[1][]{\idx{combinator!flat!#1}}
+\providecommand{\igencomb}[1][]{\idx{combinator!generator!#1}}
+\providecommand{\ipurecon}[1][]{\idx{combinator!pure consumer!#1}}
 
+% Also:
+\idx{pure producers|see {combinator: generator}}
+\idx{generator|see {combinator: generator}}
+\idx{pure consumer|see {combinator: pure consumer}}
 
 % Scalar language
-\providecommand{\iscalarlang}[1][]{\ilanguage{scalar!#1}}
+\providecommand{\iscalarlang}[1][]{\idx{language!scalar!#1}}
 \providecommand{\ihoas}[1][]{\idx{HOAS (higher-order abstract syntax)!#1}}
 \providecommand{\idebruijn}[1][]{\idx{De Bruijn!#1}}
 
@@ -37,7 +44,8 @@
 \providecommand{\iintermediate}[1][]{\idx{intermediate value!#1}}
 \providecommand{\irate}[1][]{\idx{rate!#1}}
 \providecommand{\istreamfusion}[1][]{\idx{Stream Fusion!#1}}
-% Also:
+\providecommand{\ipipe}[1][]{\idx{pipeline!#1}}
+% Also
 \idx{deforestation|see {fusion}}
 
 
@@ -71,6 +79,10 @@
 
 % Misc
 \providecommand{\ipe}[1][]{\idx{processing element!#1}}
+\providecommand{\iarray}[1][]{\idx{array!#1}}
+\providecommand{\imanifest}[1][]{\idx{array!manifest!#1}}
+\providecommand{\isegarray}[1][]{\idx{array!segmented!#1}}
+\providecommand{\iflatarray}[1][]{\idx{array!flat!#1}}
 
 
 \idx{DSL|see {language!domain-specific}}

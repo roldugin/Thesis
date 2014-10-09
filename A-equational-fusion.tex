@@ -13,8 +13,8 @@ A major problem with this approach is that it cannot fuse a producer into multip
 
 \clearpage
 
-\section{\name{build/foldr} fusion}
-\label{sec:build-foldr}
+\section{\name{foldr/build} fusion}
+\label{sec:foldr-build}
 
 \name{foldr/build} short cut fusion \cite{GLP93} is one of the most referenced techniques for fusion in \Haskell. It has been developed for use in \GHC to fuse pipelined list operations. It employs two combinators, $foldr$ and $build$, and a single rewrite rule to eliminate adjacent occurrences of the combinators. It is suitable for use in the cases when the functions to be fused can be defined in terms of these combinators. The definition of $foldr$ is reused from \name{Prelude} -- \Haskell's standard library:
 

@@ -77,7 +77,7 @@ The optimisation that removes the need for temporary arrays by replacing them wi
 \end{bluebox}
 
 
-It is a special case of \term{array contraction}.\idx{array contraction} Array contraction optimisation attempts to remove a \*dimension* from the array. In this particular case we contracted a one dimensional array to a scalar, hence \*scalarisation*. However, in the examples with arrays of higher dimensions the dimension could just be reduced, and not eliminated entirely. We will see examples of that in the upcoming chapters when we discuss \*segmented array combinators*.\isegmented This concept is taken even further in multi-dimensional array systems such as \name{Repa} \cite{KCL+10} and \name{Accelerate} \cite{CKL+11}.
+It is a special case of \term{array contraction}.\idx{array contraction} Array contraction optimisation attempts to remove a \*dimension* from the array. In this particular case we contracted a one dimensional array to a scalar, hence \*scalarisation*. However, in the examples with arrays of higher dimensions the dimension could just be reduced, and not eliminated entirely. We will see examples of that in the upcoming chapters when we discuss \*segmented array combinators*.\isegcomb This concept is taken even further in multi-dimensional array systems such as \name{Repa} \cite{KCL+10} and \name{Accelerate} \cite{CKL+11}.
 
 
 \begin{bluebox}
@@ -87,17 +87,75 @@ It is a special case of \term{array contraction}.\idx{array contraction} Array c
 
 Another term for this commonly encountered in literature is \term{deforestation},\idx{deforestation} first coined by Philip Wadler in \cite{Wad90}.
 
-In following chapter I will introduce the reader to the \DPH project. I now identify some of the shortcomings of the previously available fusion systems which motivated the search for a fresh approach.
+In the remainder of this chapter I identify several types of fusion as well as the shortcomings of the previously available fusion systems which motivated the search for a fresh approach.
 
 
-\todo{All of this}
+%\clearpage
+%\section{Types of collective array operations}
+%\label{sec:combinator-types}
+
+%In this section I present a classification of collective array operations\icollop that were of primary importance for this project. The classification is based on how the combinators consume\icomb their inputs and produce outputs.
+
+%It is by no means the only way to classify the combinators. However, the analysis is aimed to showcase the different ways in which array combinators may interact with each other is a user program.
+
+%While the discussion of the context of the work and the justification of the choice of combinators is left until the next chapter, we will attempt to put the currently available fusion systems in perspective and determine the combinators and programs for which they perform less effectively.
 
 \clearpage
-\section{Types of fusion}
+\section{Types of collective array operations}
+
 
 \subsection{Straight-line fusion}
+\label{sec:straight-line}
 
-\subsection{Diamond fusion}
+The most basic form of optimisation that is attempted by most fusion systems is @map/map@ fusion where a pipeline of @map@ combinators is transformed into a single @map@:
+
+\begin{hscode}[mathescape]
+map g $\circ$ map f $\mapsto$ map (g $\circ$ f)
+\end{hscode}
+
+However, @map@ is not the only combinator that can be chained together in a pipeline. @scan@ and @filter@, like @map@, both \*consume* one array and \*produce* another.
+% are both \term{array transducers}\idx{transducer}, in that they \*consume* one array and \*produce* another.
+
+In the simplest case, at the beginning of such a combinator pipeline there is a physical, or \term{manifest}\imanifest array, materialised in memory. However, there may also be a \term{pure producer} or a \term{generator}\igencomb instead. As such @replicate@, @enumerate@ and several others, generate an array from scalars or functions according to some rule.
+
+Just like a pipeline does not necessarily start with a physical array, it may be concluded with a computation such as @fold@ yielding one scalar value.
+
+The combinators discussed so far can be combined into a pipeline of operations where an array output of one combinator is fed directly as input to the next. Additionally, each combinator in the pipeline is able to consume the elements one by one at the \*rate* they are produced by the preceding combinator.
+
+We use the term \term{straight-line}\footnote{The term is borrowed from Waters' work on \name{Series Expressions} \cite{WatersSeries}.}\ipipe to describe a computation expressed by an uninterrupted pipeline of combinators.
+
+The expressions presented in Figure~\ref{fig:simple-piplines} programs are all examples of straight-line computations.
+
+\begin{figure}
+
+\begin{hscode}
+let ys = map (/100)    let s = fold (+) 0        let ws = filter odd
+       $ filter (>0)         $ map (\x -> x*x)          $ map (+1)
+       $ xs                  $ scan (*) 1               $ enumFromTo 1 10
+                             $ zs
+\end{hscode}
+
+\begin{subfigure}{.33\textwidth}%
+\includegraphics[center]{img/simple-pipeline-a}%
+\end{subfigure}%
+\begin{subfigure}{.33\textwidth}%
+\includegraphics[center]{img/simple-pipeline-b}%
+\end{subfigure}%
+\begin{subfigure}{.33\textwidth}%
+\includegraphics[center]{img/simple-pipeline-c}%
+\end{subfigure}%
+
+\caption{Examples of }
+\label{fig:simple-piplines}
+\end{figure}
+
+
+Such simple pipelines are generally handled well by most fusion frameworks. In particular the following are all fusible by \name{Stream Fusion} (\cite{CLS07} and Appendix~\ref{sec:stream-fusion}) and \name{Functional Array Fusion} (\cite{CK01}).
+
+
+
+\subsection{Multiple-consumers fusion}
+\label{sec:diamond}
 
 \clearpage
 \section{Problems with equational fusion systems}
@@ -109,7 +167,7 @@ In following chapter I will introduce the reader to the \DPH project. I now iden
 \clearpage
 \section{An alternative}
 
-
+In following chapter I will introduce the reader to the \DPH project.
 \IfNotCompilingAll{\bibliography{bib}}
 
 
