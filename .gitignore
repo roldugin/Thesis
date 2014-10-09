@@ -16,6 +16,8 @@
 
 # Careful with this one
 *.pdf
+!img/*.pdf
+*converted-to.pdf
 
 # Mac and Dropbox stuff
 .DS_Store
