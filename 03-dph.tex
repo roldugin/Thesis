@@ -157,7 +157,7 @@ f x = x * x + 1
 
 For every such function the vectoriser generates its \*lifted* version @f^@ replacing all inner functions by their \*lifted* counterparts and all constants by calls to @replicateP@:
 
-\begin{hscode}
+\begin{hscode}[literate={^}{{$^\uparrow$}}1]
 f^ :: [:Float:] -> [:Float:]
 f^ x = (x *^ x) +^ (replicateP n 1)
   where n = lengthP x
@@ -167,7 +167,7 @@ This new definition obeys the rule @f^ = mapP f@, thus it is possible to replace
 
 In the generated code\footnote{The code generated internally to be used with the backend library of array operations.} @f^@ becomes the following\footnote{This is no longer true for functions as simple as \code{f} \cite{vectavoid} but it is still a valid example indicative of \DPH inner workings }:
 
-\begin{hscode}
+\begin{hscode}[literate={^}{{$^\uparrow$}}1]
 f^ :: Array Float -> Array Float
 f^ x = zipWith (+) (zipWith (*) x x)
                    (replicate n 1)
@@ -240,7 +240,7 @@ Having multiple arrays, each storing only the relevant values wrapped by the sam
 
 By the time the backend is reached in the compilation pipeline the nested data parallelism\idx{data parallelism: nested} in the original user program has been completely transformed to flat data parallelism:
 \begin{itemize}
-\item The program is now expressed in terms of flat and \*segmented array combinators*\isegmented that take the segment descriptor as an additional argument.\todo{Some of these segmented operations are shows in listing...}
+\item The program is now expressed in terms of flat and \*segmented array combinators*\isegcomb that take the segment descriptor as an additional argument.\todo{Some of these segmented operations are shows in listing...}
 \item All data is now represented in terms of flat unboxed\iboxing data arrays and segment descriptors.\isegd
 \item As discussed in Section \ref{sec:DPH-Data-Representation} the vectoriser has also stripped out the product and sum types including those defined by the user and conveniently arranged them in flat arrays.
 \end{itemize}

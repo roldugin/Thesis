@@ -104,7 +104,7 @@ In the remainder of this chapter I identify several types of fusion as well as t
 \section{Types of collective array operations}
 
 
-\subsection{Straight-line fusion}
+\subsection{Simple pipeline fusion}
 \label{sec:straight-line}
 
 The most basic form of optimisation that is attempted by most fusion systems is @map/map@ fusion where a pipeline of @map@ combinators is transformed into a single @map@:
@@ -122,17 +122,16 @@ Just like a pipeline does not necessarily start with a physical array, it may be
 
 The combinators discussed so far can be combined into a pipeline of operations where an array output of one combinator is fed directly as input to the next. Additionally, each combinator in the pipeline is able to consume the elements one by one at the \*rate* they are produced by the preceding combinator.
 
-We use the term \term{straight-line}\footnote{The term is borrowed from Waters' work on \name{Series Expressions} \cite{WatersSeries}.}\ipipe to describe a computation expressed by an uninterrupted pipeline of combinators.
+%Assuming that a computation is expressed a pipeline of combinators uninterrupted by \*branching* or \*control flow* are generally handled well by many existing fusion frameworks.
 
-The expressions presented in Figure~\ref{fig:simple-piplines} programs are all examples of straight-line computations.
+Such simple pipelines are generally handled well by most fusion frameworks. In particular the expressions presented in Figure~\ref{fig:simple-piplines} are all fusible by \name{Stream Fusion} \cite{CLS07} (and Appendix~\ref{sec:stream-fusion}) and \name{Functional Array Fusion} \cite{CK01}.
 
 \begin{figure}
-
 \begin{hscode}
-let ys = map (/100)    let s = fold (+) 0        let ws = filter odd
-       $ filter (>0)         $ map (\x -> x*x)          $ map (+1)
-       $ xs                  $ scan (*) 1               $ enumFromTo 1 10
-                             $ zs
+let ys = map (/100)     let s = fold (+) 0       let ws = filter odd
+       $ filter (>0)          $ map (^2)                $ map (+1)
+       $ xs                   $ scan (*) 1              $ enumFromTo 1 10
+                              $ zs
 \end{hscode}
 
 \begin{subfigure}{.33\textwidth}%
@@ -145,12 +144,9 @@ let ys = map (/100)    let s = fold (+) 0        let ws = filter odd
 \includegraphics[center]{img/simple-pipeline-c}%
 \end{subfigure}%
 
-\caption{Examples of }
+\caption{Examples of simple combinator pipelines: \Haskell expressions (top) and their corresponding data flow graphs (bottom).}
 \label{fig:simple-piplines}
 \end{figure}
-
-
-Such simple pipelines are generally handled well by most fusion frameworks. In particular the following are all fusible by \name{Stream Fusion} (\cite{CLS07} and Appendix~\ref{sec:stream-fusion}) and \name{Functional Array Fusion} (\cite{CK01}).
 
 
 
