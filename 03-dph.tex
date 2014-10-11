@@ -123,16 +123,18 @@ The following nested parallel array may have been the deepest level of the discu
 [: [:5:], [::], [:4,2:], [::], [:3:], [:17:], [::], [:11:] :]
 \end{hscode}
 
-At runtime it would be stored as an array of data values together with the segment descriptor containing the lengths and the starting index positions of the contained arrays (offsets into the data array)\footnote{Technically the array of index offsets can be computed from the array of lengths. It is stored with the segment descriptor for efficiency reasons.}:
+At runtime it would be stored as an array of data values together with the segment descriptor containing the lengths and the starting index positions of the contained arrays (offsets into the data array):%\footnote{Technically the array of index offsets can be computed from the array of lengths. It is stored with the segment descriptor for efficiency reasons.}:
 
 \begin{hscode}
 [# 5, 4, 2, 3, 17, 11 #]       -- data
 
-[# 1, 0, 2, 0, 1, 1, 0, 1 #]   -- lengths
-[# 0, 1, 1, 3, 3, 4, 5, 5 #]   -- indices
+[# 1, 0, 2, 0, 1, 1, 0, 1 #]   -- lengths (segment descriptor)
 \end{hscode}
+%[# 0, 1, 1, 3, 3, 4, 5, 5 #]   -- indices
 
 As a result every level of a tree can be efficiently processed in parallel.
+
+The combinators that operate on the segmented array representation are called \term{segmented combinators}.\isegcomb They will be discussed is Section~\ref{sec:DPH-Combinators} towards the end of this chapter.
 
 In summary, flattening transform allows the user to define data which is then automatically aggregated into parallel arrays.
 
@@ -228,7 +230,7 @@ In \DPH the values constructed by the \*same constructor* are stored in the same
 \begin{itemize}
 \item An array @[:Float:]@ that stores radii of all circles
 \item A pair of arrays @([:Int:],[:Int:])@ that sore dimensions of all rectangles
-\item A \*selector*\idx{selector} array [:Int:] which determines which of the two constructors has been used. The selector array allows to recreate the original interleaving of values constructed with different constructors.
+\item A \*selector*\idx{selector} array @[:Int:]@ which determines which of the two constructors has been used. The selector array allows to recreate the original interleaving of values constructed with different constructors.
 \end{itemize}
 
 Having multiple arrays, each storing only the relevant values wrapped by the same constructor, not only avoids the cost of unboxing but also facilitates pattern matching on constructors.
@@ -249,23 +251,131 @@ Thus the backend, or the library of array combinators,\icomb only needs to suppo
 
 % The backend library implements a fixed interface that is called by the vectoriser. The support for any architectures other than multi-core systems can be added through reimplementing the primitive library interface, though the parallel programming model heavily relies on shared memory architectures for efficiency. The primitive library in its current state uses the Vector library\footnote{http://hackage.haskell.org/package/vector } to store arrays and Haskell threads to implement parallelism \cite{Jones08atutorial}. Essentially each thread is given a chunk of array(s) and a sequential operation to apply to it.
 
-\todo{Possibly kill everything below}
 
-\DPH system originally introduced fusion at two levels:
-\begin{description}
-\label{list:DPH-fusion-levels}
-\item \textbf{Removing synchronisation points}
 
-Due to the use of \Haskell threads \cite{Jones08atutorial}, the code responsible for distributing the processing across the processing elements\ipe introduces many thread @fork/join@ points. This prohibits the application of array fusion that we discussed in the previous chapter. Thus if there is no processing to be done between the @join@ and the next @fork@, these are fused together using the rewrite rules\irwrules \cite{PTH01}.
+\subsection{Previous fusion systems}
+\label{sec:DPH-fusion-levels}
 
-\item \textbf{Stream Fusion}
+\DPH system originally introduced fusion on two different levels: one removed the superfluous thread synchronisation points introduced after every combinator, while the other, \name{Stream Fusion}, for fusing the array processing code of each combinator.
 
-\name{Stream Fusion}\istreamfusion receives the most attention as far as the fusion in \DPH goes. It not only considerably affects the internal implementation of collective array operations in \DPH and in the underlying \name{Vector} library\footnote{http://hackage.haskell.org/package/vector}, but also relies on a certain set of optimisations in the compiler. A description of \name{Stream Fusion} is given in Appendix \ref{sec:Stream-Fusion}. Just like the fusion that removes superfluous synchronisation points, \name{Stream Fusion} also heavily relies on inlining and rewriting to work.
-\end{description}
 
-Unfortunately, the common point of failure of all of the above fusion types is that they rely on the consecutive operations being inlined and being adjacent to each other for the rewrite rules to fire. \todo{They are subject to the shortcomings of equational fusion systems I discussed in Section ref}
+\subsubsection{Removing synchronisation points}
 
-Over the following several chapters I will present my own replacement backend for \name{Data Parallel Haskell} which enables the fusion in more cases than was possible with previous fusion systems.
+Due to the use of \Haskell threads \cite{Jones08atutorial}, the code responsible for distributing the processing across the processing elements\ipe introduces many thread @fork/join@ points. Most collective array operations are individually surrounded by thread @fork@ and @join@. This prohibits the application of array fusion discussed in the previous chapter.
+
+Thus if there is no processing to be done between the @join@ and the next @fork@, these are fused together using rewrite rules\irwrules \cite{PTH01}.
+
+The handling of synchronisation points in \DPH as well as the process parallelisation by using \name{distributed types} and \*sequential array combinators* is described in \cite{CLP+07}.
+
+
+\subsubsection{Stream Fusion}
+
+\name{Stream Fusion}\istreamfusion receives the most attention as far as the fusion in \DPH goes. It is able to statically fuse many types of array combinators while only relying on a single rewrite rule and generic compiler optimisations already available in \GHC (\cite{GHCOptimiser}, \cite{SpecConstr}). A description of \name{Stream Fusion} is given in Appendix \ref{sec:Stream-Fusion}. Just like the fusion that removes superfluous synchronisation points, \name{Stream Fusion} also heavily relies on inlining \cite{PM02} and rewriting \cite{PTH01} to work.
+
+Unfortunately, the common point of failure of all of the above fusion types is that they rely on the consecutive operations being adjacent to each other for the rewrite rules to fire.
+
+In particular, the required rewriting will not take place if the result of a combinator is consumed by multiple combinators as discussed in Section~\ref{sec:problems}. \todo{The ability to fuse heavily branched data-flow graphs of combinators is key to achieving high performance in \DPH programs as seen in Chapter~\ref{ch:Results}}
+
+
+
+\subsection{\DPH Combinators}
+\label{sec:DPH-Combinators}
+
+In Chapter~\ref{ch:Fusion} on array fusion we discussed fusion as applied to simple combinators operating on flat arrays. However, with the introduction of segmented array representation by the \name{Flattening transform} (Section~\ref{sec:Flattening}) there is the need for more complex \term{segmented array cobinators}.\isegcomb
+
+\subsubsection{Point-wise consumers}
+
+The term \term{point-wise} will be used to describe the manner of array processing where multiple arrays are consumed in lockstep.
+
+The most obvious of them is @zipWith@ (and its \codemath{zipWith$N$} counterparts) which has already been used for point-wise multiplication of two vectors in the beginning of this chapter \todo{(also on Figure~\ref{})}:
+
+%\begin{hscode}
+%let s = sum
+%      $ zipWith (*) xs ys
+%\end{hscode}
+
+Another example is a combinator called \*segmented replicate* which given an array of elements and an array of counts creates a new array where each element is repeated the number of times specified by the count, e.g.:
+
+\begin{hscode}
+replicate_s [2,1,3] [10,20,30] = [10,10,20,30,30,30]
+\end{hscode}
+
+
+However, point-wise consumption is not the only useful way to consume arrays. Other recurring patterns of consumption of multiple arrays include \term{interleaved}, \term{random access}, \term{consecutive} and \term{nested} which we discuss next.
+
+
+\subsubsection{Interleaved consumers}
+
+Interleaved consumption presumes picking elements from one array at a time but potentially changing the array to pick from from iteration to iteration. \*Interleave* and \*segmented append* are examples of these. Expectedly interleave picks one element from each array in order, while \*segmented append* interleaves the whole segments of arrays:
+
+\begin{hscode}
+interleave [1,3,5,7,9] [2,4,6] = [1,2,3,4,5,6,7,9]
+
+append_s ([2,1,1],[10,20, 30, 40]) ([1,2,2],[50, 60,70, 80,90])
+  = [10,20, 50, 30, 60,70, 40, 80,90]
+\end{hscode}
+
+
+\subsubsection{Random access consumers}
+
+Random access pattern is useful for combinators performing \*backwards permutation* on an array given an array of indexes (@bpermute@. In @bpermute@ the indexes specify which elements must be picked from the source array and that array must be randomly accessible:
+
+\begin{hscode}
+bpermute [0,10,20,30,40,50] [3,4,5,1] = [30,40,50,10]
+\end{hscode}
+
+This is different from \*forward permutation*, where the index array specifies the \*destination* index for a particular index of the source array. This allow one to consume both arrays in a lockstep, where each array is potentially a result of a fused pipeline of operations. However, @permute@ will likely be unable to fuse into its consumer because of out-of-order output generation.
+
+\begin{hscode}
+permute [30,40,50,10,20,0] [3,4,5,1,2,0] = [0,10,20,30,40,50]
+\end{hscode}
+
+
+\subsubsection{Consecutive consumers}
+
+This type of consumers is a result of two or more independent array traversals, with one happening after the other. @append@ is currently the only combinator which possesses this property:
+
+\begin{hscode}
+append [1,2,3,4,5] [6,7,8] = [1,2,3,4,5, 6,7,8]
+\end{hscode}
+
+
+\subsubsection{Nested consumers}
+
+We have already mentioned a \*segmented replicate* and a \*segmented append* in this section. These types of combinator form the basis of how \DPH handles operations on \*nested* arrays by way of \name{Flattening transform} (Section~\ref{sec:Flattening}). All nested arrays in the \DPH backend are represented by flat data array and a \*segment descriptor* defining the original nesting.
+
+Conceptually \*segmented combinators* resemble nested loops in procedural languages, where for each element taken from the segment descriptor array, that many elements of the data array get processed. We can identify two types of such segmented combinators:
+\begin{enumerate}
+\item Combinators that \*produce* elements at the \*rate* of the segment descriptor, i.e. one element per segment. For example:
+
+\begin{hscode}
+fold_s [3,1,2] max minBound [1,4,2, 5, 6,8] = [4,5,8]
+\end{hscode}
+
+\item Combinators that \*produce* elements at the \*rate* of the data array. For example:
+
+\begin{hscode}
+scan_s [3,1,2] (+) 0 [1,4,2, 5, 6,8] = [0,1,5, 0, 0,6]
+\end{hscode}
+\end{enumerate}
+
+As seen in the above examples @fold_s@ and @scan_s@ behave identical to their \name{Prelude} counterparts as applied to individual segments.
+
+There is also a type of segmented combinators which are a segmented equivalent of \*generators*.\igencomb They produce segmented arrays given certain input arrays. These combinators roughly fit in the second category (data rate) even though they don't consume a data array as such. \*Segmented replicate*, \*enumerators* and \*index generator* are all examples of these:
+
+\begin{hscode}
+replicate_s [2,1,3] [10,20,30] = [10,10,20,30,30,30]
+
+enumFromStepLenEach [10,40,60] [1,2,3] [2,4,3]
+  = [10,11, 40,42,44,46, 60,63,66]
+
+indices_s [5,3,4] = [0,1,2,3,4, 0,1,2, 0,1,2,3]
+\end{hscode}
+
+
+
+
+Over the following several chapters I will present my own replacement backend for \name{Data Parallel Haskell} which enables the fusion in more cases than was possible with \name{Stream Fusion}.
 
 
 \IfNotCompilingAll{\bibliography{bib}}
