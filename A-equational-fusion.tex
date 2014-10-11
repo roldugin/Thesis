@@ -6,7 +6,7 @@
 \label{sec:Equational-Fusion-Systems}
 \ieqfusion{}
 
-This section will review two approaches to compile-time fusion in \Haskell: \name{foldr/build} short cut fusion and \name{Stream Fusion}. They both fall into the category of \*equational* fusion systems meaning that they rely on compiler's \*rewrite rules* for them to work.
+This section will review two approaches to compile-time fusion in \Haskell: \name{foldr/build} short cut fusion and \name{Stream Fusion}. They both fall into the category of \*equational* fusion systems meaning that they rely on compiler's \*rewrite rules* \cite{PTH01} for them to work.
 
 A major problem with this approach is that it cannot fuse a producer into multiple consumers which is vital for \name{Data Parallel Haskell} as discussed in Section \ref{problems}.
 
@@ -25,7 +25,7 @@ foldr f z (x:xs) = f x z : (foldr f z xs)
 \end{hscode}
 
 
-To understand the motivation behind short cut fusion one may think of @foldr@ as of replacing each @Cons@ of a list with a binary operator and @Nil@ with the neutral element. The other combinator, @build@, takes a second order function which in turn takes an operator to be used as @Cons@, and a value to be used as @Nil@. Since we are building a list, these immediately become \texttt{(:)} and \texttt{{[} {]}}.
+To understand the motivation behind short cut fusion one may think of @foldr@ as of replacing each @Cons@ of a list with a binary operator and @Nil@ with the neutral element. The other combinator, @build@, takes a second order function which in turn takes an operator to be used as @Cons@, and a value to be used as @Nil@. Since we are building a list, these immediately become @(:)@ and @[ ]@.
 
 \begin{hscode}
 build :: ((a -> b -> b) -> b -> b) -> [a]
@@ -43,7 +43,7 @@ map f xs = build (\c n -> foldr (c . f) n xs)
 
 In the above code the list is being folded into another list. With the help of a rewrite rule
 
-$\langle \mathit{foldr/build\ fusion} \rangle\forall g\, k\, z.\mathit{foldr}\, k\, z\,(build\, g)\mapsto g\, k\, z$
+$\langle \mathit{foldr/build\ fusion} \rangle \forall g\, k\, z.\mathit{foldr}\, k\, z\,(build\, g)\mapsto g\, k\, z$
 
 the two consecutive @map@s could be reduced to as in the following:
 
@@ -153,7 +153,7 @@ Again, the user-facing filter function @stream@s the list before passing it to t
 
 Given the above definitions of @map@ and @filter@ the fusion opportunity such as @map f . filter p@ may now be exploited with the following rewrite rule
 
-$\langle \mathit{stream/unstream\ fusion}\rangle\,\forall stream\, (unstream\, s)\mapsto s$
+$\langle \mathit{stream/unstream\ fusion}\rangle\, \forall stream\, (unstream\, s)\mapsto s$
 
 \begin{hscode}
 (map f . filter p) xs
