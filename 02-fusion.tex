@@ -87,7 +87,9 @@ It is a special case of \term{array contraction}.\idx{array contraction} Array c
 
 Another term for this commonly encountered in literature is \term{deforestation},\idx{deforestation} first coined by Philip Wadler in \cite{Wad90}.
 
-In the remainder of this chapter I identify several types of fusion as well as the shortcomings of the previously available fusion systems which motivated the search for a fresh approach.
+
+In the remainder of this chapter I outline the reasons which led me to the line of work described in this thesis.
+
 
 
 %\clearpage
@@ -100,8 +102,16 @@ In the remainder of this chapter I identify several types of fusion as well as t
 
 %While the discussion of the context of the work and the justification of the choice of combinators is left until the next chapter, we will attempt to put the currently available fusion systems in perspective and determine the combinators and programs for which they perform less effectively.
 
+
 \clearpage
-\section{Types of collective array operations}
+\section{The problem statement}
+
+In this section I identify several types of fusion as well as the shortcomings of the previously available fusion systems which motivated the search for a fresh approach.
+
+I will make many references to the \StreamFusion\istreamfusion (\cite{CLS07}, \cite{CSL06}, \cite{VectorStreamFusion}) framework in my discussion as one of the most comprehensive fusion frameworks that exist for \Haskell. However, I also will implicitly or explicitly make references to \name{foldr/build} \cite{GLP93}, \name{Functional Array Fusion} \cite{CK01} since they all fall into the category of \term{equational fusion frameworks}.\ieqfusion Such fusion systems rely on adjacent term rewriting\irw (for example through the use of rewrite rules\irwrules \cite{PTH01}) and subsequent compiler optimisations to produce efficient code.
+
+\StreamFusion and \name{foldr/build} fusion are covered more thoroughly in Appendix~\ref{sec:Equational-Fusion-Systems}.
+
 
 
 \subsection{Simple pipeline fusion}
@@ -135,13 +145,13 @@ let ys = map (/100)     let s = fold (+) 0       let ws = filter odd
 \end{hscode}
 
 \begin{subfigure}{.33\textwidth}%
-\includegraphics[center]{img/simple-pipeline-a}%
+\includegraphics[center,scale=0.85]{img/simple-pipeline-a}%
 \end{subfigure}%
 \begin{subfigure}{.33\textwidth}%
-\includegraphics[center]{img/simple-pipeline-b}%
+\includegraphics[center,scale=0.85]{img/simple-pipeline-b}%
 \end{subfigure}%
 \begin{subfigure}{.33\textwidth}%
-\includegraphics[center]{img/simple-pipeline-c}%
+\includegraphics[center,scale=0.85]{img/simple-pipeline-c}%
 \end{subfigure}%
 
 \caption{Examples of simple combinator pipelines: \Haskell expressions (top) and their corresponding data flow graphs (bottom).}
@@ -149,11 +159,76 @@ let ys = map (/100)     let s = fold (+) 0       let ws = filter odd
 \end{figure}
 
 
+\subsection{Multiple consumer fusion}
 
-\subsection{Multi-array consumers fusion}
-\label{sec:multiarray-fusion}
+In the previous section we have looked at \*uninterrupted* pipelines of combinators. Each intermediate array produced by a combinator was immediately consumed by \*exactly one* other combinator.
 
-A more elaborate and more complex form of fusion involves combinators which accept more that one array as input.
+However, in some cases the output of a combinator may be consumed at two or more places in the program. Consider the example on Figure~\ref{fig:ratios}, showing a program computing, for each element, the ratio of the sum of all preceding elements to the current element. Because computing the ratio involves division operator, the input array is first filtered to exclude any zero elements.
+
+The output of the @filter@ combinator is consumed by both the @scan@ to compute the partial sums and the @zipWith@ to give the final ratio. If one was to write this in \C, the resulting program could be expressed in a single loop.
+
+Nevertheless, this program will not be fused by an equational fusion system.\ieqfusion Even though each pair of combinators could be fused individually (@zipWith@/@scan@, @zipWith@/@filter@, @scan@/@filter@) in this program the fusion will stop already after @filter@.
+
+The reason for this is the following. If fused by \StreamFusion (the approach for other fusion frameworks is similar), the program will be first expanded to the following:
+
+\begin{hscode}
+let nz     = unstream $ filterS (/= 0) $ stream xs
+    psums  = unstream $ scanS (+) 0 $ stream nz
+    ratios = unstream $ zipWithS (/) (stream psums) (stream nz)
+in  ratios
+\end{hscode}
+
+For fusion to take place the following rewrite rule\irwrules need to apply:
+
+$\langle \mathit{stream/unstream\ fusion}\rangle\, \forall stream\, (unstream\, s)\mapsto s$
+
+Unfortunately, because @nz@ term is used in multiple places, \GHC will not inline its definition into its use sites. This is done to prevent work duplication. This crucial step will prevent the fusion from occurring.
+
+\begin{figure}
+
+\begin{subfigure}{.5\textwidth}%
+\begin{hscode}
+let nz     = filter (/= 0) xs
+    psums  = scan (+) 0 nz
+    ratios = zipWith (/) psums nz
+in  ratios
+\end{hscode}
+\end{subfigure}%
+%
+\begin{subfigure}{.5\textwidth}%
+\includegraphics[center,scale=0.85]{img/ratios}%
+\end{subfigure}%
+
+\caption{\code{ratios} program illustrating the problem of multiple consumers (left) and the corresponding data flow graph (right).}
+\label{fig:ratios}
+\end{figure}
+
+
+In the application of fusion to \DPH we have discovered that this pattern of array consumption is recurring and if one of the principle factors contributing to reduced performance as far as fusion is concerned.
+
+In particular the @filterMax@ program on Figure~ is a simplified version of the \DPH program computing convex hull of a number of points using \name{QuickHull} algorithm.
+
+\begin{figure}
+
+\begin{subfigure}{.5\textwidth}%
+\begin{hscode}
+let dist (x,y) = ...
+    distances  = map dist points
+    above      = filter (> 0) distances
+    farthest   = fold1 max distances
+in  (above, farthest)
+\end{hscode}
+\end{subfigure}%
+%
+\begin{subfigure}{.5\textwidth}%
+\includegraphics[center,scale=0.85]{img/filterMax-dataflow}%
+\end{subfigure}%
+
+\caption{\code{filterMax} program illustrating the problem of multiple consumers in DPH (left) and the corresponding data flow graph (right).}
+\label{fig:filterMap}
+\end{figure}
+
+
 
 
 \subsubsection{Point-wise consumers}
@@ -256,7 +331,12 @@ indices_s [5,3,4] = [0,1,2,3,4, 0,1,2, 0,1,2,3]
 \clearpage
 \section{An alternative}
 
+The discussion that follows will try to stay relevant to the application the context in which we are seeking to have the best performing. As such I focus mostly on the types of fusion that are not currently handled by existing systems but are crucial for the application.
+
+
 In following chapter I will introduce the reader to the \DPH project.
+
+
 \IfNotCompilingAll{\bibliography{bib}}
 
 
