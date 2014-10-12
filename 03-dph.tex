@@ -270,7 +270,7 @@ The handling of synchronisation points in \DPH as well as the process parallelis
 
 \subsubsection{Stream Fusion}
 
-\name{Stream Fusion}\istreamfusion receives the most attention as far as the fusion in \DPH goes. It is able to statically fuse many types of array combinators while only relying on a single rewrite rule and generic compiler optimisations already available in \GHC (\cite{GHCOptimiser}, \cite{SpecConstr}). A description of \name{Stream Fusion} is given in Appendix \ref{sec:stream-fusion}. Just like the fusion that removes superfluous synchronisation points, \name{Stream Fusion} also heavily relies on inlining \cite{PM02} and rewriting \cite{PTH01} to work.
+\name{Stream Fusion}\isf receives the most attention as far as the fusion in \DPH goes. It is able to statically fuse many types of array combinators while only relying on a single rewrite rule and generic compiler optimisations already available in \GHC (\cite{GHCOptimiser}, \cite{SpecConstr}). A description of \name{Stream Fusion} is given in Appendix \ref{sec:stream-fusion}. Just like the fusion that removes superfluous synchronisation points, \name{Stream Fusion} also heavily relies on inlining \cite{PM02} and rewriting \cite{PTH01} to work.
 
 Unfortunately, the common point of failure of all of the above fusion types is that they rely on the consecutive operations being adjacent to each other for the rewrite rules to fire.
 

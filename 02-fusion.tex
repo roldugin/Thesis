@@ -109,7 +109,7 @@ In the remainder of this chapter I outline the reasons which led me to the line 
 
 In this section I identify several types of fusion as well as the shortcomings of the previously available fusion systems which motivated the search for a fresh approach.
 
-I will make many references to the \StreamFusion\istreamfusion (\cite{CLS07}, \cite{CSL06}, \cite{VectorStreamFusion}) framework in my discussion as one of the most comprehensive fusion frameworks that exist for \Haskell. However, I also will implicitly or explicitly make references to \name{foldr/build} \cite{GLP93}, \name{Functional Array Fusion} \cite{CK01} since they all fall into the category of \term{equational fusion frameworks}.\ieqfusion Such fusion systems rely on adjacent term rewriting\irw (for example through the use of rewrite rules\irwrules \cite{PTH01}) and subsequent compiler optimisations to produce efficient code.
+I will make many references to the \StreamFusion\isf (\cite{CLS07}, \cite{CSL06}, \cite{VectorStreamFusion}) framework in my discussion as one of the most comprehensive fusion frameworks that exist for \Haskell. However, I also will implicitly or explicitly make references to \name{foldr/build} \cite{GLP93}, \name{Functional Array Fusion} \cite{CK01} since they all fall into the category of \term{equational fusion frameworks}.\ieqf Such fusion systems rely on adjacent term rewriting\irw (for example through the use of rewrite rules\irwrules \cite{PTH01}) and subsequent compiler optimisations to produce efficient code.
 
 \StreamFusion and \name{foldr/build} fusion are covered more thoroughly in Appendix~\ref{sec:Equational-Fusion-Systems}.
 
@@ -169,7 +169,7 @@ However, in some cases the output of a combinator may be consumed at two or more
 
 The output of the @filter@ combinator is consumed by both the @scan@ to compute the partial sums and the @zipWith@ to give the final ratio. If one was to write this in \C, the resulting program could be expressed in a single loop.
 
-Nevertheless, this program will not be fused by an equational fusion system.\ieqfusion Even though each pair of combinators could be fused individually (@zipWith@/@scan@, @zipWith@/@filter@, @scan@/@filter@) in this program the fusion will stop already after @filter@.
+Nevertheless, this program will not be fused by an equational fusion system.\ieqf Even though each pair of combinators could be fused individually (@zipWith@/@scan@, @zipWith@/@filter@, @scan@/@filter@) in this program the fusion will stop already after @filter@.
 
 The reason for this is the following. If fused by \StreamFusion\isf (the approach for other fusion frameworks is similar), the program will be first expanded to the following\footnote{See Appendix~\ref{sec:stream-fusion} for the explanation of this expansion.}:
 
