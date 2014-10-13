@@ -29,18 +29,18 @@ In the following sections we will look more closely at what a loop really is and
 
 Despite the purely functional, combinatorial interface to the library, looking at a loop in a procedural way is the approach I have opted for in the middle layer of the system. It is represented by the \Loop language.\iloop
 
-The loops \LiveFusion generates can be viewed as similar to those one might write in an Assembly language. It uses labelled basic blocks and has explicit control flow using @goto@ statements\footnote{The formal grammar of the \Loop language is introduced later in the chapter. It is presented in Figure \ref{fig:Loop-grammar} on \pageref{fig:Loop-grammar}}.
+The loops \LiveFusion generates can be viewed as similar to those one might write in an Assembly language. It uses labelled basic blocks and has explicit control flow using @goto@ statements\footnote{The formal grammar of the \Loop language is introduced later in the chapter. It is presented in Figure \ref{fig:Loop-grammar} on page \pageref{fig:Loop-grammar}}.
 
-However, as we will see later, they are often even more structured than loops in \C and other mainstream procedural languages. As such I urge the reader to think of them as being high-level and treat the explicit control flow as implementation details.
+However, as we will see later, the loops are more structured than those in \C and other procedural languages. As such I urge the reader to think of them as being high-level and treat the explicit control flow as implementation details.
 
 %The downside, however, is that our loop relies on @goto@-like statements whose use is almost always considered bad practice in modern software engineering.
 
-Without further delaying the discussion of the matter we will now look are the structure of a typical @for@ loop in a language like \C in an attempt to shape our own loop structure.
+Without further delaying the discussion of the matter we will now look at the structure of a typical @for@ loop in a language like \C in an attempt to shape our own loop structure.
 
 
 \subsection{Structure of a \code{for} loop}
 
-Consider the following fragment of a \C program that creates a new array @ys@, by applying some function @f@ to those elements of array @xs@ that satisfy some predicate function @p@ (in \Haskell this could be expressed as @ys = (filter p . map f) xs)@):
+Consider the following fragment of a \C program that creates a new array @ys@, by applying some function @f@ to those elements of array @xs@ that satisfy some predicate function @p@. I (in \Haskell this could be expressed as @ys = (filter p . map f) xs)@):
 
 \begin{ccode}[numbers=left]
 double *ys = malloc(len * sizeof(double)); // result array
@@ -153,7 +153,7 @@ In fact, an element may not even be produced as we discuss next.
 
 \subsubsection{Skip producing an element}
 
-Combinators like @filter@ may not produce a new element in every iteration. This was the case with the example above where only elements satisfying predicate @p@ were used. The \*guard* of the @if@ was serving as a predicate check which its body was the code that produced the element.
+Combinators like @filter@ may not produce a new element in every iteration. This was the case with the example above where only elements satisfying predicate @p@ were used. The \*guard* of the @if@ was serving as a predicate check while its body was the code that produced the element.
 
 The \Loop language attempts to be more precise about where the element is produced. The code is split across two blocks: \[body] and \[yield]:
 
