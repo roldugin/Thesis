@@ -387,14 +387,14 @@ Semantically, the \Loop language does not presume a fixed order of evaluating @l
 \section{Fused loops generation}
 \label{sec:loop-generation}
 
-In the previous section we have seen the first example of the \Loop EDSL which computed at @filter@ of an array followed by a @map@. We have also identified five main \*sections* of a loop, represented by \*basic blocks* in the \Loop language: \[init], \[guard], \[body], \[yield], \[bottom] and \[done].
+In the previous section we have seen the first example of the \Loop EDSL which computed a @filter@ of an array followed by a @map@. We have also identified five main \*sections* of a loop, represented by \*basic blocks* in the \Loop language: \[init], \[guard], \[body], \[yield], \[bottom] and \[done].
 
 We shall revisit the example from the previous section and introduce the process by which a \Loop is generated.
 
-This time we extend the example with specific functions passed to @map@ and @filter@ combinators. The function @toPercentages@ shown on Figure~\ref{fig:toPercentages} (left) converts an array fractions to their percentage equivalents, filtering out those below $0.01$ (or $1\%$).
+This time we extend the example with specific functions passed to @map@ and @filter@ combinators. The function @toPercentages@ shown on Figure~\ref{fig:toPercentages} (left) converts an array of fractions to their percentage equivalents, filtering out those below $0.01$ (or $1\%$).
 
 \begin{figure}
-\begin{subfigure}{.65\textwidth}
+\begin{subfigure}{.66\textwidth}
 \begin{hscode}
 toPercentages :: Array Double -> Array Double
 toPercentages fractions
@@ -408,8 +408,8 @@ toPercentages fractions
 %  \includegraphics[height=12em]{img/toPercentages-flow}
 %\end{subfigure}
 %
-\begin{subfigure}{.35\textwidth}
-  \includegraphics[height=10em]{img/toPercentages-ast}
+\begin{subfigure}{.34\textwidth}
+  \includegraphics[scale=\omniscale]{img/AST-toPercentages}
 \end{subfigure}
 \caption{\code{toPercentages} function (left) and its \LiveFusion AST (right).}
 \label{fig:toPercentages}
