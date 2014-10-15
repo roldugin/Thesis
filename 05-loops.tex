@@ -40,13 +40,13 @@ Without further delaying the discussion of the matter we will now look at the st
 
 \subsection{Structure of a \code{for} loop}
 
-Consider the following fragment of a \C program that creates a new array @ys@, by applying some function @f@ to those elements of array @xs@ that satisfy some predicate function @p@. I (in \Haskell this could be expressed as @ys = (filter p . map f) xs)@):
+Consider the following fragment of a \C program that creates a new array @ys@, by applying some function @f@ to those elements of array @xs@ that satisfy some predicate function @p@ (in \Haskell this could be expressed as @ys = filter p $ map f $ xs@):
 
-\begin{ccode}[numbers=left]
+\begin{ccode}[numbers=left, label=lst:filterMapC]
 double *ys = malloc(len * sizeof(double)); // result array
-int i = 0;                                 // output index
+int j = 0;                                 // output index
 for(int i = 0; i < len; i++) {
-    if(p(xs[i])) {
+    if(p (xs[i])) {
         ys[j] = f (xs[i]);
         j++;
     }
@@ -60,20 +60,20 @@ A @for@ loop in \C has four sections:
 \halfspacing
 \item \*initialisation* section (@i = 0@),
 \item \*guard* section (@i < len@),
-\item the main \*body* (@if(){ ... }@), and finally
+\item the main \*body* (@if ... @), and finally
 \item the \*update* section (@i++@).
 \end{enumerate}
 
 Compared to free-formed @while@ loops which only have a @guard@ and a @body@, the @for@ loops are already much more structured.
 
-However, as we will now show, further structural elements could be introduced which will ultimately assist us when composing loops from array combinators.
+However, as we see next, further structural elements could be introduced which will ultimately assist us when composing loops from array combinators.
 
 
 \subsubsection{Initialisation}
 
 The very first observation to make is that both the result array @ys@ and the output index @j@ were declared and initialised outside the @for@ loop.
 
-In pursuit of a more structured and composable approach to looping all statements executed \*once* before the loop begins are placed in the \[init] basic block of the loop.
+In pursuit of a more structured and composable approach to looping all statements that are executed \*once* before the loop begins are placed in the \[init] basic block of the loop.
 
 The initialisation code corresponds to the following in the \Loop language:
 
@@ -89,37 +89,29 @@ init:
 
 \subsubsection{Guard}
 
-The @guard@ of a @for@ loop corresponds to a \[guard] block of in the \Loop language. It can contain arbitrary statements but usually contains at least one @unless@ statement:
+The @guard@ section of a @for@ loop corresponds to the \[guard] block in the \Loop language. It can contain arbitrary statements but usually contains at least one @unless@ statement:
 
-\begin{loopcode}
+\begin{loopcode}[%
+  literate={_xs}{{\sub{xs}}}2,%
+]
 guard:
   unless i < len | done
-  goto body
+  goto body_xs
 \end{loopcode}
 
-The @guard@ \*statement* transfers the control to a different block if the condition is \*false* (to \[done] in this case).
+The @unless@ \*statement* transfers the control to a different block if the specified condition is \*false* (to \[done] in this case, the finaliser block discussed later). Otherwise the control stays in the current block, which in this case results in entering the loop's body.
 
 
 \subsubsection{Update}
 
-The @update@ equivalent of a @for@ loop in the \Loop language is the basic block called \[bottom]:
-
-\begin{loopcode}
-bottom:
-  i := i + 1
-  goto guard
-\end{loopcode}
-
-The block so called because it is executed \*unconditionally* at the end of each iteration.
-
-As seen in the code above \Loop language supports destructive updates through using @assignment@ (@:=@).
+We defer presenting the \Loop language's equivalent of the @update@ section until after the structure of loop bodies is discussed shortly.
 
 
 \subsubsection{Finalisation}
 
-The @filter@ results in a shorter array in the general case. Hence, after the @for@ loop finishes, the resulting array is \texttt{realloc}'ated to free the unused memory (in practice the array is unlikely to be copied).
+In the general case the @filter@ results in a shorter array than its input. Hence, after the @for@ loop finishes, the resulting array is \texttt{realloc}'ated to free the unused memory (in practice the array is unlikely to be copied).
 
-This is one of the use cases for what is called a \[done] block of the loop:\todo{As we will see later it is not only useful for trimming and returning the final array but also for scheduling other loops such as in @append@ combinator.}.
+This is one of the use cases for what is called the \[done] block of the loop:\todo{As we will see later it is not only useful for trimming and returning the final array but also for scheduling other loops such as in @append@ combinator.}.
 
 \begin{loopcode}
 done:
@@ -131,61 +123,159 @@ As seen from the code, every loop has a result which it returns explicitly.
 
 
 \subsection{``Dissecting loop bodies''}
+\label{sec:dissecting-bodies}
 
 We will now attempt to categorise the types of operations that all belong to the bodies of conventional @for@ and @while@ loops.
 
-\subsubsection{Reading and writing arrays}
+We continue using example presented on page \pageref{lst:filterMapC} as reference. In particular, the @body@ of the @for@ loop contained the following statements:
 
-Line 5 of the @for@ presented above (@ys[j] = f (xs[i]);@) is actually doing three things:
+\begin{ccode}[numbers=left, firstnumber=4,]
+if(p (xs[i])) {
+    ys[j] = f (xs[i]);
+    j++;
+}
+\end{ccode}
+
+
+
+\subsubsection{Isolating combinators}
+
+Line 5 of the @for@ loop, the statement @ys[j] = f (xs[i])@, is actually performing three operations:
 \begin{enumerate}
 \halfspacing
 \item \*reading* an element from array @xs@,
-\item \*producing* a new element by applying @f@ to it, and
+\item \*producing* a new element by applying function @f@, and
 \item \*writing* the new element into array @ys@.
 \end{enumerate}
 
-Consider, however, that we are trying to devise a loop representation for an application of fusion. When several combinators are fused into a single loop and produce no intermediate arrays, such reading and writing only happens at the beginning and at the end of a combinator pipeline.
+Recall, however, that we are trying to devise a loop representation for an application of fusion. When several combinators are fused into a single loop and produce no intermediate\iintermediate arrays, such reading and writing only happens at the beginning and at the end of a combinator pipeline\ipipe.
 
-Hence we want to separate the notion of \*producing* a new element from the fact that it came from an array, a list or just another computation. Likewise, we do not need to be concerned with how the new element is going to be consumed. It may or may not be written into a new array. It may or may not be used by a consuming combinator. However, it should not up to an individual combinator to decide.
+Hence we want to separate the notion of \*producing* a new element from the fact that it came from a physical array or just another computation. Likewise, we should not be concerned with how the new element is going to be consumed. It may or may not be written into a new array. It may or may not be used by a consuming combinator. However, it should not be up to an individual combinator to decide.
 
-In fact, an element may not even be produced as we discuss next.
+Each combinator in the pipeline is responsible to only take care of its own processing. In particular each combinator fills in its own \[body], \[yield] and \[bottom] basic blocks which we discuss next.
 
 
-\subsubsection{Skip producing an element}
 
-Combinators like @filter@ may not produce a new element in every iteration. This was the case with the example above where only elements satisfying predicate @p@ were used. The \*guard* of the @if@ was serving as a predicate check while its body was the code that produced the element.
+\subsubsection{Computing a new element in the \[body]}
 
-The \Loop language attempts to be more precise about where the element is produced. The code is split across two blocks: \[body] and \[yield]:
+As discussed previously, each combinator fills in a number of blocks with statements specific to it. For now we will only focus on the \[body] blocks produced:
 
-\begin{loopcode}
-body:
+\begin{loopcode}[%
+  literate=
+    {_xs}{{\sub{xs}}}2
+    {_filt}{{\sub{filt}}}4
+    {_map}{{\sub{map}}}3
+    {_write}{{\sub{write}}}5
+]
+body_xs:
   let x = readArray xs i
-  unless (p x) | bottom  -- end iteration if the predicate is not satified
-  let y = f x
-  goto yield
 
-yield:
-  writeArray ys j y
-  j := j + 1
-  goto bottom
+body_filt:
+  unless (p x) | bottom_filt
+
+body_map:
+  let y = f x
 \end{loopcode}
 
-The \[body] block deals with all the code that is concerned with producing an element, however an element is known to have been produced only if it the control reaches the \[yield] block.
+The reading of @xs@ array is treated as a separate combinator and results in a @readArray@ statement. The \[body] of the @filter@ is a conditional jump if the predicate @p@ is not satisfied. Lastly, the \[body] of @map@ is the application of function @f@ to element @x@ and binding it to a fresh variable @y@.
 
-This allows us to make assumptions about the behaviour of a loop without knowing what the loop is doing internally. As we will see later, the code that introduces @writeArray@ statements into the loop is oblivious to how the element has been produced. It knows that an element has definitely been produced if the control enters the \[yield] block.
+We know however, that if @filter@ produces and element, then so does @map@. We say that @filter@ and @map@ produces elements at the same \term{rate}. Thus we can \*merge* the respective blocks of the two:
+
+\begin{loopcode}[%
+  literate=
+    {_xs}{{\sub{xs}}}2
+    {_filt}{{\sub{xs}}}4
+    {_map}{{\sub{map}}}3
+    {_write}{{\sub{write}}}5
+]
+body_xs:
+  let x = readArray xs i
+
+body_filt_map:
+  unless (p x) | bottom_filt
+  let y = f x
+\end{loopcode}
+
+It was mentioned that each combinator also introduces \[yield] and \[bottom] blocks.
+
+The complete \Loop generated for @ys = map f $ filter p $ xs@ as well as its control flow graph (CFG)\icfg are shown on Figure~\ref{fig:MapFilterLoop}. In addition to \[init], \[guard], \[body] and \[done] blocks it also contains \[yield] and \[bottom] block with the required control flow. A step-by-step explanation of these spans the following four sections.
 
 
-\subsection{The complete example}
+\subsubsection{Yielding produced elements}
 
-We have now constructed a complete loop in the internal \Loop language which corresponds to the \C code at the beginning of the section. The \C code in turn corresponds to \Haskell program @ys = (map f . filter p) xs@.
+The \Loop language attempts to be precise as to where the element is produced and where it is consumed. More concretely, the \[yield] block of the loop is only ever entered if an element has been produced in the current iteration.
 
-Both the original program and the resulting loop are given in Figure~\ref{fig:MapFilter}.
+\begin{bluebox}
+The \[body] block contains the code that is concerned with producing an element, however an element is known to have been produced only if the control reaches the \[yield] block.
+\end{bluebox}
+
+Every \[body] block on the listing is accompanied by the \[yield] block. The combinator reading the @xs@ array in \[body$_{xs}$] produces an element @x@ at every iteration, hence the corresponding \[yield$_{xs}$] block is entered unconditionally.
+
+On the other hand, the @filter@ (and the subsequent @map@) may skip an element hence the possibility possibility of bypassing \[yield$_{filt}_{map}$] block.
+
+This allows us to make assumptions about the behaviour of a loop without knowing what the loop is doing internally.
 
 
+\subsubsection{Writing an element into result array}
+
+The separation of \[yield] and \[body] has allowed for a finer grained loop structure.
+
+In particular, if the result of a combinator has to be materialised into the physical array (as in the the case of @map@ in our example), the @writeArray@ statement needs to be inserted into \[yield$_map$]:
+
+\begin{hscode}
+writeArray ys j y  -- write element y into array ys at index j
+\end{hscode}
+
+
+\subsubsection{Updating index}
+
+The \[yield] block also provides a convenient place to update the index variable.
+
+In our example the loop contains two \*rates*\irate:
+\begin{itemize}
+\item one at which the elements are read from the source array,
+\item and one at which the elements of @filter@ and @map@ are produced
+\end{itemize}
+
+With the current loop structure, updating both @i@ and @j@ index is a matter of placing an increment statement in the right \[yield] block:
+
+\begin{loopcode}[%
+  literate=
+    {_xs}{{\sub{xs}}}2
+    {_filt}{{\sub{filt}}}3
+    {_map}{{\sub{map}}}3
+]
+yield_xs:
+  i := i + 1
+  goto body_filt
+
+yield_filt_map:
+  writeArray ys j y
+  j := j + 1
+  goto bottom_map
+\end{loopcode}
+
+As seen in the code above \Loop language supports destructive updates through using @assignment@ (@:=@).
+
+This introduction of the index update is uniform for all \*rates* that may be present in the loop. This is in contrast to the @for@ loop originally presented on page \pageref{lst:filterMapC} where @i++@ was part of @update@ section, while @j++@ was inside the @for@ loop's body. 
+
+
+\subsubsection{Ending the iteration}
+
+When the iteration has finished the last block that is entered \*unconditionally* (for each rate) is \[bottom]. In the given examples the two \[bottom] blocks simply transfer the control to the beginning of the next iteration, the \[guard]. However, in more sophisticated loops, e.g. @append@ combinator\todo{\ref{sec:append}}, the \[bottom] blocks may serve other purposes.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Final Loop for mapFilter example.
 \begin{figure}
 
 \begin{subfigure}{.45\textwidth}
-\begin{loopcode}
+\begin{loopcode}[%
+  literate=
+    {_xs}{{\sub{xs}}}2
+    {_filt}{{\sub{filt}}}3
+    {_map}{{\sub{map}}}3
+]
 init:
   let len = arrayLength xs
   let ys = newArray len
@@ -195,21 +285,36 @@ init:
 
 guard:
   unless i < len | done
-  goto body
+  goto body_xs
 
-body:
+
+
+body_xs:
   let x = readArray xs i
-  unless (p x) | bottom
-  let y = f x
-  goto yield
+  goto yield_xs:
 
-yield:
+yield_xs:
+  i := i + 1
+  goto body_filt
+
+
+
+body_filt_map:
+  unless (p x) | bottom_filt
+  let y = f x
+  goto yield_map:
+
+yield_filt_map:
   writeArray ys j y
   j := j + 1
-  goto bottom
+  goto bottom_map
 
-bottom:
-  i := i + 1
+bottom_filt_map:
+  goto bottom_xs
+
+
+
+bottom_xs:
   goto guard
 
 done:
@@ -220,35 +325,28 @@ done:
 %
 \begin{subfigure}[right]{.55\textwidth}
 \begin{ccode}
-double *ys = malloc(len * sizeof(double));
-int i = 0;
-for(int i = 0; i < len; i++) {
-    if(p(xs[i])) {
-        ys[j] = f (xs[i]);
-        j++;
-    }
-}
-ys = realloc(ys, j * sizeof(double));
+---- Insert DFD ----
 \end{ccode}
 \end{subfigure}
 
-\caption{Computation \code{ys = (map f . filter p) xs} in \C (right) and internal \Loop language (left).}
-\label{fig:MapFilter}
+\caption{Internal \Loop language representation for \code{ys = map f $ filter p $ xs} (left) and the corresponding CFG (right).}
+\label{fig:MapFilterLoop}
 \end{figure}
 
 
 \subsection{Summary of Loop structure}
 \label{sec:anatomy-summary}
 
-In summary the common loop structure to be used throughout this chapter is comprised of the following 6 loop section (represented by basic blocks in the \Loop language):\iblock
+In summary the common loop structure to be used throughout this chapter is comprised of the following 6 loop section, represented by basic blocks in the \Loop language:\iblock
 \begin{enumerate}
 \item \[init] block is the main entry into the loop and contains statements which need to execute only once for the whole loop. New array allocation, index and length variable initialisation all belong here.
 \item \[guard] block performs looping condition tests before every iteration of the loop.
-\item \[body] block contains all statements concerned with reading arrays and computing elements.
-\item \[yield] block is entered only if a \*new element* has been produced by the loop in the current iteration. It is not entered is the loop's logic has skipped to the next iteration without producing an element (e.g. in @filter@ combinator). This is the place to write the produced element in the resulting array if required.
-\item \[bottom] block is entered unconditionally at the end of every iteration whether of not an element has been produced. It roughly corresponds to the \*update* section of a @for@ loop in procedural languages. Uses beyond simple index advancement will be seen later in this chapter.
-\item \[done] block performs any remaining operations after the loop has finished. In particular it returns the final result from the loop. Unlike the loops in the majority of procedural languages the @return@ of a value from a loop in the \Loop language is explicit.
+\item \[body] block contains all statements concerned with reading arrays and computing elements. This block is \*rate*-specific and there is a new \[body] block for every distinct rate in the loop.
+\item \[yield] block for a particular rate is entered only if a \*new element* has been produced by the \[body] block of the same rate in the current iteration. It is not entered if the loop's logic has skipped to the next iteration without producing an element (e.g. in @filter@ combinator). This is the place to update the loop index as well as \*write* the produced element in the resulting array if required.
+\item \[bottom] block is entered unconditionally at the end of every iteration whether of not an element has been produced. Uses beyond going back up to the beginning of the next iteration will be seen later in this chapter.
+\item \[done] block performs any remaining operations after the loop has finished. In particular it returns the final result from the loop. Unlike the loops in the majority of procedural languages the @return@ of values \*from a loop* is explicit in the \Loop language.
 \end{enumerate}
+
 
 
 \clearpage
@@ -257,13 +355,13 @@ In summary the common loop structure to be used throughout this chapter is compr
 \label{sec:The-Loop-language}
 \iloop
 
-In summary we have used the following features of the \Loop language in the previous example:
+So far we have used the following features of the \Loop language:
 \begin{enumerate}
 \halfspacing
 \item New variable binding (@i = 0@)
 \item Variable assignment (@i := i + 1@)
 \item Explicit control transfer (@goto body@)
-\item Conditional control transfer (@guard i < len | done@)
+\item Conditional control transfer (@unless i < len | done@)
 \item Returning values from loop (@return ys'@)
 \item A number of built-in array primitives: (@newArray@, @readArray@, @writeArray@, @arrayLength@ and @sliceArray@).
 \end{enumerate}
@@ -279,15 +377,15 @@ The grammar of the \Loop language is presented formally in Figure~\ref{fig:Loop-
 \todo{Put the footnotetext on the same page where the grammar ends up}
 \footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings. \*(Footnote for listing \ref{fig:Loop-grammar})*}
 
-If the grammar is studied more carefully one would note two each basic block may have multiple associated labels. As we will see in the next section this is a vital feature of the language which allows for easy fusion of loops.
+If the grammar is studied more carefully one would note that one basic block may have multiple associated labels. We have seen a use case for this when we merged \[body], \[yield] and \[bottom] basic blocks of @filter@ and @map@ combinators (Figure~\ref{fig:MapFilterLoop}). Such merged blocks can be referenced by either label, e.g. \[body$_filt$] or \[body$_map$].
 
-We also note that each label and variable in the language is postfixed with a unique value which has so far been omitted from the listings.
+It should also be noted that each label and variable in the language is postfixed with a unique value which has so far been seen omitted from the listings. However \[body$_xs$] is an example of such label identification.
 
-Being a flexible assembly-style language the \Loop language is not limited by the basic block structure discussed in Section~\ref{sec:anatomy} and summarised in Section~\ref{sec:anatomy-summary}. However, as seen in the rest of this chapter this structure has proven to be a useful common base for many types of arrays combinators. Thus we assume this to be the common pattern of using the \Loop language.
+Being a flexible assembly-style language, the \Loop language is not limited by the basic block structure discussed in Section~\ref{sec:anatomy} and summarised in Section~\ref{sec:anatomy-summary}. However, as seen in the rest of this chapter this structure has proven to be a useful common base for many types of arrays combinators. Thus we assume this to be the common pattern of using the \Loop language.
 
 Semantically, the \Loop language does not presume a fixed order of evaluating @let@ bound variables. However, all statements affecting control flow (@goto@, @unless@, @if@) are executed in the order they appear in the block.
 
-Lastly, the new value of assigned variables ($\coleq$) is not available until the next block the control is transferred to. This is an implementation side-effect of the \*liveness analysis* pass (Section~\ref{sec:Liveness-analysis}) which however is helpful in implementing fused loops.
+% Lastly, the new value of assigned variables ($\coleq$) is not available until the next block the control is transferred to. This is an implementation side-effect of the \*liveness analysis* pass (Section~\ref{sec:Liveness-analysis}) which however is helpful in implementing fused loops.
 
 
 \clearpage
