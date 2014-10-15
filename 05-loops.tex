@@ -419,18 +419,21 @@ toPercentages fractions
 
 \subsection{Start with an AST}
 
-The @toPercentages@ function internally uses a pipeline of to combinators: the output array of @filter@ (@significant@) becomes the input array of @map@. Remembering that @Array Double@ is the type synonym for @AST (Vector Double)@, each combinator constructs a node in an AST representing a \*delayed array computation*.
+The @toPercentages@ function internally uses a pipeline of to combinators: the output array of @filter@ (called @significant@) becomes the input array of @map@. Recalling that @Array Double@ is the type synonym for @AST (Vector Double)@, each combinator constructs a node in an AST representing a \*delayed array computation*.
 
-It is impossible possible to know statically whether the input @fraction@ array is computed by a long pipeline of combinators or is a @Manifest@ array stored in memory. Likewise, it is not known before the runtime if the resulting @percents@ array is consumed by another combinator and the pipeline of delayed operation will continue to grow after @toPercentages@ function returns.
+It is not known statically if the input array, @fractions@, is computed by a pipeline of combinators or whether it is a @Manifest@ array stored in memory. Likewise, it is not known before runtime if the resulting @percents@ array is consumed by another combinator and the pipeline of delayed operation will continue to grow after @toPercentages@ function returns.
 
-For the purposes of illustration we will assume that the @toPercentagee@ function is called with a @Manifest@ array as argument and the result is immediately \*forced* to be computed (e.g. to be printed out or to be consumed in a random access fashion).
+For the purposes of illustrating a complete running example we will assume that the @toPercentages@ function is called with a @Manifest@ array as argument and the result is immediately \*forced* to be computed (e.g. to be written out to a file or to be consumed in a random access fashion).
 
 In this case the AST shown on Figure~\ref{fig:toPercentages} (right) is constructed and \*forced* to a @Manifest@ array at the runtime of the program:
 
 \begin{hscode}[mathescape]
--- AST that may be generated for a call to toPercentages
+-- AST that may be a result of a call to toPercentages
 ast :: AST (Vector Double)
-ast = force $\dol$ Map (* 100) $\dol$ Filter (>=. 0.01) $\dol$ Manifest vec
+ast = force
+    $\dol$ Map (* 100)
+    $\dol$ Filter (>=. 0.01)
+    $\dol$ Manifest vec
 
 -- LiveFusion library functions
 force :: Elt a => AST (Vector a) -> AST (Vector a)
@@ -444,9 +447,9 @@ The three fusible combinators represented by @Manifest@, @Filter@ and @Map@ AST 
 % After sharing recovery each AST node (or rather ASG node) is assigned a unique value
 
 
-\subsection{Generate loops for individual combinatos}
+\subsection{Generate loops for individual combinators}
 
-In order to generate the \Loop code for an AST of combinators, the evaluator first processes them individually. For each combinator it populates the parts of the loop that were identified in Section~\ref{sec:anatomy}. It does so by inserting new statements into the appropriate basic blocks of a loop template comprising of thus instantiating the loop template.
+In order to generate the \Loop language code for an AST of combinators, the evaluator first processes them individually. For each combinator it populates the sections of the loop that were identified in Section~\ref{sec:anatomy}. It does so by inserting new statements into the appropriate basic blocks of a loop template.
 
 \subfile{lst-toPercentages-loops}
 
