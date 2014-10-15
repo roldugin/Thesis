@@ -81,9 +81,12 @@
 \def\dol{\mathtt{\char36}}
 
 \newcommand\sub[1]{\large\itshape\rmfamily\textsubscript{#1}\normalfont\normalsize}
+\newcommand\normsub[1]{\itshape\rmfamily\textsubscript{#1}\normalfont\normalsize}
 
 \def\halfspacing{\setstretch{0.5}} % Not sure how this works, but it's smaller than 1.0
 
+% The font chosen in OmniGraffle is a little too big. Rescale everything here.
+\def\omniscale{0.8}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Automatically make code after underscore subscripted
@@ -364,6 +367,7 @@
         {:=}{{$\coleq$}}2
         {|}{{$\mid$}}1
         {/=}{{$\neq$}}2
+        {/}{{\normsub{/}}}1 % rate separator
 }
 
 

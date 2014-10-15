@@ -163,9 +163,8 @@ As discussed previously, each combinator fills in a number of blocks with statem
 \begin{loopcode}[%
   literate=
     {_xs}{{\sub{xs}}}2
-    {_filt}{{\sub{filt}}}4
+    {_filt}{{\sub{filt}}}2
     {_map}{{\sub{map}}}3
-    {_write}{{\sub{write}}}5
 ]
 body_xs:
   let x = readArray xs i
@@ -184,14 +183,13 @@ We know however, that if @filter@ produces and element, then so does @map@. We s
 \begin{loopcode}[%
   literate=
     {_xs}{{\sub{xs}}}2
-    {_filt}{{\sub{xs}}}4
+    {_filt}{{\sub{filt}}}2
     {_map}{{\sub{map}}}3
-    {_write}{{\sub{write}}}5
 ]
 body_xs:
   let x = readArray xs i
 
-body_filt_map:
+body_filt/_map:
   unless (p x) | bottom_filt
   let y = f x
 \end{loopcode}
@@ -211,7 +209,7 @@ The \[body] block contains the code that is concerned with producing an element,
 
 Every \[body] block on the listing is accompanied by the \[yield] block. The combinator reading the @xs@ array in \[body$_{xs}$] produces an element @x@ at every iteration, hence the corresponding \[yield$_{xs}$] block is entered unconditionally.
 
-On the other hand, the @filter@ (and the subsequent @map@) may skip an element hence the possibility possibility of bypassing \[yield$_{filt}_{map}$] block.
+On the other hand, the @filter@ (and the subsequent @map@) may skip an element hence the possibility possibility of bypassing \[yield$_{filt/map}$] block.
 
 This allows us to make assumptions about the behaviour of a loop without knowing what the loop is doing internally.
 
@@ -220,7 +218,7 @@ This allows us to make assumptions about the behaviour of a loop without knowing
 
 The separation of \[yield] and \[body] has allowed for a finer grained loop structure.
 
-In particular, if the result of a combinator has to be materialised into the physical array (as in the the case of @map@ in our example), the @writeArray@ statement needs to be inserted into \[yield$_map$]:
+In particular, if the result of a combinator has to be materialised into the physical array (as in the the case of @map@ in our example), the @writeArray@ statement needs to be inserted into \[yield$_{map}$]:
 
 \begin{hscode}
 writeArray ys j y  -- write element y into array ys at index j
@@ -242,14 +240,14 @@ With the current loop structure, updating both @i@ and @j@ index is a matter of 
 \begin{loopcode}[%
   literate=
     {_xs}{{\sub{xs}}}2
-    {_filt}{{\sub{filt}}}3
+    {_filt}{{\sub{filt}}}2
     {_map}{{\sub{map}}}3
 ]
 yield_xs:
   i := i + 1
   goto body_filt
 
-yield_filt_map:
+yield_filt/_map:
   writeArray ys j y
   j := j + 1
   goto bottom_map
@@ -269,11 +267,11 @@ When the iteration has finished the last block that is entered \*unconditionally
 %% Final Loop for mapFilter example.
 \begin{figure}
 
-\begin{subfigure}{.45\textwidth}
+\begin{subfigure}{.6\textwidth}
 \begin{loopcode}[%
   literate=
     {_xs}{{\sub{xs}}}2
-    {_filt}{{\sub{filt}}}3
+    {_filt}{{\sub{filt}}}2
     {_map}{{\sub{map}}}3
 ]
 init:
@@ -287,8 +285,6 @@ guard:
   unless i < len | done
   goto body_xs
 
-
-
 body_xs:
   let x = readArray xs i
   goto yield_xs:
@@ -299,17 +295,17 @@ yield_xs:
 
 
 
-body_filt_map:
+body_filt/_map:
   unless (p x) | bottom_filt
   let y = f x
   goto yield_map:
 
-yield_filt_map:
+yield_filt/_map:
   writeArray ys j y
   j := j + 1
   goto bottom_map
 
-bottom_filt_map:
+bottom_filt/_map:
   goto bottom_xs
 
 
@@ -323,10 +319,8 @@ done:
 \end{loopcode}
 \end{subfigure}%
 %
-\begin{subfigure}[right]{.55\textwidth}
-\begin{ccode}
----- Insert DFD ----
-\end{ccode}
+\begin{subfigure}[right]{.4\textwidth}
+\includegraphics[center,scale=\omniscale]{img/CFG-MapFilter}
 \end{subfigure}
 
 \caption{Internal \Loop language representation for \code{ys = map f $ filter p $ xs} (left) and the corresponding CFG (right).}
@@ -377,9 +371,9 @@ The grammar of the \Loop language is presented formally in Figure~\ref{fig:Loop-
 \todo{Put the footnotetext on the same page where the grammar ends up}
 \footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings. \*(Footnote for listing \ref{fig:Loop-grammar})*}
 
-If the grammar is studied more carefully one would note that one basic block may have multiple associated labels. We have seen a use case for this when we merged \[body], \[yield] and \[bottom] basic blocks of @filter@ and @map@ combinators (Figure~\ref{fig:MapFilterLoop}). Such merged blocks can be referenced by either label, e.g. \[body$_filt$] or \[body$_map$].
+If the grammar is studied more carefully one would note that one basic block may have multiple associated labels. We have seen a use case for this when we merged \[body], \[yield] and \[bottom] basic blocks of @filter@ and @map@ combinators (Figure~\ref{fig:MapFilterLoop}). Such merged blocks can be referenced by either label. For example, \[bottom\sub{filt/map}] was being referenced both by \[bottom\sub{filt}] and \[bottom\sub{map}].
 
-It should also be noted that each label and variable in the language is postfixed with a unique value which has so far been seen omitted from the listings. However \[body$_xs$] is an example of such label identification.
+It should also be noted that each label and variable in the language is postfixed with a unique value which has so far been omitted from the listings. However, \[body\sub{xs}] is an example of such label identification. At the implementation level these values are unique integers. However, for improved readability they are replaced with combinator names and other meaningful identifiers.
 
 Being a flexible assembly-style language, the \Loop language is not limited by the basic block structure discussed in Section~\ref{sec:anatomy} and summarised in Section~\ref{sec:anatomy-summary}. However, as seen in the rest of this chapter this structure has proven to be a useful common base for many types of arrays combinators. Thus we assume this to be the common pattern of using the \Loop language.
 
