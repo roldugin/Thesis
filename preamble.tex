@@ -88,6 +88,19 @@
 % The font chosen in OmniGraffle is a little too big. Rescale everything here.
 \def\omniscale{0.8}
 
+
+% The amazing \myrulefill by Werner producing centred text like so:
+% ---------- text ----------
+% Source: http://tex.stackexchange.com/a/77824/61985
+% Usage:  \enrule[\color{olive}]{0.95\textwidth}{text}%
+\newcommand*{\enrule}[3][]{%
+  \makebox[#2]{#1%
+    \leaders\hrule height \dimexpr.5ex+.2pt\relax depth \dimexpr -.5ex+.2pt\relax \hfill% Left rule
+    \enskip{#3}\enskip% Text (and surrounding spaces)
+    \leaders\hrule height \dimexpr.5ex+.2pt\relax depth \dimexpr -.5ex+.2pt\relax \hfill\kern0pt}% Right rule
+}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Automatically make code after underscore subscripted
 
