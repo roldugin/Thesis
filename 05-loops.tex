@@ -508,6 +508,31 @@ It is worthy of note that the design decision to transfer control to \[yield] ba
 
 
 
+\subsection{Rates and looping}
+\label{sec:rates}\irate
+
+Multiple times throughout this thesis, the concept of \term{rates} has been mentioned.
+
+\begin{bluebox}
+\term{Rate} is a property of a combinator within a combinator graph. If two combinators are statically known to produce arrays of the same length, they are said to have the same \term{rate}.
+\end{bluebox}
+
+For example, all three @map@s in @map h . map g . map f@ are known to share the same rate since their inputs and outputs will be of the same length.
+
+For the same reason the @filter@ and the subsequent @map@ of the @toPercentages@ example share the same rate since they both produce same-length arrays. As such, they are assigned a single index variable @ix@\sub{filt} (Figure~\ref{fig:toPercentages-loops}).
+
+However, the @filter@ combinator has earlier been identified as \*rate-changing*. In particular we treat @filter@ as a combinator producing elements at a \term{subrate} of the previous combinators. In the @toPercentages@ example, the @filter@ was preceded by @Manifest@, which receives it's own separate index variable @ix@\sub{mfst}.
+
+\begin{bluebox}
+If the rates of combinators are equal they share one index variable and their corresponding blocks can be merged together.
+
+If a combinator runs at a \*subrate* of another combinator then it has its own \[body], \[yield] and \[bottom] blocks since it may not produce an element at every iteration.
+\end{bluebox}
+
+Rate equality and subrate relationship are not the only possible relationships between two combinators. We will introduce other relationships when we discuss segmented combinators.\todo{in Section~ref}
+
+
+
 \subsection{Naming conventions}
 
 As seen from the loop code generated for the individual combinators in the @toPercentages@ example, the \Loop language uses a set of \*naming conventions* to facilitate communication between consecutive combinators in a pipeline. In particular the following are always true for a combinator with identifier \*id*:
@@ -519,7 +544,7 @@ As seen from the loop code generated for the individual combinators in the @toPe
 \item Variable @ix@\sub{id} contains the index of the element being produced.
 \end{itemize}
 
-Binding the three variables in every combinator ensures that this information is \*propagated* upwards through the pipeline of combinators. In particular, the @filter@ only required to know the \*id* of @Manifest@ combinator below it to infer these variables.
+Binding @elt@\sub{id} and @len@\sub{id} in every combinator ensures that this information is \*propagated* upwards through the pipeline of combinators. In particular, the @filter@ only required to know the \*id* of @Manifest@ combinator below it to infer these variables.
 
 \begin{bluebox}
 By design the combinators know their own unique identifiers and the unique identifiers of the combinators they are referencing and nothing else.
@@ -531,13 +556,14 @@ By design the combinators know their own unique identifiers and the unique ident
 
 We have given the \Loop language representations for @Manifest@, @map@ and @filter@ combinators as well as the code that writes out physical arrays.
 
-In order a create one succinct loop, these individual loops are merged into one loop as they are being created. Each combinator has access to the loop composed by all of the combinators below it. For example, when fusing the @map@ the cumulative loop of both @filter@ and @Manifest@ is available for it to be merged with.
+In order a create a succinct loop, these individual loops are merged into one loop.
+%In order a create one succinct loop, these individual loops are merged into one loop as they are being created. Each combinator has access to the loop composed by all of the combinators below it. For example, when fusing the @map@ the cumulative loop of both @filter@ and @Manifest@ is available for it to be merged with.
 
 For combinators as simple as @map@ and @filter@ merging loops means to simply merge the statements of the corresponding blocks blocks in no particular order.
 
 As seen from the final loop on Figure~\ref{fig:toPercentages-loops} (right), not only the block statement lists have been merged together, but also the block labels: each block can now be identified by any of the three identifiers (\*mfst*, \*filt*, \*map*).
 
-This is done in order to support fusing complex ASTs with lots of shared nodes. The benefit of this may appear much clearer when we introduce nested combinators\todo{in Section}.
+This is done in order to support fusing complex ASTs with many shared nodes. The benefit of this may appear much clearer when we introduce nested combinators\todo{in Section}.
 \todo{Elaborate.}
 
 
@@ -545,13 +571,14 @@ This is done in order to support fusing complex ASTs with lots of shared nodes. 
 
 In order to achieve the flexibility of having multiple labels associated with the same block I have implemented a new type of associations @Map@ called \name{AliasMap}.
 
-It offers a familiar interface (Listing~\ref{lst:AliasMap-interface}) similar to that of \Haskell's @Data.Map@. The difference is that it allows for a \*set* of keys to be associated with one value. In addition to the usual functions found in @Data.Map@ one will allow to query the map using \*synonyms*. That is, it will produce a given any one keys associated with the value.
+It offers a familiar interface (Listing~\ref{lst:AliasMap-interface}) similar to that of \Haskell's @Data.Map@. The difference is that it allows for a \*set* of keys to be associated with one value. In addition to the usual functions found in @Data.Map@ one can query the map using \*synonyms*. That is, a value can be retrieved from the map given any key associated with that value.
 
 The notion of \*key synonyms* is used throughout \name{AliasMap} interface which greatly facilitates managing and merging loops where blocks are associated with multiple labels.
 
 \lstinputlisting[style=haskell, float, caption={\name{AliasMap} interface (partial). \code{Ord k} constraints omitted for brevity.}, label=lst:AliasMap-interface]{listings/AliasMap-interface.hs}
 
 
+\clearpage
 \section{More on \texttt{goto}s}
 
 While the use of @goto@s is considered bad practice in modern software engineering I note several reasons for using them in the \Loop intermediate language:
