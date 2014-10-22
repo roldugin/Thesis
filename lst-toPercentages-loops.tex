@@ -30,7 +30,6 @@ init_3:
 body_3:
   let elt_3 = readArray arr_3 ix_3
 
-
 %\WhatCombinator{Filter}%
 init_2:
   let len_2 = len_3
@@ -39,7 +38,6 @@ body_2:
   let elt_2 = elt_3
   unless elt_3 >= 0.01 | bottom_1
 
-
 %\WhatCombinator{Map}%
 init_1:
   let len_1 = len_2
@@ -47,12 +45,21 @@ init_1:
 body_1:
   let elt_1 = elt_2 * 100
 
+%\WhatCombinator{Writing result array}%
+init_1:
+  let arr_1 = newArray len_1
 
-%\WhatCombinator{Looping and writing result array}%
+yield_1:
+  writeArray arr_1 ix_2 elt_1
+
+done_1:
+  let result_1 = sliceArray arr_1 ix_2
+  return result_1
+
+%\WhatCombinator{Looping}%
 init_1/_2/_3:
   let ix_2 = 0
   let ix_3 = 0
-  let arr_1 = newArray len_1
 
 guard_1/_2/_3:
   unless ix_3 < len_3 | done_1
@@ -62,11 +69,6 @@ yield_3:
 
 yield_1/_2:
   ix_2 := ix_2 + 1
-  writeArray arr_1 ix_2 elt_1
-
-done_1/_2/_3:
-  let result = sliceArray arr_1 ix_2
-  return result
 \end{loopcode}
 \end{subfigure}%
 \begin{subfigure}{.55\textwidth}
