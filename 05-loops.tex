@@ -448,6 +448,7 @@ The three fusible combinators represented by @Manifest@, @Filter@ and @Map@ AST 
 
 
 \subsection{Generate loops for individual combinators}
+\label{sec:individual-loops}
 
 In order to generate the \Loop language code for an AST of combinators, the evaluator first processes combinators individually. For each combinator it populates the sections of the loop that were identified in Section~\ref{sec:anatomy}. It does so by inserting new statements into the appropriate basic blocks of a loop template.
 
@@ -460,7 +461,6 @@ All variables and labels introduced by a particular combinator are given a uniqu
 Internally however, the library uses unique integers to distinguish between similarly named variables and labels belonging to different combinators (e.g. @body_2@ and @elt_3@). This not only avoids variable name clashes, but as we discuss next, enables communication among combinators through naming conventions.
 
 
-\subsubsection{Variable naming conventions}
 
 \subsubsection{Iterate over a \code{Manifest} array}
 
@@ -468,44 +468,32 @@ Recalling that the @Manifest@ combinator is the only combinator in the pipeline 
 
 It is worth noting that the array is not @let@-bound in any of the blocks. This is due to the fact that the array is an \*argument* to the loop and is passed from the running program when the computation is finally ready to be performed (code generation and loading are discussed in Chapter~\ref{ch:Code-Generation}).
 
-The combinator introduces a length variable @len@\sub{mfst} and a counter variable @ix@\sub{mfst}. It also has its own set of basic blocks @init@\sub{mfst} ... @done@\sub{mfst}.
+The combinator introduces a length variable @len@\sub{mfst} which it binds in loop initialisation block @init@\sub{mfst}.
 
 The result of array read is placed in @elt@\sub{mfst} variable.
 
+Notably, the combinator does not bind the index variable @ix@\sub{mfst} itself but assumes that it's present in scope. The insertion of appropriate index variables is done after the complete loop is analysed and all \*rates* are established.\todo{as discussed in ref}
 
-\subsubsection{Filter and variable naming conventions}
+
+\subsubsection{Filter}
 
 In the loop representing @filter@ code all bound variables and label names are identified by \*filt*.
 
-One will notice the absence of @goto@s in the generated \Loop code. The filter relies to the underlying combinators to provide the valid control flow.
+As discussed previously in Section~\ref{sec:Scalar-language} it is essential for performance that the user functions parametrising combinators be inlined in the generated code. In case of the @filter@ the predicate function $(\geq 0.01)$ has been inlined as the predicate expression to the @unless@ statement.
 
-As discussed previously in Section~\ref{sec:Scalar-language} it is essential performance that the user functions parametrising combinators be inlined in the generated code. In case of the @filter@ the predicate function $(\geq 0.01)$ has been inlined as the predicate expression to the @unless@ statement.
+While the length of output array of @filter@ may be different from the length of input, the \*upper bound* on the length is the same as that of the previous combinator. This is expressed by binding the length variable @len@\sub{filt} to @len@\sub{mfst} of the @Manifest@ combinator.
 
-Since the length output array of @filter@ may be different from the length of input, a new counter variable @ix@\sub{filt} is introduced.
+Similarly, the resulting element @elt@\sub{filt} is bound to be @elt@\sub{mfst} -- the output of @Manifest@ in the same iteration of the loop.
 
-The length variable @len@\sub{filt} representing the \*upper bound* on the length of output array is rebound to be the same as @len@\sub{mfst} of @Manifest@ combinator. Similarly, the resulting element of @elt@\sub{filt} is rebound to be @elt@\sub{mfst} -- the output of @Manifest@ from the same iteration.
-
-These are examples of \*naming conventions* used to facilitate communication between consecutive combinators in a pipeline. In particular the following are always true for a combinator with identified \*id*:
-
-\begin{itemize}
-\halfspacing
-\item Variable @elt@\sub{id} contains the value of produced element at every iteration
-\item Variable @len@\sub{id} contains the upper bound on the length of the output array
-\item Variable @ix@\sub{id} contains the index of the element being produced.
-\end{itemize}
-
-Rebinding the three variables in every combinator ensures that this information is \*propagated* upwards through the pipeline of combinators. In particular, the @filter@ only required to know the \*id* of @Manifest@ combinator below it to infer these variables.
-
-\begin{bluebox}
-By design the combinators know the unique identifiers of the combinators they are referencing and nothing else.
-\end{bluebox}
 
 
 \subsubsection{Map}
 
 Populating the loop with @map@-specific statements is straight-forward.
 
-Since the length @len@\sub{map} and the iteration index @ix@\sub{map} are always the same as those of the input array (output of @filter@), they are simply rebound. This means that @Manifest@ combinator uses one index, while both @filter@ and @map@ are using another. This supports the \*rate*-changing\irate nature of @filter@.
+Since the length of the output of @map@ is always the same as the length of input, the @len@\sub{map} variable is simply rebound. This also means that @Manifest@, @filter@ and @map@ share the same \*upper bound* on the length of their output arrays. %This means that @Manifest@ combinator uses one index, while both @filter@ and @map@ are using another. This supports the \*rate*-changing\irate nature of @filter@.
+
+To compute @elt@\sub{map} for the current iteration, we only need to know @elt@\sub{filt}, that is the element produced by the previous combinator \*in the current iteration*.
 
 Again, the user specified function $(* 100)$ is inlined to facilitate generation of fast code.
 
@@ -516,7 +504,26 @@ For the @toPercentages@ example we said the pipeline of combinators will be forc
 
 The statements required to allocate, populate, slice and return the new array are self-explanatory.
 
-It is worthy of note that the design decision to transfer control to \[yield] block whenever an element is produced has made it very easy to introduce the array write.
+It is worthy of note that the design decision to transfer control to \[yield] basic block only when an element is produced has made it very easy to introduce the array write.
+
+
+
+\subsection{Naming conventions}
+
+As seen from the loop code generated for the individual combinators in the @toPercentages@ example, the \Loop language uses a set of \*naming conventions* to facilitate communication between consecutive combinators in a pipeline. In particular the following are always true for a combinator with identifier \*id*:
+
+\begin{itemize}
+\halfspacing
+\item Variable @elt@\sub{id} contains the value of produced element at every iteration
+\item Variable @len@\sub{id} contains the upper bound on the length of the output array
+\item Variable @ix@\sub{id} contains the index of the element being produced.
+\end{itemize}
+
+Binding the three variables in every combinator ensures that this information is \*propagated* upwards through the pipeline of combinators. In particular, the @filter@ only required to know the \*id* of @Manifest@ combinator below it to infer these variables.
+
+\begin{bluebox}
+By design the combinators know their own unique identifiers and the unique identifiers of the combinators they are referencing and nothing else.
+\end{bluebox}
 
 
 
