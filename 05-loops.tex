@@ -471,6 +471,7 @@ Internally however, the library uses unique integers to distinguish between simi
 
 
 \subsubsection{Iterate over a \code{Manifest} array}
+\label{sec:manifest}
 
 Recalling that the @Manifest@ combinator is the only combinator in the pipeline that holds a reference to the physical array, its loop does nothing more than to read the array @arr@\sub{mfst} element by element.
 
@@ -542,6 +543,7 @@ Rate equality and subrate relationship are not the only possible relationships b
 
 
 \subsection{Naming conventions}
+\label{sec:naming-conventions}
 
 As seen from the loop code generated for the individual combinators in the @toPercentages@ example, the \Loop language uses a set of \*naming conventions* to facilitate communication between consecutive combinators in a pipeline. In particular the following are always true for a combinator with identifier \*id*:
 
@@ -596,7 +598,8 @@ While the use of @goto@s is considered bad practice in modern software engineeri
 
   Given a well behaving \Loop code generator the produced code will always be valid if the user program is valid.
 
-  This is akin to using @unsafePerformIO@ and similar within the library internals for performance reasons. They can lead to bad code but with careful use give very noticeable advantages to purely functional programs.
+  This is akin to using @unsafePerformIO@ and the like within the library internals for performance reasons. They can lead to bad code but with careful use give very noticeable advantages to purely functional programs.
+
 
   \item The \Loop language was designed with a pluggable backend in mind.
 
@@ -604,70 +607,159 @@ While the use of @goto@s is considered bad practice in modern software engineeri
 
   Specifically in the \Haskell backend, @goto@ statements are translated to tail-recursive function calls.
 
-  An \LLVM backend is also planned. \LLVM uses very similar notions of \*basic blocks*.
+  An \LLVM backend is also planned. \LLVM uses a very similar notions of \*basic blocks*.
+
 
   \item The @goto@ based design was the most flexible and the easiest to implement.
 
-  Nonetheless, this does not prevent the \Loop language from being extended to support a more statically safe programming model.
+  Nonetheless, this does not prevent the \Loop language from being extended to support a safer programming model.
 \end{itemize}
 
 
 
-\clearpage
 
-\section{Flat array cominators}
+\clearpage
+\section{Flat array combinators}
+
+\todo{Intro to the section. Say it's going to be brief. \ref{fig:CFG-basic}}
+
 
 \subsection{Reductions}
 
-\begin{comment}
-We have already looked at how the indices maintain the state of the loop between iteration. However, indices, although the most obvious state the loop has, are not the only ones. If we think of standard list combinators that pass partial results with the recursive calls as accumulators, @fold@s and @scan@s immediately come to mind. In practice, declaring and using accumulator variables like this in a loop language is straight-forward and is no differect from declaring and using index variables. They both represtent mutable variables in the loop language.
+We have already looked at how the indices maintain the state of the loop between iterations. Although it is probably the most obvious state a loop has, it is not the only one. Perhaps the most prominent standard list combinators that pass partial results to recursive calls as accumulators are @fold@s and @scan@s. \LiveFusion also offers these combinators.
 
-Suppose that out expressing is `scan (*) 1 xs'. We already know how to generate code for iterating the $xs$ array. It may or may not be a manifest array. We trust that the combinator producing $xs$ has already generated the appropriate code in the loop we are trying to construct.
+In practice, binding and using accumulator variables like this in the \Loop language is straight-forward and is no different from binding and using index variables. They are both treated as mutable variables in the \Loop language.
 
-If @scan@ gets the id of 6 in the pipeline, then we know that it can access its input elements in $elt_{i_6}$, the index of the iteration in $i_6$. Any local variable will also get postfixed with id 6. As such we will declare $f_6 = (*)$ as the reduction function, $acc_6 = 1$ as the mutable accumulator value containing the initial value. Moreover, we will be placing the output element for the current iteration in $elt_{o_6}$.
-\end{comment}
+Suppose, we wanted to translate @scan (*) 0 xs@ to a loop. As discussed previously in Section~\ref{sec:naming-conventions} on naming conventions the generation of loop blocks for @scan@ proceeds in assumption that variables @len@\sub{xs} and @elt@\sub{xs} are in scope.
+
+The following is the portion of the loop generated for @scan@ combinator:
+
+\begin{loopcode}[%
+  literate=
+    {_1}{{\sub{scan}}}3
+    {_3}{{\sub{xs}}}1,
+]
+init_1/_3:
+  let len_1 = len_3
+  let z_1 = 1
+  let acc_1 = z_1
+
+body_1/_3:
+  let elt_1 = acc_1
+
+bottom_1/_3:
+  acc_1 := acc_1 * elt_3
+\end{loopcode}
+
+Generating loop code for @fold@ is very similar except no element @elt@\sub{fold} is produced in each iteration and the final result is stored in @acc@\sub{fold}.
 
 
 \subsection{Zipping}
 
-\begin{comment}
-So far the combinator pipelines we have looked at had a list like structure. Each combinator would consume exactly one array and produce another. However, for many programs this is not sufficient. In many cases a combinator takes multiple arrays as input. In general there is no constraint on how a combinator would consume each of those arrays. Some combinators (e.g. @backpermute@) require that one of the passed arrays is random-access, however, some, like @zipWith@ consume two arrays in lock step.
+So far the combinator pipelines we have looked at had a list like structure. Each combinator would consume exactly one array and produce another. However, for many programs this is not sufficient. Many combinators take multiple arrays as input.
 
-A call to `zipWith (*) xs ys' element-wise multiplies arrays $xs$ and $ys$. Those two arrays may internally be pipelines of combinators. A @zipWith@ combinator is such a common occurence in DPH programs that it would be wasteful not to fuse it with the combinators producing $xs$ and $ys$.
+In general there is no constraint on how a combinator would consume each of those arrays. Some combinators (e.g. @backpermute@) require that one of the argument arrays can be accessed randomly. Combinators like @append@ and @interleave@ consume arrays independently and not at the same time.
 
-%Two difficulties arrising when fusing @zipWith@ with its children is:
-%+ the potential difference in lengths between $xs$ and $ys$, and
-%+ the duplicated index counters: one iterating $xs$, and one - $ys$
+However, there are combinators like @zipWith@$N$ which consume $N$ arrays in lock step.
 
-The loops for $xs$ and $ys$ have been generated independently of each other. They have their own index spaces and their own control flows. Suppose that we get the following tree of combinators to compute:
+A call to @zipWith (*) xs ys@ element-wise multiplies @xs@ and @ys@. Those two arrays may internally be pipelines of combinators. It results in the following \Loop code:
+
+\begin{loopcode}[%
+  literate=
+    {_1}{{\sub{zip}}}2
+    {_2}{{\sub{xs}}}1
+    {_3}{{\sub{ys}}}1,
+]
+init_1/_2/_3:
+  let len_1 = len_2
+
+body_1/_2/_3:
+  let elt_1 = elt_2 * elt_3
+\end{loopcode}
+
+The code is similar to that of @map@ (Figure~\ref{fig:toPercentages-loops}). In fact @zipWith@$N$ combinators can be viewed as generalised @map@s.
+
+There are two problems with @zipWith@$N$ family of combinators:
+\begin{enumerate}
+\halfspacing
+\item The lengths of @xs@ and @ys@ may be different.
+\item The loops for @xs@ and @ys@ may not produce elements in every iteration.
+\end{enumerate}
+
+
+\subsubsection{Different length inputs}
+
+The result list of @zipWith@ from \Haskell's standard library has the same length as the shortest of its inputs. In the \Loop language this could easily be expressed by setting the output length to be the minimum of the input array lengths and adjusting the iteration range appropriately:
+
+\begin{loopcode}[%
+  literate=
+    {_1}{{\sub{zip}}}2
+    {_2}{{\sub{xs}}}1
+    {_3}{{\sub{ys}}}1,
+]
+init_1/_2/_3:
+  let len_1 = min len_2 len_3
+
+guard_1/_2/_3:
+  unless ix_1 < len_1 | done_1
+\end{loopcode}
+
+However, there are still implications of this approach. Consider the program in Figure~\ref{fig:zipProblem1}. The @ys@ array is consumed both by @zipWith@ and @map@. Supposing that @xs@ is shorter than @ys@ it makes it harder (though not impossible) to compute both @xys@ and @zs@ in the same loop.
+
+\begin{figure}
+
+\begin{subfigure}{.6\textwidth}
+\begin{hscode}
+let xys = zipWith (*) xs ys
+    zs  = map (+1) ys
+in  (xys, zs)
+\end{hscode}
+\end{subfigure}%
+%
+\begin{subfigure}[right]{.4\textwidth}
+\includegraphics[center,scale=\omniscale]{img/DFD-zipWithMap}
+\end{subfigure}
+
+\caption{Zipping arrays of different lengths. \Haskell code (left) and the corresponding data flow diagram (right).}
+\label{fig:zipProblem1}
+\end{figure}
+
+In order to successfully fuse the above example the \Loop language needs to be able to express overlapping loop ranges. In this particular example a portion of the index range should be processed by both @zipWith@ and @map@ operations, and the rest with just the @map@.
+
+Since \LiveFusion was designed to target \DPH\idph, and \DPH statically guarantees the inputs to be of the same lengths, the restriction on accepted input lengths is justified.
+
+
+
+\subsubsection{Skipping elements in the inputs}
+
+\LiveFusion has support for fusing loops which do not produce
+The code generated in the previous step will produce correct results for the specific problem. However, it will not work in the general case. Suppose we introduce a @filter@ into the combinator pipeline producing input of @zipWith@:
 
 \begin{hscode}
-let xs = map (+10) [1..10]
-    ys = map (*3)  [100..110]
+let xs = filter odd [0..9]
+    ys = [11..15]
 in  zipWith (*) xs ys
 \end{hscode}
 
-We can easily generate the loops for each of $xs$ and $ys$ the way we described previously. We can then merge all of the blocks together with code multiplying the output elements to form a valid loop computing the desired result:
-
-...code...
-
-**The Problem**
-
-The code generated in the previous step will produce correct results for the specific problem. However, it will not work in the general case. Suppose we introduce a filter into `xs':
-
-\begin{hscode}
-let xs = filter odd \$ map (+10) [1..10]
-    ys = map (*3)  [100..110]
-in  zipWith (*) xs ys
-\end{hscode}
-
-While @zipWith@ is supposed to consume elements from $xs$ and $ys$ in a lockstep, producing both those elements will not always happen in the same iteration. $ys$ array does not pose a problem, it is guaranteed to produce one element in each iteration. However, the addition of @filter@ into the equation for $xs$ will mean that the loop for $xs$ may need more than one iteration to produce an element. If the @filter@ skips an element the loop for $ys$ must wait.
-
-**A Solution**
+While @zipWith@ is supposed to consume elements from @xs@ and @ys@ in a lockstep, producing both those elements will not always happen in the same iteration. @ys@ array does not pose a problem, it is guaranteed to produce one element in each iteration. However, the addition of @filter@ into the equation for @xs@ will mean that the loop for @xs@ may require more than one iteration to produce an element. If the @filter@ skips an element the loop for @ys@ must wait.
 
 We solve the above problem by first analysing the loops for $xs$, $ys$ and $zs$. A quick check of how we would write the above program in C tells us that we would probably still be able to only an overall loop for $zs$. However, we will likely declare two separate counters for computing $xs$ and $ys$. In fact we may also create a separate *nested* loop for $xs$. We will break out of that loop as soon as we have produced an element that satisfied the @filter@ condition.
 
 We know that the length of $ys$ is fixed and is 10. We also know that the length of $xs$ has the upper bound of 10 but is not known until runtime. Incidentally, @zipWith@ will consume as many elements as $xs$ will produce. We say that $xs$ and @zipWith@ have the same rate. Since @zipWith@ is a direct consumer of $ys$, its loop's body should only ever be exectuted once both have finished.
+
+\begin{figure}
+
+\begin{subfigure}{.6\textwidth}
+\end{subfigure}%
+%
+\begin{subfigure}[right]{.4\textwidth}
+\includegraphics[center,scale=\omniscale]{img/DFD-zipWithMap}
+\end{subfigure}
+
+
+
+**A Solution**
+
 
 Let us look at the resulting loops
 
@@ -768,7 +860,6 @@ bottom:
 done:
 
 \end{loopcode}
-\end{comment}
 
 
 
