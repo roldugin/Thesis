@@ -22,8 +22,8 @@ The focus of this chapter is to establish a common loop representation to which 
 In the following sections we will look more closely at what a loop really is and then present the core of our fusion optimisation.
 
 
-\clearpage
 
+\clearpage
 \section{Anatomy of a loop}
 \label{sec:anatomy}
 
@@ -352,7 +352,6 @@ Figure~\ref{fig:CFG-basic} shows the default control flow between these sections
 
 
 \clearpage
-
 \section{The \Loop language more formally}
 \label{sec:The-Loop-language}
 \iloop
@@ -390,8 +389,8 @@ Semantically, the \Loop language does not presume a fixed order of evaluating @l
 % Lastly, the new value of assigned variables ($\coleq$) is not available until the next block the control is transferred to. This is an implementation side-effect of the \*liveness analysis* pass (Section~\ref{sec:Liveness-analysis}) which however is helpful in implementing fused loops.
 
 
-\clearpage
 
+\clearpage
 \section{Fused loops generation}
 \label{sec:loop-generation}
 
@@ -692,20 +691,17 @@ Appendix~\ref{ch:zipping-problems} considers both problems in turn, offering pot
 
 
 \clearpage
-
 \section{Random access combinators}
 
 \subsection{Backpermute}
 
-\subsection{Index}
 
+\clearpage
+\section{Array generators: Enumeration and Replication}
 
 
 \clearpage
-
-\section{Array generators: Enumeration and Replication}
-
-\subsection{Segmented array combinators}
+\section{Segmented array combinators}
 
 Two types
 
