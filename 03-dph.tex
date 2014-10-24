@@ -277,31 +277,82 @@ Unfortunately, the common point of failure of all of the above fusion types is t
 In particular, the required rewriting will not take place if the result of a combinator is consumed by multiple combinators as discussed in Section~\ref{sec:problems}. \todo{The ability to fuse heavily branched data-flow graphs of combinators is key to achieving high performance in \DPH programs as seen in Chapter~\ref{ch:Results}}
 
 
+\clearpage
 
-\subsection{\DPH Combinators}
+\section{\DPH combinators}
 \label{sec:DPH-Combinators}
 
-In Chapter~\ref{ch:Fusion} on array fusion we discussed fusion as applied to simple combinators operating on flat arrays. However, with the introduction of segmented array representation by the \name{Flattening transform} (Section~\ref{sec:Flattening}) there is the need for more complex \term{segmented array cobinators}.\isegcomb
+In Chapter~\ref{ch:Fusion} on array fusion we discussed fusion as applied to simple combinators operating on flat arrays. This section introduces \*segmented combinators* as well as more advanced flat array combinators which consume multiple arrays at once.
+
+
+\section{Segmented combinators}
+\label{sec:DPH-segmented-combinators}
+
+With the introduction of segmented array representation by the \name{Flattening transform} (Section~\ref{sec:Flattening}) there is the need for more complex \term{segmented array combinators}.\isegcomb
+
+All nested arrays in the \DPH backend are represented by a flat data array and a \*segment descriptor* defining the original nesting.
+
+Conceptually \*segmented combinators* resemble nested loops in procedural languages, where for each element taken from the segment descriptor array, that many elements of the data array get processed.
+
+We can identify two types of segmented combinators:
+
+\begin{enumerate}
+\item Combinators that \*produce* elements at the \*rate* of the segment descriptor, i.e. one element per segment. For example:
+
+\begin{hscode}
+fold_s max 0 [3,1,2] [1,4,2, 5, 6,8] = [4,5,8]
+\end{hscode}
+
+\item Combinators that \*produce* elements at the \*rate* of the data array. For example:
+
+\begin{hscode}
+scanl_s (+) 0 [3,1,2] [1,4,2, 5, 6,8] = [0,1,5, 0, 0,6]
+\end{hscode}
+\end{enumerate}
+
+As seen in the above examples @fold_s@ and @scan_s@ behave identically to their \name{Prelude} counterparts as applied to individual segments. Due to the way the parallelism is achieved in \DPH, the reduction operation $f$ is required to be associative with the neutral initial value $z$. This is the reason for omitting @l/r@ suffix from the combinator names.
+
+In particular, the following must hold:
+
+$f\ (f\ m\ n)\ k) = f\ m\ (f\ n\ k)$
+
+$f\ z\ n = n$
+
+There is also a type of segmented combinators which are a segmented equivalent of \*generators*.\igencomb They produce segmented arrays given certain input arrays. \*Segmented replicate*, \*enumerators* and \*index generator* are all examples of these:
+
+\begin{hscode}
+replicate_s [2,1,3] [10,20,30] = [10,10, 20, 30,30,30]
+
+enumFromStepLenEach [10,40,60] [1,2,3] [2,4,3]
+  = [10,11, 40,42,44,46, 60,63,66]
+
+indices_s [5,3,4] = [0,1,2,3,4, 0,1,2, 0,1,2,3]
+\end{hscode}
+
+These combinators roughly fit in the second category (data rate) even though they don't consume a data array as such.
+
+As with the reduction combinators, they behave similarly to their corresponding flat combinators except they are applied across multiple segments.
+
+
+\subsection{Advanced multiarray consumers}
 
 \subsubsection{Point-wise consumers}
 
-The term \term{point-wise} will be used to describe the manner of array processing where multiple arrays are consumed in lockstep.
+The most obvious and widely used combinator that consumes multiple arrays is @zipWith@ (and its \codemath{zipWith$N$} counterparts). It has already been used for point-wise multiplication of two vectors in the beginning of this chapter.
 
-The most obvious of them is @zipWith@ (and its \codemath{zipWith$N$} counterparts) which has already been used for point-wise multiplication of two vectors in the beginning of this chapter \todo{(also on Figure~\ref{})}:
+The term \term{point-wise} describes the manner of array processing where multiple arrays are consumed in lockstep.
 
-%\begin{hscode}
-%let s = sum
-%      $ zipWith (*) xs ys
-%\end{hscode}
-
-Another example is a combinator called \*segmented replicate* which given an array of elements and an array of counts creates a new array where each element is repeated the number of times specified by the count, e.g.:
+Examples of point-wise consumers from the previous section on segmented combinators include \*segmented replicate* and \*enumerators*:
 
 \begin{hscode}
-replicate_s [2,1,3] [10,20,30] = [10,10,20,30,30,30]
+replicate_s [2,1,3] [10,20,30] = [10,10, 20, 30,30,30]
+
+enumFromStepLenEach [10,40,60] [1,2,3] [2,4,3]
+  = [10,11, 40,42,44,46, 60,63,66]
 \end{hscode}
 
 
-However, point-wise consumption is not the only useful way to consume arrays. Other recurring patterns of consumption of multiple arrays include \term{interleaved}, \term{random access}, \term{consecutive} and \term{nested} which we discuss next.
+However, point-wise consumption is not the only pattern seen in \DPH. Other recurring patterns of consumption of multiple arrays include \term{interleaved}, \term{random access} and \term{consecutive} which we discuss next.
 
 
 \subsubsection{Interleaved consumers}
@@ -318,17 +369,21 @@ append_s ([2,1,1],[10,20, 30, 40]) ([1,2,2],[50, 60,70, 80,90])
 
 \subsubsection{Random access consumers}
 
-Random access pattern is useful for combinators performing \*backwards permutation* on an array given an array of indexes (@bpermute@. In @bpermute@ the indexes specify which elements must be picked from the source array and that array must be randomly accessible:
+Random access pattern is useful for combinators performing \*permutations* on an array given an array of indexes. We distinguish \*backwards* and \*forward* permutations.
+
+In @bpermute@ (back permute) the indexes specify which elements must be picked from the source array and that array must be randomly accessible:
 
 \begin{hscode}
 bpermute [0,10,20,30,40,50] [3,4,5,1] = [30,40,50,10]
 \end{hscode}
 
-This is different from \*forward permutation*, where the index array specifies the \*destination* index for a particular index of the source array. This allow one to consume both arrays in a lockstep, where each array is potentially a result of a fused pipeline of operations. However, @permute@ will likely be unable to fuse into its consumer because of out-of-order output generation.
+This is different from \*forward permutation*, where the index array specifies the \*destination* index for a particular index of the source array.
 
 \begin{hscode}
 permute [30,40,50,10,20,0] [3,4,5,1,2,0] = [0,10,20,30,40,50]
 \end{hscode}
+
+This pattern allows both arrays to be consumed in a lockstep. Each array may potentially be a result of a fused pipeline of operations. However, @permute@ will likely be unable to fuse into its consumer because of out-of-order output generation.
 
 
 \subsubsection{Consecutive consumers}
@@ -340,40 +395,7 @@ append [1,2,3,4,5] [6,7,8] = [1,2,3,4,5, 6,7,8]
 \end{hscode}
 
 
-\subsubsection{Nested consumers}
-
-We have already mentioned a \*segmented replicate* and a \*segmented append* in this section. These types of combinator form the basis of how \DPH handles operations on \*nested* arrays by way of \name{Flattening transform} (Section~\ref{sec:Flattening}). All nested arrays in the \DPH backend are represented by flat data array and a \*segment descriptor* defining the original nesting.
-
-Conceptually \*segmented combinators* resemble nested loops in procedural languages, where for each element taken from the segment descriptor array, that many elements of the data array get processed. We can identify two types of such segmented combinators:
-\begin{enumerate}
-\item Combinators that \*produce* elements at the \*rate* of the segment descriptor, i.e. one element per segment. For example:
-
-\begin{hscode}
-fold_s [3,1,2] max minBound [1,4,2, 5, 6,8] = [4,5,8]
-\end{hscode}
-
-\item Combinators that \*produce* elements at the \*rate* of the data array. For example:
-
-\begin{hscode}
-scan_s [3,1,2] (+) 0 [1,4,2, 5, 6,8] = [0,1,5, 0, 0,6]
-\end{hscode}
-\end{enumerate}
-
-As seen in the above examples @fold_s@ and @scan_s@ behave identical to their \name{Prelude} counterparts as applied to individual segments.
-
-There is also a type of segmented combinators which are a segmented equivalent of \*generators*.\igencomb They produce segmented arrays given certain input arrays. These combinators roughly fit in the second category (data rate) even though they don't consume a data array as such. \*Segmented replicate*, \*enumerators* and \*index generator* are all examples of these:
-
-\begin{hscode}
-replicate_s [2,1,3] [10,20,30] = [10,10,20,30,30,30]
-
-enumFromStepLenEach [10,40,60] [1,2,3] [2,4,3]
-  = [10,11, 40,42,44,46, 60,63,66]
-
-indices_s [5,3,4] = [0,1,2,3,4, 0,1,2, 0,1,2,3]
-\end{hscode}
-
-
-
+\section{Conclusion}
 
 Over the following several chapters I will present my own replacement backend for \name{Data Parallel Haskell} which enables the fusion in more cases than was possible with \name{Stream Fusion}.
 
