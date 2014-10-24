@@ -978,8 +978,33 @@ bottom_1/_4:
 \subsection{Segmented generators}
 \label{sec:Loops-segmented-generators}
 
-Segmented generators correspond to the category of combinators that \*produce* elements at the rate of data. They differ from combinators like @scanl_s@ discussed previously in that their
+Segmented generators correspond to the category of combinators that \*produce* elements at the rate of data. They differ from combinators like @scanl_s@ discussed previously in that they do not consume a data array.
 
+They are similar to their scalar counterparts in that they produce arrays from scalar values, only that they do it for an array of such scalar values, resulting in a segmented array:
+
+\begin{hscode}
+replicate   :: Int        -- count
+            -> a          -- element
+            -> Array a
+
+replicate_s :: Int        -- result length
+            -> Array Int  -- segment descriptor
+            -> Array a    -- elements        
+            -> Array a
+
+enumFromStepLen   :: Int        -- start
+                  -> Int        -- step
+                  -> Int        -- length
+                  -> Array a
+
+enumFromStepLen_s :: Int        -- result length
+                  -> Array Int  -- start
+                  -> Array Int  -- step
+                  -> Array Int  -- segment descriptor
+                  -> Array a
+\end{hscode}
+
+Many of these combinators are also \*point-wise consumers* (Sections \ref{sec:zipping} and \ref{sec:DPH-pointwise-consumers}). They consume values from multiple arrays in lockstep in order to generate an array segment in the inner loop. An example of @replicate_s@ application is shown in Figure~\ref{fig:replicate-s}.
 
 \begin{figure}
 \includegraphics[scale=\omniscale]{img/Example-replicate-s}
@@ -988,6 +1013,7 @@ Segmented generators correspond to the category of combinators that \*produce* e
 \end{figure}
 
 
+\su
 \clearpage
 
 \section{Interleaved loops}
