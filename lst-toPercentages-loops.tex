@@ -2,10 +2,6 @@
 \documentclass[preamble.tex]{subfiles}
 \begin{document}
 
-\providecommand\CommentsColor{\color{MidnightBlue}}
-\providecommand\WhatCombinator[1]{\enrule[\CommentsColor]{0.95\textwidth}{#1}}
-
-
 % For lines describing combinators
 
 \begin{figure}
@@ -22,14 +18,14 @@
         {_2}{{\sub{filt}}}2 % significant
         {_3}{{\sub{mfst}}}3 % fractions
 ]
-%\WhatCombinator{Manifest}%
+%\CommentPlusPlus{Manifest}%
 init_3:
   let len_3 = arrayLength arr_3
 
 body_3:
   let elt_3 = readArray arr_3 ix_3
 
-%\WhatCombinator{Filter}%
+%\CommentPlusPlus{Filter}%
 init_2:
   let len_2 = len_3
 
@@ -37,14 +33,14 @@ body_2:
   let elt_2 = elt_3
   unless elt_3 >= 0.01 | bottom_1
 
-%\WhatCombinator{Map}%
+%\CommentPlusPlus{Map}%
 init_1:
   let len_1 = len_2
 
 body_1:
   let elt_1 = elt_2 * 100
 
-%\WhatCombinator{Writing result array}%
+%\CommentPlusPlus{Writing result array}%
 init_1:
   let arr_1 = newArray len_1
 
@@ -55,7 +51,7 @@ done_1:
   let result_1 = sliceArray arr_1 ix_2
   return result_1
 
-%\WhatCombinator{Looping}%
+%\CommentPlusPlus{Looping}%
 init_1/_2/_3:
   let ix_2 = 0
   let ix_3 = 0
