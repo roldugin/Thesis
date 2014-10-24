@@ -692,8 +692,52 @@ Appendix~\ref{ch:zipping-problems} considers both problems in turn, offering pot
 
 \clearpage
 \section{Random access combinators}
+\label{sec:Loops-random-access}
 
-\subsection{Backpermute}
+All of the combinators discussed so far were consumed their inputs in the sequential matter from beginning to end. However, there are cases in \DPH and otherwise, where elements need to be picked from the array at random. In particular, the @backpermute@ combinator creates a new array by picking elements at given indices:
+
+\begin{hscode}
+bpermute :: Array a -> Array Int -> Array a
+
+bpermute [0,10,20,30,40,50] [3,4,5,1] = [30,40,50,10]
+\end{hscode}
+
+To understand the translation of random access combinators to \Loop language representation we must first recall how sequential looping is done. Whenever a sequential rate\irate $r$ is established, the looping statements are inserted into the loop (Figure~\ref{fig:sequential-looping}). The corresponding index variable @ix@\sub{r} is initialised (line 3) and updated (line 15) and the looping range is established (line 7).
+
+
+\begin{figure}
+\begin{loopcode}[%
+    numbers=left,
+    literate=
+        {_xs}{{\sub{xs}}}2
+        {_r}{{\sub{r}}}1
+]
+init_xs/_r:
+  let len_xs = arrayLength arr_xs
+  let ix_r = 0
+  goto guard_r
+
+guard_xs/_r:
+  unless ix_r < len_xs | done_r
+  goto body_r
+
+body_xs/_r:
+  let elt_xs = readArray arr_xs ix_r
+  goto yield_r
+
+yield_xs/_r:
+  ix_r := ix_r + 1
+  goto bottom_r
+\end{loopcode}
+\caption{Sequential indexing in the \Loop language.}
+\label{fig:sequential-looping}
+\end{figure}
+
+However, the statement reading the @xs@ array is oblivious to how the index variable was computed. It will use any value @ix@\sub{r} currently has. In order to read variables at random, the @xs@ array the rate $r$ is no longer considered to be sequential and no index initialisation/update statements are inserted. Instead, the @backpermute@ combinator will set the @ix@\sub{r} variable to the appropriate value to read @xs@ at the required index.
+
+\todo{insert bpermute codez}
+
+The \*rate system* of the \Loop language makes it easy to switch between sequential and random accessing since the sequential looping statements are not inserted into the loop until the very end.
 
 
 \clearpage
@@ -1013,7 +1057,8 @@ Many of these combinators are also \*point-wise consumers* (Sections \ref{sec:zi
 \end{figure}
 
 
-\su
+\todo{Talk rates}
+
 \clearpage
 
 \section{Interleaved loops}
