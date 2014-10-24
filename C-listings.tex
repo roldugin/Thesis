@@ -88,5 +88,84 @@ bottom_4:
 \end{figure}
 
 
+\begin{figure}[h!]
+
+\begin{subfigure}{.55\textwidth}
+\begin{loopcode}[%
+  literate=
+    {_1}{{\sub{scan}}}3
+    {_3}{{\sub{segd}}}3
+    {_4}{{\sub{data}}}3,
+]
+init_1/_3/_4:
+  let len_3 = arrayLength arr_3
+  let len_4 = arrayLength arr_4
+  let len_1 = len_4
+  let z_1 = 0
+  let ix_4 = 0
+  let ix_3 = 0
+  let arr_1 = newArray len_1
+  goto guard_3
+
+guard_3:
+  unless ix_3 < len_3 | done_1
+  goto nest_3
+
+nest_3:
+  let acc_1 = z_1
+  let elt_3 = readArray arr_3 ix_3
+  let end_3 = ix_4 + elt_3
+  goto guard_1
+
+body_3:
+  goto yield_3
+
+yield_3:
+  ix_3 := ix_3 + 1
+  goto bottom_3
+
+bottom_3:
+  goto guard_3
+
+done_1/_3/_4:
+  let result_1 = sliceArray arr_1 ix_4
+  return (result_1)
+\end{loopcode}
+\end{subfigure}%
+%
+\begin{subfigure}{.45\textwidth}
+\begin{loopcode}[%
+  literate=
+    {_1}{{\sub{scan}}}3
+    {_3}{{\sub{segd}}}3
+    {_4}{{\sub{data}}}3,
+]
+guard_1/_4:
+  unless ix_4 < end_3 | body_3
+  goto nest_1
+
+nest_1/_4:
+  goto body_1
+
+body_1/_4:
+  let elt_4 = readArray arr_4 ix_4
+  let elt_1 = acc_1
+  goto yield_1
+
+yield_1/_4:
+  ix_4 := ix_4 + 1
+  writeArray arr_1 ix_4 elt_1
+  goto bottom_1
+
+bottom_1/_4:
+  acc_1 := acc_1 + elt_4
+  goto guard_1
+\end{loopcode}
+\end{subfigure}
+
+\caption{\Loop code generated for \code{scanl_s (+) 0 segd data} where both \code{segd} and \code{data} are manifest arrays and the result array is forced. Referenced in Section~\ref{sec:Loops-segmented-data-rate-combinators}.}
+\label{fig:Loop-scanl-s-complete}
+\end{figure}
+
 
 \end{document}
