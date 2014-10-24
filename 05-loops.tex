@@ -702,15 +702,171 @@ Appendix~\ref{ch:zipping-problems} considers both problems in turn, offering pot
 
 \clearpage
 \section{Segmented array combinators}
+\label{sec:Loops-segmented-combinators}
+\isegcomb
 
-Two types
+The process of vectorisation in \name{Data Parallel Haskell} and in particular its \name{Flattening transform} (Section~\ref{sec:Flattening}) mandates the need for combinators that operate on segmented arrays in the backend library. They have been discussed in an earlier chapter in Section~\ref{sec:DPH-segmented-combinators}.
+
+Segmented arrays is a representation of nested arrays where all of the data is stored in a single flat array and a separate segment descriptor defines the partitioning of the data array into subarrays, called segments.
+
+It was said that segmented combinators fall into two categories:
+\begin{enumerate}
+\label{segmented-classification}
+\item Combinators that \*produce* elements at the \*rate* of the segment descriptor, i.e. one element per segment (Figure~\ref{fig:fold-s}).
+\item Combinators that \*produce* elements at the \*rate* of data, i.e. producing entire segments (Figure~\ref{fig:scanl-s}).
+\end{enumerate}
+
+The discussion of the combinators proceeds with reference to the two combinator categories. 
+
+
+\subsection{Nested loops}
+
+Conceptually segmented combinators resemble nested loops in procedural languages where for each element taken from the segment descriptor array, that many elements of the data array get processed.
+
+So far in this chapter we have been looking at flat loops. In the \Loop language they have the standard structure and control flow presented in Figure~\ref{fig:CFG-flat-segmented} (left).
+
+\begin{bluebox}
+In order to support nested loops the \Loop language offers a special basic block, \[nest].
+
+If a loop contains a nested loop, the \[nest] basic block transfers control to it. After the nested loop is finished, the control is returned to the \[body] block of the outer loop.
+\end{bluebox}
+
+The default control flow for all nested combinators is shown on Figure~\ref{fig:CFG-flat-segmented} (right).
+
+\begin{figure}
+
+\begin{subfigure}{.4\textwidth}
+\includegraphics[center,scale=\omniscale]{img/CFG-basic}
+\end{subfigure}%
+%
+\begin{subfigure}{.6\textwidth}
+\includegraphics[scale=\omniscale]{img/CFG-Segmented}
+\end{subfigure}
+
+\caption{Default control flow between basic blocks in flat loops (left) and nested loops (right).}
+\label{fig:CFG-flat-segmented}
+\end{figure}
+
+The following sections introduce the translations of the most prominent segmented combinators to the \Loop language.
+
+
+\subsection{Segmented reductions}
+\label{sec:Loops-segmented-reductions}
+Segmented reductions represent the first type of segmented combinators outlined on page~\pageref{segmented-classification}. They reduce each data segment to a single scalar value.
+
+%To give a list analogy, the flat and segmented reductions would have the following types:
+
+An example of @fold_s@ application is shown in Figure~\ref{fig:fold-s}. 
+
+\begin{figure}
+\includegraphics[scale=\omniscale]{img/Example-fold-s}
+\caption{Segmented fold.}
+\label{fig:fold-s}
+\end{figure}
+
+
+Recalling the \Loop language conventions, a single @elt@\sub{segd} element should be produced for every iteration of the outer loop.
+
+
+\begin{figure}
+
+\begin{subfigure}{.50\textwidth}
+\begin{loopcode}[%
+  literate=
+    {_1}{{\sub{fold}}}3
+    {_3}{{\sub{segd}}}3
+    {_4}{{\sub{data}}}3,
+]
+init_1/_3/_4:
+  ...
+  let z_1 = 0
+  goto guard_1
+
+guard_1/_3:
+  ...
+  goto nest_1
+
+nest_1/_3:
+  let elt_3 = ...  
+  -- reset accumulator
+  let acc_1 = z_1
+  -- find segment boundary
+  let end_3 = ix_4 + elt_3
+  -- enter inner loop
+  goto guard_4
+
+body_1/_3:
+  let elt_1 = acc_1
+  goto yield_1
+
+yield_1/_3:
+  ...
+  goto bottom_1
+
+bottom_1/_3:
+  goto guard_1
+
+done_1/_3/_4:
+  ...
+\end{loopcode}
+\end{subfigure}%
+%
+\begin{subfigure}{.50\textwidth}
+\begin{loopcode}[%
+  literate=
+    {_1}{{\sub{fold}}}3
+    {_3}{{\sub{segd}}}3
+    {_4}{{\sub{data}}}3,
+]
+guard_4:
+  -- exit inner loop at the end of segment
+  unless ix_4 < end_3 | body_1
+  goto nest_4
+
+nest_4:
+  goto body_4
+
+body_4:
+  let elt_4 = ...
+  goto yield_4
+
+yield_4:
+  ...
+  goto bottom_4
+
+bottom_4:
+  acc_1 := acc_1 + elt_4
+  goto guard_4
+\end{loopcode}
+\end{subfigure}
+
+\caption{\Loop code for \code{fold_s (+) 0 segd data}.}
+\label{fig:CFG-flat-segmented}
+\end{figure}
+
+
+@elt@\sub{segd} and @elt@\sub{data}
+
+
+
+
 
 \subsection{Segmented scan}
 
-\subsection{Segmented fold}
+\begin{figure}
+\includegraphics[scale=\omniscale]{img/Example-scanl-s}
+\caption{Segmented left scan.}
+\label{fig:scanl-s}
+\end{figure}
 
-\subsection{Segmented replicate}
 
+\subsection{Segmented replicate and generators}
+
+\begin{figure}
+\includegraphics[scale=\omniscale]{img/Example-replicate-s}
+\caption{Segmented replicate.}
+\label{fig:replicate-s}
+\end{figure}
 
 
 \clearpage
