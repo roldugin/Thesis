@@ -320,6 +320,7 @@
     deletekeywords={case,class,data,default,deriving,do,in,instance,let,of,type,where,if,then,else},
     morekeywords={[2]class,data,default,deriving,family,instance,type,where},
     morekeywords={[3]in,let,case,of,do,if,then,else},
+    morekeywords={[4]newArray,readArray,writeArray,arrayLength,sliceArray},
     literate=
         {\\}{{$\lambda$}}1
         {\\\\}{{\char`\\\char`\\}}1
@@ -367,6 +368,8 @@
 
 
 \lstdefinestyle{loop}{%
+    columns=fullflexible, % to get well spaced subscripts
+    keepspaces,           % and keep spaces
     deletekeywords={case,class,data,default,deriving,do,in,instance,let,of,type,where,if,then,else,init,guard,unless,done,return},
     %morekeywords={[4]init,guard,body,yield,bottom,done},
     morekeywords={[3]let,goto,unless,return},

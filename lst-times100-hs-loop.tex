@@ -1,0 +1,108 @@
+%% We use `subfiles' package
+\documentclass[preamble.tex]{subfiles}
+\begin{document}
+
+% For lines describing combinators
+
+\begin{figure}
+%\vspace*{-1cm}
+\hspace*{-1cm}
+\begin{subfigure}{.6\textwidth}
+\begin{hscode}[%
+  columns=fullflexible, % to get well spaced subscripts
+  keepspaces,           % and keep spaces
+  literate=
+    {_1}{{\sub{map}}}3
+    {_2}{{\sub{xs}}}2,
+]
+entry :: [Dynamic] -> Dynamic
+entry [arr_2] = toDyn (run (fromDyn arr_2))
+
+run :: Vector Double -> Vector Double
+run arr_2 = runST (init_1 arr_2)
+
+init_1 arr_2 = do
+  let len_2 = arrayLength arr_2
+  let len_1 = len_2
+  let ix_2 = 0
+  arr_1 <- newArray len_1
+  guard_1 arr_2 arr_1 ix_2 len_2
+
+guard_1 arr_2 arr_1 ix_2 len_2 = do
+  if ix_2 < len_2
+    then nest_1 arr_2 arr_1 ix_2 len_2
+    else done_1 arr_2 arr_1 ix_2 len_2
+
+nest_1 arr_2 arr_1 ix_2 len_2 = do
+  body_1 arr_2 arr_1 ix_2 len_2
+
+body_1 arr_2 arr_1 ix_2 len_2 = do
+  let elt_2 = readArray arr_2 ix_2
+  let elt_1 = elt_2 * 100
+  yield_1 arr_2 arr_1 ix_2 len_2 elt_1
+
+yield_1 arr_2 arr_1 ix_2 len_2 elt_1 = do
+  let ix_2' = ix_2 + 1
+  writeArray arr_1 ix_2 elt_1
+  bottom_1 arr_2 arr_1 ix_2' len_2 elt_1
+
+bottom_1 arr_2 arr_1 ix_2 len_2 elt_1= do
+  guard_1 arr_2 arr_1 ix_2 len_2
+
+done_1 arr_2 arr_1 ix_2 len_2 = do
+  result_1 <- sliceArray arr_1 ix_2
+  return result_1
+\end{hscode}
+\end{subfigure}%
+%
+\begin{subfigure}{.55\textwidth}
+\begin{loopcode}[%
+  literate=
+    {_1}{{\sub{map}}}3
+    {_2}{{\sub{xs}}}2,
+]
+
+
+
+
+
+
+init_1/_2:
+  let len_2 = arrayLength arr_2
+  let len_1 = len_2
+  let ix_2 = 0
+  let arr_1 = newArray len_1
+  goto guard_1
+
+guard_1/_2:
+  unless ix_2 < len_2 | done_1
+  goto nest_1
+
+
+nest_1/_2:
+  goto body_1
+
+body_1/_2:
+  let elt_2 = readArray arr_2 ix_2
+  let elt_1 = elt_2 * 100
+  goto yield_1
+
+yield_1/_2:
+  ix_2 := ix_2 + 1
+  writeArray arr_1 ix_2 elt_1
+  goto bottom_1
+
+bottom_1/_2:
+  goto guard_1
+
+done_1/_2:
+  let result_1 = sliceArray arr_1 ix_2
+  return result_1
+\end{loopcode}
+\end{subfigure}
+\caption{\Haskell code (left) and \Loop code (right) generated for \code{map (* 100) xs}.}
+\label{fig:times100-hs-loop}
+\end{figure}
+
+
+\end{document}
