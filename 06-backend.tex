@@ -57,8 +57,7 @@ In \Haskell mutable arrays can be used from both @IO@ and @ST@ monads. There are
 \clearpage
 \section{Compiling \Loop language to \Haskell loops}
 
-In this section I present the translation of the \Loop EDSL to \Haskell. The grammar of \Loop language is given once again in Figure~\ref{fig:Loop-grammar-again}. We will go over the code generation for this language using a simple example. \todo{Describe example}
-
+In this section I present the translation of the \Loop EDSL to \Haskell. The grammar of \Loop language is given once again in Figure~\ref{fig:Loop-grammar-again}. 
 
 \begin{figure}
 \subfile{loop-grammar}
@@ -67,15 +66,30 @@ In this section I present the translation of the \Loop EDSL to \Haskell. The gra
 \end{figure}
 \todo{Put the footnotetext on the same page where the grammar ends up}\footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings.}
 
+A simple example to be used for illustration purposes is based on the @toPercetages@ function thoroughly studied in the previous chapter (Section~\ref{sec:loop-generation}). The following expression multiplies every element of an array by 100:
 
 \begin{hscode}
-(\a -> \b -> (+) a b)
-              ix_2
-              1
+map (* 100) xs
+\end{hscode}
+
+While the expression only consists of one combinator, @map@, the @xs@ argument may be a fusible pipeline of combinators. Likewise the @map@ itself may be fused into its consumer. However, for our purposes we assume that @xs@ is a \*manifest* array and that the result of @map@ is immediately forced.
+
+The generated \Loop code for the example is shown on the right of Figure~\ref{fig:times100-hs-loop}. Its translation by the \Haskell backend is presented in the left of the same figure. For readability the function applications have been $\beta$-reduced, package qualifiers omitted, and the operators moved to the infix position. More importantly the unique integer suffixes have been replaced with more readable names:
+
+\begin{hscode}[%
+  columns=fullflexible, % to get well spaced subscripts
+  keepspaces,           % and keep spaces
+  literate=
+    {_xs}{{\sub{xs}}}2,
+]
+(\a -> \b -> (GHC.Num.+) a b) ix_2 (GHC.Num.fromInteger 1)
+   %$\Downarrow$%
+ix_xs + 1
 \end{hscode}
 
 
-To demonstrate the workings of the code generator we will use the source program given in Figure \todo{ref}, it's internal representation in \Loop language in Figure \todo{ref} as well as the resulting \Haskell code in Figure \ref{lst:toPercentile-hs}.
+\subfile{lst-times100-hs-loop}
+
 
 
 \subsection{Blocks and Gotos}
