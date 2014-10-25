@@ -94,27 +94,29 @@ ix_xs + 1
 
 \subsection{Blocks and Gotos}
 
-A \Loop is essentially a group of labelled basic blocks with a predefined entry block. Every basic block becomes its own function in the generated code. We see in the example that each basic block like \[body] became $body$ function. Each basic block has a unique identifier associated with it (in our case $ys$), which distinguishes it from similarly named blocks of any nested loops which may be present.
+A \Loop is essentially a group of labelled basic blocks with a predefined entry block. Every basic block becomes its own function in the generated code. We see in the example that each block like \[body]\sub{map/xs} became @body@\sub{map} function choosing only one label to represent the block. Each basic block has a unique identifier associated with it (in our case $map$), which distinguishes it from similarly named blocks of any nested loops which may be present.
 
-A \*block* becomes a \*function* in the generated code. Consequently, the @goto@ statements become *function calls*. Each @goto@ statement specifies which block to transfer the control to.
+A \*block* becomes a \*function* in the generated code. Consequently, the @goto@ statements become \*function calls*.
 
-Blocks of the internal \Loop language do not explicitly specify what loop state they require or declare. A loop's state is implicit and global. As will be discussed later in Section \todo{ref} the state of the loop is passed as function arguments in the generated code. This is the reason for a large number of arguments to functions generated from blocks. The process for generating the arguments from loop variables will be outlined in Section \todo{ref}.
-
-
-\subsection{Guards and Cases}
-
-The \Loop language offers two conditional statements: @guard@ and @case@. Given a boolean expression the @case@ statement transfers control to one of the two specified blocks. A @guard@ is a simplified @case@ statement which only transfers control to a different block if the predicate is \*false*, but stays in the same block otherwise. The @guard@ is used to preempt execution of a block if a condition is not met.
-
-Both @case@ and @guard@ are translated to \Haskell's @if@ expression in the generated code. It can be seen in the provided example, that the \[guard] block as well as the \[body] contain a @guard@. The former performs the bounds check of the loop index while the latter is the guard of the @filter@ combinator.
-
-% One important thing to note is that the @case@ and the @guard@ must come after all variable bindings and updates. Maybe give an example of (map . filter). But then it is unclear what to do with (map (1/) . filter (/= 0)) The eager evaluation will not short circuit the filter and the division will be performed.
+Blocks of the internal \Loop language do not explicitly specify what loop state they reference or declare. A loop's state is implicit and global. In the generated code the state of the loop is passed as function. This is the reason for a large number of arguments to functions generated from blocks. The process for generating the arguments from loop variables will be outlined in Section~\ref{sec:Liveness-analysis}.
 
 
-\subsection{Variable initialisation and update}
+\subsection{Conditionals}
 
-In the \Loop language every local variable must be initialised before use. Since the language is currently untyped and relies on subsequent type inference and type checking in the generated code compiler, there are no explicit declarations. However, the \Loop code generator checks that every variable has exactly one binding spot inside the loop and that the control goes through that binding before the first use of the variable.
+The \Loop language offers two conditional statements: @if@ and @unless@. Given a boolean expression the @if@ statement transfers control to one of the two specified blocks. The @unless@ is a simplified @if@ statement which only transfers control to the specified block if the predicate is \*false*. The @unless@ is used to preempt execution of a block if a condition is not met.
 
-The bound variables can be mutable as well as immutable. In fact the \Loop language does not make a distinction between the two in the way they are initialised and used.
+Both @if@ and @unless@ are translated to \Haskell's @if@ expression in the generated code as seen in the \[guard] of the provided example.
+
+% One important thing to note is that the @if@ and the @unless@ must come after all variable bindings and updates. Maybe give an example of (map . filter). But then it is unclear what to do with (map (1/) . filter (/= 0)) The eager evaluation will not short circuit the filter and the division will be performed.
+
+
+\subsection{Variable bindings and assignments}
+
+In the \Loop language every local variable must be bound before use. The code generator checks to ensure that the control goes through the binding before the first use of the variable.
+
+% Since the language is currently untyped and relies on subsequent type inference and type checking in the generated code compiler, there are no explicit declarations.
+
+The bound variables can be mutable as well as immutable. In fact the \Loop language does not currently make a distinction between the two in the way they are bound and used.
 
 A variable \*binding* appears as a \*strict* @let@ binding in the generated \Haskell code. The exclamation marks, called \*bang patterns*, ensure that every bound variable is evaluated to WHNF and no thunks are created when evaluating the code. In most cases this is not necessary since the subsequent strictness analysis determines most variables to be strict anyway. However there are cases, especially in the presence of @filter@ combinators, where forcing strict evaluation is required for maintaining high performance of the generated code. \todo{See if not seq'ing post-filter variables results in thunks}
 
@@ -212,7 +214,7 @@ The only additional step required before returning an array is converting the mu
 \subsection{Liveness analysis and state passing}
 \label{sec:Liveness-analysis}
 
-We have discussed that the individual basic blocks of the \Loop language become @ST@ functions in the generated code. Subsequently the statements that transfer control from one block to the other (@goto@, @guard@, @case@) become function calls. 
+We have discussed that the individual basic blocks of the \Loop language become @ST@ functions in the generated code. Subsequently the statements that transfer control from one block to the other (@goto@, @unless@, @if@) become function calls. 
 
 \Loop language is largely a procedural language with assignment statement (@:=@) that can mutate variables arbitrarily. However, since the target language \Haskell has no mutable state by default\footnote{Later I will describe several ways to introduce mutable state in a \Haskell program and show all but the one chosen are currently negatively affecting performance.} all mutable variables of the \Loop language must be translated to \Haskell as immutable values.
 
@@ -262,7 +264,7 @@ Several points to note about calculating the environment: \todo{Perhaps move to 
   \item The liveness analysis pass will catch any use of variables that have not been previously bound which will result in a runtime error.
 \end{enumerate}
 
-Once the environment has been computed, it is used to generate function argument lists and the appropriate function calls for each @goto@, @guard@ or @case@ statement. Each block's \*assumed* variables become the arguments of the \Haskell function corresponding to that block. \todo{In the example on Figure, the variable assumed are because...blah}.
+Once the environment has been computed, it is used to generate function argument lists and the appropriate function calls for each @goto@, @unless@ or @if@ statement. Each block's \*assumed* variables become the arguments of the \Haskell function corresponding to that block. \todo{In the example on Figure, the variable assumed are because...blah}.
 
 The exact same list of variables is used to transfer control to that block, i.e. to make function calls to it. The only important point to make here is that the list of \*updated* variables in the calling block and use the appropriate variable on the caller side (e.g. @i'_xs@ instead of @i_xs@ \todo{on line ...})
 
