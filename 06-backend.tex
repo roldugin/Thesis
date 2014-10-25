@@ -94,7 +94,7 @@ ix_xs + 1
 
 \subsection{Blocks and Gotos}
 
-A \Loop is essentially a group of labelled code blocks with a predefined entry block. Every code block becomes its own function in the generated code. We see in the example that each code block like \[body] became $body$ function. Each code block has a unique identifier associated with it (in our case $ys$), which distinguishes it from similarly named blocks of any nested loops which may be present.
+A \Loop is essentially a group of labelled basic blocks with a predefined entry block. Every basic block becomes its own function in the generated code. We see in the example that each basic block like \[body] became $body$ function. Each basic block has a unique identifier associated with it (in our case $ys$), which distinguishes it from similarly named blocks of any nested loops which may be present.
 
 A \*block* becomes a \*function* in the generated code. Consequently, the @goto@ statements become *function calls*. Each @goto@ statement specifies which block to transfer the control to.
 
@@ -212,7 +212,7 @@ The only additional step required before returning an array is converting the mu
 \subsection{Liveness analysis and state passing}
 \label{sec:Liveness-analysis}
 
-We have discussed that the individual statement blocks of the \Loop language become @ST@ functions in the generated code. Subsequently the statements that transfer control from one block to the other (@goto@, @guard@, @case@) become function calls. 
+We have discussed that the individual basic blocks of the \Loop language become @ST@ functions in the generated code. Subsequently the statements that transfer control from one block to the other (@goto@, @guard@, @case@) become function calls. 
 
 \Loop language is largely a procedural language with assignment statement (@:=@) that can mutate variables arbitrarily. However, since the target language \Haskell has no mutable state by default\footnote{Later I will describe several ways to introduce mutable state in a \Haskell program and show all but the one chosen are currently negatively affecting performance.} all mutable variables of the \Loop language must be translated to \Haskell as immutable values.
 
@@ -282,7 +282,7 @@ So far neither of these limitations posed a problem since the loop structure its
 
 \section{Interfacing host and plugin code}
 
-In the previous sections we have seen the process of generating \Haskell code from \Loop EDSL. The functions generated from statement blocks of the loop form the main part of the plugin that would later be compiled and loaded into the running host program.
+In the previous sections we have seen the process of generating \Haskell code from \Loop EDSL. The functions generated from basic blocks of the loop form the main part of the plugin that would later be compiled and loaded into the running host program.
 
 An extra layer of code that makes the interaction of the host and the plugin possible is described in this section.
 
