@@ -7,6 +7,51 @@
 \chapter{Listings}
 \label{ch:listings}
 
+\begin{figure}[h!]
+\begin{loopcode}[%
+    literate=
+        {_xs}{{\sub{xs}}}2
+        {_r}{{\sub{r}}}1
+        {_is}{{\sub{is}}}2
+        {_bperm}{{\sub{bperm}}}5
+]
+init_bperm/_is:
+  let len_is = arrayLength arr_is
+  let len_xs = arrayLength arr_xs
+  let len_bperm = len_is
+  let ix_is = 0
+  let arr_bperm = newArray len_bperm
+  goto guard_bperm
+
+guard_bperm/_is:
+  unless ix_is < len_is | done_bperm
+  goto body_bperm
+
+body_bperm/_is:
+  let elt_is = readArray arr_is ix_is
+  -- set index to read xs at
+  let ix_r = elt_is
+  let elt_xs = readArray arr_xs ix_r
+  let elt_bperm = elt_xs
+  goto yield_bperm
+
+yield_bperm/_is:
+  ix_is := ix_is + 1
+  writeArray arr_bperm ix_is elt_bperm
+  goto bottom_bperm
+
+bottom_bperm/_is:
+  goto guard_bperm
+
+done_bperm/_is:
+  let result_bperm = sliceArray arr_bperm ix_is
+  return (result_bperm)
+\end{loopcode}
+
+\caption{\Loop code generated for \code{bpermute xs is} where both data (\code{xs}) and indices (\code{is}) arrays are manifest and the result array is forced. Referenced in Section~\ref{sec:Loops-random-access}.}
+\label{fig:Loop-bpermute-complete}
+\end{figure}
+
 
 \begin{figure}[h!]
 
