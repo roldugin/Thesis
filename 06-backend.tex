@@ -57,60 +57,22 @@ In \Haskell mutable arrays can be used from both @IO@ and @ST@ monads. There are
 \clearpage
 \section{Compiling \Loop language to \Haskell loops}
 
-In this section the translation of the \Loop EDSL to \Haskell will be presented. The grammar of \Loop language is given once again in Figure~\ref{fig:Loop-grammar-again}. We will go over the code generation for this language using a simple example. \todo{Describe example}
+In this section I present the translation of the \Loop EDSL to \Haskell. The grammar of \Loop language is given once again in Figure~\ref{fig:Loop-grammar-again}. We will go over the code generation for this language using a simple example. \todo{Describe example}
 
 
-\begin{cfigure}{\label{fig:Loop-grammar-again}\Loop language grammar.}
+\begin{figure}
 \subfile{loop-grammar}
-\end{cfigure}
+\caption{\Loop language grammar.}
+\label{fig:Loop-grammar-again}
+\end{figure}
 \todo{Put the footnotetext on the same page where the grammar ends up}\footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings.}
 
 
-%\begin{minipage}{\linewidth}
-\begin{hscode2}[%
-    caption={Generated Haskell code for \code{toPercentile} function.},%
-    label=lst:toPercentile-hs,%
-]
-entry :: [Dynamic] -> Dynamic
-entry [!arr_xs] = toDyn (run (fd arr_xs))
-
-run :: Vector Int -> Vector Int
-run !arr_xs = runST (init_ys arr_xs)
-
-init_ys !arr_xs
-  = do let !ix_xs = 0;
-       let !len_xs = lengthArray arr_xs;
-       let !len_ys = len_xs;
-       !arr_ys <- newArray len_ys;
-       guard_ys arr_xs arr_ys len_xs ix_xs
-
-guard_ys !arr_xs !arr_ys !len_xs !ix_xs
-  = do let !pred_xs = (<) ix_xs len_xs;
-       let !ix_ys = ix_xs;
-       if pred_xs
-        then do body_ys arr_xs arr_ys len_xs ix_xs ix_ys
-        else done_ys arr_xs arr_ys len_xs ix_xs ix_ys
-
-body_ys !arr_xs !arr_ys !len_xs !ix_xs !ix_ys
-  = do let !elt_xs = readArray ix_xs arr_xs;
-       let !f_ys = \a -> (*) a (fromInteger 100);
-       let !elt_ys = f_ys elt_xs;
-       write_ys arr_xs arr_ys len_xs ix_xs ix_ys elt_ys
-
-write_ys !arr_xs !arr_ys !len_xs !ix_xs !ix_ys !elt_ys
-  = do writeArray arr_ys ix_ys elt_ys;
-       bottom_ys arr_xs arr_ys len_xs ix_xs ix_ys elt_ys
-
-bottom_ys !arr_xs !arr_ys !len_xs !ix_xs !ix_ys !elt_ys
-  = do let !one_xs = 1;
-       let !ix_xs' = (+) ix_xs one_xs;
-       guard_ys arr_xs arr_ys len_xs ix_xs'
-
-done_ys !arr_xs !arr_ys !len_xs !ix_xs !ix_ys
-  = do !result <- sliceArray arr_ys ix_ys;
-       return result
-\end{hscode2}
-%\end{minipage}
+\begin{hscode}
+(\a -> \b -> (+) a b)
+              ix_2
+              1
+\end{hscode}
 
 
 To demonstrate the workings of the code generator we will use the source program given in Figure \todo{ref}, it's internal representation in \Loop language in Figure \todo{ref} as well as the resulting \Haskell code in Figure \ref{lst:toPercentile-hs}.
