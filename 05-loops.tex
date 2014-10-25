@@ -434,21 +434,23 @@ For the purposes of illustrating a complete running example we will assume that 
 
 In this case the AST shown on Figure~\ref{fig:toPercentages} (right) is constructed and \*forced* to a @Manifest@ array at the runtime of the program:
 
-\begin{hscode}[mathescape]
+
+\begin{hscode}
 -- AST that may be a result of a call to toPercentages
 ast :: AST (Vector Double)
 ast = force
-    $\dol$ Map (* 100)
-    $\dol$ Filter (>=. 0.01)
-    $\dol$ Manifest vec
+    $ Map (* 100)
+    $ Filter (>=. 0.01)
+    $ Manifest vec
 
 -- LiveFusion library functions
 force :: Elt a => AST (Vector a) -> AST (Vector a)
 force = Manifest . evalAST
 
 evalAST :: AST a -> a
-evalAST = $...\ compile\ AST\ and\ compute\ result ...$
+evalAST = ...  -- compile AST and compute result
 \end{hscode}
+
 
 The three fusible combinators represented by @Manifest@, @Filter@ and @Map@ AST nodes are followed by the call to an evaluator, which processes them individually as shown next.
 % After sharing recovery each AST node (or rather ASG node) is assigned a unique value
@@ -699,7 +701,8 @@ The combinators discussed so far consumed their inputs in a sequential manner fr
 \begin{hscode}
 bpermute :: Array a -> Array Int -> Array a
 
-bpermute [0,10,20,30,40,50] [3,4,5,1] = [30,40,50,10]
+bpermute [0,10,20,30,40,50] [3,4,5,1]
+> [30,40,50,10]
 \end{hscode}
 
 To understand the translation of random access combinators to \Loop language representation we must first recall how sequential looping is done. Whenever a sequential rate\irate $r$ is established, the looping statements are inserted into the loop (Figure~\ref{fig:sequential-looping}). The corresponding index variable @ix@\sub{r} is initialised (line 3) and updated (line 15) and the looping range is established (line 7).
