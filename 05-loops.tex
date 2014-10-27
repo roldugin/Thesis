@@ -637,19 +637,19 @@ The following is the portion of the loop generated for @scan@ combinator:
 
 \begin{loopcode}[%
   literate=
-    {_bperm}{{\sub{scan}}}3
+    {_1}{{\sub{scan}}}3
     {_3}{{\sub{xs}}}1,
 ]
-init_bperm/_3:
-  let len_bperm = len_3
-  let z_bperm = 1
-  let acc_bperm = z_bperm
+init_1/_3:
+  let len_1 = len_3
+  let z_1 = 1
+  let acc_1 = z_1
 
-body_bperm/_3:
-  let elt_bperm = acc_bperm
+body_1/_3:
+  let elt_1 = acc_1
 
-bottom_bperm/_3:
-  acc_bperm := acc_bperm * elt_3
+bottom_1/_3:
+  acc_1 := acc_1 * elt_3
 \end{loopcode}
 
 Generating loop code for @fold@ is very similar except no element @elt@\sub{fold} is produced in each iteration and the final result is stored in @acc@\sub{fold}.
@@ -668,15 +668,15 @@ A call to @zipWith (*) xs ys@ element-wise multiplies @xs@ and @ys@. Those two a
 
 \begin{loopcode}[%
   literate=
-    {_bperm}{{\sub{zip}}}2
+    {_1}{{\sub{zip}}}2
     {_2}{{\sub{xs}}}1
     {_3}{{\sub{ys}}}1,
 ]
-init_bperm/_2/_3:
-  let len_bperm = len_2
+init_1/_2/_3:
+  let len_1 = len_2
 
-body_bperm/_2/_3:
-  let elt_bperm = elt_2 * elt_3
+body_1/_2/_3:
+  let elt_1 = elt_2 * elt_3
 \end{loopcode}
 
 The code is similar to that of @map@ (Figure~\ref{fig:toPercentages-loops}). In fact @zipWith@$N$ combinators can be viewed as generalised @map@s.
@@ -850,42 +850,42 @@ Notably, @fold_s@ can fuse with both the \*segment descriptor* and the \*data* l
 \begin{subfigure}{.50\textwidth}
 \begin{loopcode}[%
   literate=
-    {_bperm}{{\sub{fold}}}3
+    {_1}{{\sub{fold}}}3
     {_3}{{\sub{segd}}}3
     {_4}{{\sub{data}}}3,
 ]
-init_bperm/_3/_4:
+init_1/_3/_4:
   ...
-  let z_bperm = 0
-  goto guard_bperm
+  let z_1 = 0
+  goto guard_1
 
 %\CommentPlusPlus{Outer loop}%
-guard_bperm/_3:
+guard_1/_3:
   ...
-  goto nest_bperm
+  goto nest_1
 
-nest_bperm/_3:
+nest_1/_3:
   let elt_3 = ...  
   -- reset accumulator
-  let acc_bperm = z_bperm
+  let acc_1 = z_1
   -- find segment boundary
   let end_3 = ix_4 + elt_3
   -- enter inner loop
   goto guard_4
 
-body_bperm/_3:
+body_1/_3:
   -- the fold value
-  let elt_bperm = acc_bperm
-  goto yield_bperm
+  let elt_1 = acc_1
+  goto yield_1
 
-yield_bperm/_3:
+yield_1/_3:
   ...
-  goto bottom_bperm
+  goto bottom_1
 
-bottom_bperm/_3:
-  goto guard_bperm
+bottom_1/_3:
+  goto guard_1
 
-done_bperm/_3/_4:
+done_1/_3/_4:
   ...
 \end{loopcode}
 \end{subfigure}%
@@ -893,14 +893,14 @@ done_bperm/_3/_4:
 \begin{subfigure}{.50\textwidth}
 \begin{loopcode}[%
   literate=
-    {_bperm}{{\sub{fold}}}3
+    {_1}{{\sub{fold}}}3
     {_3}{{\sub{segd}}}3
     {_4}{{\sub{data}}}3,
 ]
 %\CommentPlusPlus{Inner loop}%
 guard_4:
   -- exit inner loop at the end of segment
-  unless ix_4 < end_3 | body_bperm
+  unless ix_4 < end_3 | body_1
   goto nest_4
 
 nest_4:
@@ -916,7 +916,7 @@ yield_4:
 
 bottom_4:
   -- update accumulator
-  acc_bperm := acc_bperm + elt_4
+  acc_1 := acc_1 + elt_4
   goto guard_4
 
 % %
@@ -970,13 +970,13 @@ As in the case with @fold_s@ and all other segmented combinators, @scanl_s@ can 
 \begin{subfigure}{.5\textwidth}
 \begin{loopcode}[%
   literate=
-    {_bperm}{{\sub{scan}}}3
+    {_1}{{\sub{scan}}}3
     {_3}{{\sub{segd}}}3
     {_4}{{\sub{data}}}3,
 ]
-init_bperm/_3/_4:
+init_1/_3/_4:
   ...
-  let z_bperm = 0
+  let z_1 = 0
   goto guard_3
 
 %\CommentPlusPlus{Outer loop}%
@@ -987,11 +987,11 @@ guard_3:
 nest_3:
   let elt_3 = ...
   -- reset accumulator
-  let acc_bperm = z_bperm
+  let acc_1 = z_1
   -- find segment boundary
   let end_3 = ix_4 + elt_3
   -- enter inner loop
-  goto guard_bperm
+  goto guard_1
 
 body_3:
   goto yield_3
@@ -1003,7 +1003,7 @@ yield_3:
 bottom_3:
   goto guard_3
 
-done_bperm/_3/_4:
+done_1/_3/_4:
   ...
 \end{loopcode}
 \end{subfigure}%
@@ -1011,35 +1011,35 @@ done_bperm/_3/_4:
 \begin{subfigure}{.5\textwidth}
 \begin{loopcode}[%
   literate=
-    {_bperm}{{\sub{scan}}}3
+    {_1}{{\sub{scan}}}3
     {_3}{{\sub{segd}}}3
     {_4}{{\sub{data}}}3,
 ]
 
 
 %\CommentPlusPlus{Inner loop}%
-guard_bperm/_4:
+guard_1/_4:
   -- exit inner loop at the end of segment
   unless ix_4 < end_3 | body_3
-  goto nest_bperm
+  goto nest_1
 
-nest_bperm/_4:
-  goto body_bperm
+nest_1/_4:
+  goto body_1
 
-body_bperm/_4:
+body_1/_4:
   let elt_4 = ...
   -- result element
-  let elt_bperm = acc_bperm
-  goto yield_bperm
+  let elt_1 = acc_1
+  goto yield_1
 
-yield_bperm/_4:
+yield_1/_4:
   ...
-  goto bottom_bperm
+  goto bottom_1
 
-bottom_bperm/_4:
+bottom_1/_4:
   -- update accumulator
-  acc_bperm := acc_bperm + elt_4
-  goto guard_bperm
+  acc_1 := acc_1 + elt_4
+  goto guard_1
 \end{loopcode}
 \end{subfigure}
 
