@@ -1,0 +1,92 @@
+%% We use `subfiles' package
+\documentclass[preamble.tex]{subfiles}
+\begin{document}
+
+\clearpage
+
+\chapter{Discussion}
+
+\subsection{LiveFusion - Performance considerations}
+
+\section{Two types of sharing}
+\begin{itemize}
+\item Diamond is easy is there are many ways of achieving it, even though it compromises referential transparency. But we guaranty correctness by design. Extensively covered in section \todo{ref}
+\item Problem arises if the diamond does not form before the result is required in one of the branches
+\item Illustrate with QuickHull example
+\item Would be less of a problem if we were analysing a static tree in the compiler since there are no conditionals so such a computation would always be there
+\item However, when it comes to runtime we are limited by the execution order. If a result is required in Node x in Figure, then Node y won't be forced since none of the predecessors of Node x know about the branch leading up to Node y.
+\item This wouldn't be a problem in a language with mutable references, where the parents of the tree could know about its children
+\item This has two consequences:
+\begin{itemize}
+  \item Even though the results of Node x and y can be computed in one loop, Node x will be computed first, thus a fusion opportunity is missed
+  \item A bigger problem, however, is that it may lead to duplicated work
+  \item Consider Node z when the branching occurs. At the time of computing Node x, the computation in Node and all of its predecessors will be fused into the loop computing result for Node x. Once the result of Node y is finally required, the computation would have to start from scratch and include Node z and all of its predecessors.
+  \item In this case it would have been beneficial for performance to create an intermediate array at Node z and start the computation of Node y with that.
+\end{itemize}
+\end{itemize}
+
+\section{One solution for branched sharing}
+\begin{itemize}
+\item It maybe beneficial to take a step back and think about the problem in terms of the data structures that represent the delayed computations
+\item Trees
+\item In general in Haskell trees the parents know about the children, but the children do not know about the parents. In the case of LiveFusion with predecessor in the pipeline of combinators is the child, while the root of the tree is the last combinator in the pipeline.
+\item If we employ the common sharing recovery techniques, we get a graph in which the shared nodes are not repeated.
+\item The important thing to note is that we still have a graph with ONE SINGLE root node. The same node that was the tree before sharing recovery.
+\item The problem with branched sharing is that even before the sharing recovery takes place, we have not a tree but a graph. There are multiple tree roots (e.g. x and y) that are held by different parts of the program which happen to share some nodes.
+\item Knowing about other such roots from at each one of them presents the essence of the problem we are facing
+\item Here we present a sample solution to the problem which is set outside the LiveFusion framework
+\item Describe that ugly sharing recovery example I wrote
+\end{itemize}
+
+
+\section{Delaying computation of scalar results}
+\begin{itemize}
+\item So far assumed that we have arrays as results
+\item However, as discussed we distinguish three types of array combinators:
+\begin{itemize}
+  \item anamorphic combinators (generators)
+  \item hylomorphic combinators (producer/consumers)
+  \item catamorphic combinators (pure consumers)
+\end{itemize}
+\item A particular example of the pure consumers is a Fold and it produces a single scalar value- 
+\item It is important to note the result type of function \texttt{fold}. It is just the element type. Compare it to the combinators which have the result type of Array a which is a synonym for \texttt{AST (Vector a)}. The latter clearly states it is a delayed computation. However, in the case of $fold$ nowhere in the type signature does it say it's a delayed computation.
+\item The reason for this is in the way DPH integrates into Haskell
+\item Arrays are library defined, while the scalars are Haskell built in.
+\item Another way to look at it is if AST was the type of a typical EDSL. All array producing computations in LiveFusion are represented in this AST language. In much the same way Accelerate language has Acc Array. However, unlike DPH, Accelerate also offers scalar computations and even functions represented as \texttt{Acc}: e.g. \texttt{Acc Int} and \_?\_ \texttt{(Int -> Int)} respectively.
+\item Thus the type of fold in Accelerate would look like ...
+\item Due to the tighter integration of DPH with Haskell, it by design uses Haskell types directly, hence the type of the fold which uses Haskell primitive types
+\item This poses a problem that it forces the computation as soon as the reduction is reached as there is no data structure to hold the delayed computation in
+\item This is usually the desired result, unless it is an instance of branched sharing discussed previously (outline an example)
+\item There is currently no solution for the problem, however, for easier integration into other systems, LiveFusion does delay scalar computations, i.e. the type of Fold combinator is actually \texttt{..... -> AST a}. In fact the only thing that the wrapper \texttt{fold} functions does is: @fold f z xs = compute (Fold f z xs)@
+\end{itemize}
+
+\section{Code reuse}
+\begin{itemize}
+\item Most of DPH programs are recursive in one form or the other.
+\item E.g. QuickHull, NBody, etc..
+\item In QuickHull ...
+\item In NBody ...
+\item The same graph of combinators are executed over and over again at each recursion step
+\item Amortising the cost of code generation and runtime code compilation and loading over a number of iterations is not a new problem in Computer Science [...refs...]
+\item This problem has also been solved by the Accelerate EDSL for GPU programming in Haskell, so can be adapted.
+\end{itemize}
+
+
+\clearpage
+\section{Influence of Language and Context - Common patterns in DPH}
+\begin{itemize}
+\item Lots of Filtering (common FP approach)
+\item Same length zipping
+\item No unbounded lengths
+\item Find them in examples
+\end{itemize}
+
+\section{Applicability in other languages}
+\begin{itemize}
+\item Non DPH
+\item Non pure FP
+\item Non FP
+\item Non loop
+\end{itemize}
+
+\end{document}
