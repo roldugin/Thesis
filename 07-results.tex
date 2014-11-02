@@ -20,6 +20,13 @@ The result of finding convex hull of a set of points can be seen on the right of
 
 In the original recursive solution In each recursive step the algorithm finds
 
+\begin{hscode}
+quickHull_r :: [:Point:] -> Line -> [:Point:]
+
+quickHull_r^ :: [:[:Point:]:] -> [:Line:] -> [:[:Point:]:]
+\end{hscode}
+
+
 \begin{figure}
 \includegraphics[width=0.3\textwidth]{img/Example-QuickHull-step1}~~~~~%
 \includegraphics[width=0.3\textwidth]{img/Example-QuickHull-step2}~~~~~%
@@ -35,35 +42,34 @@ In the original recursive solution In each recursive step the algorithm finds
 type Point = (Double, Double)
 type Line  = (Point,  Point)
 
-distance :: Point -> Line -> Double
-distance (xo, yo) ((x1, y1), (x2, y2))
-  = (x1 - xo) * (y2 - yo) - (y1 - yo) * (x2 - xo)
-
-
-hsplit :: [:Point:] -> Line -> [:Point:]
-hsplit points line@(p1, p2)
-  | lengthP packed == 0 = [:p1:]
-  | otherwise
-  = concatP [: hsplit packed ends
-                 | ends <- [:(p1, pm), (pm, p2):] :]
-  where
-    -- Find relative distance from each point to the line
-    cross  = [: distance p line | p <- points :]
-    -- Only keep points above the line
-    packed = [: p | (p,c) <- zipP points cross, c > 0.0 :]
-    -- Find the point farthest from the line
-    pm     = points !: maxIndexP cross
-
-
 quickHull :: [:Point:] -> [:Point:]
 quickHull points
   | lengthP points == 0 = points
   | otherwise
-  = concatP [: hsplit points ends | ends <- [: (minx, maxx), (maxx, minx) :] :]
+  = concatP [: quickHull_r points ends
+                 | ends <- [: (minx, maxx), (maxx, minx) :] :]
   where
     xs   = [: x | (x, y) <- points :]
     minx = points !: minIndexP xs
     maxx = points !: maxIndexP xs
+
+quickHull_r :: [:Point:] -> Line -> [:Point:]
+quickHull_r points line@(start, end)
+  | lengthP above == 0 = [:start:]
+  | otherwise
+  = concatP [: quickHull_r above ends
+                 | ends <- [:(start, far), (far, end):] :]
+  where
+    -- Find relative distance from each point to the line
+    distances = [: distance p line | p <- points :]
+    -- Only keep points above the line
+    above = [: p | (p,c) <- zipP points distances, c > 0.0 :]
+    -- Find the point farthest from the line
+    far = points !: maxIndexP distances
+
+distance :: Point -> Line -> Double
+distance (xo, yo) ((x1, y1), (x2, y2))
+  = (x1 - xo) * (y2 - yo) - (y1 - yo) * (x2 - xo)
 \end{hscode}
 
 
