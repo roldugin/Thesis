@@ -12,9 +12,61 @@
 \section{QuickHull}
 \label{sec:quickhull}
 
+Throughout this chapter we will use a \name{Data Parallel Haskell} implementation of the QuickHull algorithm that computes the convex hull of a finite set of points in the plane. It derives its name from the QuickSort algorithm and similarly uses a divide and conquer approach.
+
+The convex hull for a set of points in the plane can be visualised as a polygon formed by a rubber band stretched around the points. The smallest set of points forming the polygon that encloses all other points is called the convex hull.
+
+The result of finding convex hull of a set of points can be seen on the right of Figure~\ref{fig:qh-result}. The same figure depicts the three steps of the sample run of QuickHull algorithm.
+
+In the original recursive solution In each recursive step the algorithm finds
+
 \begin{figure}
-\includegraphics[center]{img/Example-QH1000}
+\includegraphics[width=0.3\textwidth]{img/Example-QuickHull-step1}~~~~~%
+\includegraphics[width=0.3\textwidth]{img/Example-QuickHull-step2}~~~~~%
+\includegraphics[width=0.3\textwidth]{img/Example-QuickHull-step3}%
+\caption{A sample run of data parallel QuickHull algorithm.}
+\label{fig:qh-result}
 \end{figure}
+
+
+\begin{hscode}[%
+  caption={\label{fig:dph-qh}\name{Data Parallel Haskell} implementation of QuickHull.},
+]
+type Point = (Double, Double)
+type Line  = (Point,  Point)
+
+distance :: Point -> Line -> Double
+distance (xo, yo) ((x1, y1), (x2, y2))
+  = (x1 - xo) * (y2 - yo) - (y1 - yo) * (x2 - xo)
+
+
+hsplit :: [:Point:] -> Line -> [:Point:]
+hsplit points line@(p1, p2)
+  | lengthP packed == 0 = [:p1:]
+  | otherwise
+  = concatP [: hsplit packed ends
+                 | ends <- [:(p1, pm), (pm, p2):] :]
+  where
+    -- Find relative distance from each point to the line
+    cross  = [: distance p line | p <- points :]
+    -- Only keep points above the line
+    packed = [: p | (p,c) <- zipP points cross, c > 0.0 :]
+    -- Find the point farthest from the line
+    pm     = points !: maxIndexP cross
+
+
+quickHull :: [:Point:] -> [:Point:]
+quickHull points
+  | lengthP points == 0 = points
+  | otherwise
+  = concatP [: hsplit points ends | ends <- [: (minx, maxx), (maxx, minx) :] :]
+  where
+    xs   = [: x | (x, y) <- points :]
+    minx = points !: minIndexP xs
+    maxx = points !: maxIndexP xs
+\end{hscode}
+
+
 
 \subsection{The heart of QuickHull}
 
