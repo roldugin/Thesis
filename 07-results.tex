@@ -18,26 +18,37 @@ The convex hull for a set of points in the plane can be visualised as a polygon 
 
 The result of finding convex hull of a set of points can be seen on the right of Figure~\ref{fig:qh-result}. The same figure depicts the three steps of the sample run of QuickHull algorithm.
 
-In the original recursive solution In each recursive step the algorithm finds
 
-\begin{hscode}
-quickHull_r :: [:Point:] -> Line -> [:Point:]
+\subsection{QuickHull in \DPH}
 
-quickHull_r^ :: [:[:Point:]:] -> [:Line:] -> [:[:Point:]:]
-\end{hscode}
+The \DPH implementation of QuickHull closely follows the recursive solution:
+\begin{enumerate}
+  \item Finds the points with smallest and largest $x$ coordinates (lines 12 and 13 and Figure~\ref{fig:qh-result} left). These points are bound to be in the convex hull.
+
+  \item The line between the two points forms two subsets of points, which will be processed recursively (line 8) by @QuickHullR@ function.
+
+  \item The recursive @QuickHullR@ function, given a subset of points and a line, determines the point, on one side of the line, @far@thest from it (line 27). This point is also in the convex hull.
+
+  \item @QuickHullR@ also filters out all points on the other side of the line (line 25), keeping only the points @above@ the line.
+
+  \item The two ends of the line each form a new line with the @far@ point to be recursively processed (line 19).
+
+  \item The previous three steps are repeated expanding the convex hull until no more points are left above any of the lines. The recursion has finished and the points forming the lines constitute the convex hull.
+\end{enumerate}
 
 
 \begin{figure}
 \includegraphics[width=0.3\textwidth]{img/Example-QuickHull-step1}~~~~~%
 \includegraphics[width=0.3\textwidth]{img/Example-QuickHull-step2}~~~~~%
 \includegraphics[width=0.3\textwidth]{img/Example-QuickHull-step3}%
-\caption{A sample run of data parallel QuickHull algorithm.}
+\caption{Three steps of a sample run of data parallel QuickHull algorithm.}
 \label{fig:qh-result}
 \end{figure}
 
 
 \begin{hscode}[%
   caption={\label{fig:dph-qh}\name{Data Parallel Haskell} implementation of QuickHull.},
+  numbers=left,
 ]
 type Point = (Double, Double)
 type Line  = (Point,  Point)
@@ -46,18 +57,18 @@ quickHull :: [:Point:] -> [:Point:]
 quickHull points
   | lengthP points == 0 = points
   | otherwise
-  = concatP [: quickHull_r points ends
+  = concatP [: quickHullR points ends
                  | ends <- [: (minx, maxx), (maxx, minx) :] :]
   where
     xs   = [: x | (x, y) <- points :]
     minx = points !: minIndexP xs
     maxx = points !: maxIndexP xs
 
-quickHull_r :: [:Point:] -> Line -> [:Point:]
-quickHull_r points line@(start, end)
+quickHullR :: [:Point:] -> Line -> [:Point:]
+quickHullR points line@(start, end)
   | lengthP above == 0 = [:start:]
   | otherwise
-  = concatP [: quickHull_r above ends
+  = concatP [: quickHullR above ends
                  | ends <- [:(start, far), (far, end):] :]
   where
     -- Find relative distance from each point to the line
@@ -67,12 +78,34 @@ quickHull_r points line@(start, end)
     -- Find the point farthest from the line
     far = points !: maxIndexP distances
 
+-- Cross product used as distance-like measure
 distance :: Point -> Line -> Double
 distance (xo, yo) ((x1, y1), (x2, y2))
   = (x1 - xo) * (y2 - yo) - (y1 - yo) * (x2 - xo)
 \end{hscode}
 
 
+
+\subsection{QuickHull vectorisation}
+
+The QuickHull program presented is a typical example of a divide and conquer algorithm. Recursive calls of @quickHullR@ function in most languages would be processed sequentially one at a time. However, in \DPH, the function is vectorised as described in Section~\ref{sec:Vectorisation} to give @quickHullR^@ of the following type:
+
+
+\begin{hscode}[literate={^}{{$^\uparrow$}}1,]
+-- Original
+quickHullR  :: [:Point:] -> Line -> [:Point:]
+-- Vectorised
+quickHullR^ :: [:[:Point:]:] -> [:Line:] -> [:[:Point:]:]
+\end{hscode}
+
+
+The vectorised function is able to process not one, but an array of lines at a time. This means that the ``expansion'' of convex hull in every direction happens in one call of @quickHullR^@. In fact the three steps of vectorised QuickHull depicted in Figure~\ref{fig:qh-result} faithfully represent the only three calls to @quickHullR^@ required to find the convex hull.
+
+
+
+\subsection{QuickHull in the backend}
+
+The vectorised @quickHullR^@ function takes a \*nested parallel array* of points @[:[:Point:]:]@ as its first argument. It was discussed in Section~\ref{sec:Lifting}, that such nested arrays are represented using \*segmented* arrays in the backend. For example, the pointsrepresentation. \*Lifting transform* turns functions on n
 
 \subsection{The heart of QuickHull}
 
