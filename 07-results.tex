@@ -105,7 +105,37 @@ The vectorised function is able to process not one, but an array of lines at a t
 
 \subsection{QuickHull in the backend}
 
-The vectorised @quickHullR^@ function takes a \*nested parallel array* of points @[:[:Point:]:]@ as its first argument. It was discussed in Section~\ref{sec:Lifting}, that such nested arrays are represented using \*segmented* arrays in the backend. For example, the pointsrepresentation. \*Lifting transform* turns functions on n
+The vectorised @quickHullR^@ function takes a \*nested parallel array* of points @[:[:Point:]:]@ as its first argument. It was discussed in Section~\ref{sec:Lifting}, that such nested arrays are represented using \*segmented* arrays in the backend.
+
+Recalling that an \*array of pairs* is repesented as a \*pair of arrays* (Section~\ref{sec:DPH-Data-Representation}), the \*Lifting transform* represents a \*nested array* of @Point@ as two data arrays and a segment descriptor:
+
+% For drawing rules of width of multiples of fixed char width
+% E.g. \seg{4} will give ----
+\newlength\fixedcharwidth
+\settowidth{\fixedcharwidth}{\code{a}}
+\newcommand\seg[1]{\rule{#1\fixedcharwidth}{1pt}}
+
+% xs:   [: [:3:], [:4, 2, 2, 4:], [:8, 7, 7,  9:], [:9, 10, 8:], [:4:] :]
+% ys:   [: [:3:], [:7, 8, 9, 9:], [:8, 7, 9, 10:], [:5,  3, 1:], [:0:] :]
+
+\begin{hscode}
+Points:
+  [:
+     [:(3,3):],
+     [:(4,7), (2,8),  (2,9), (4,9):],
+     [:(8,8), (7,7),  (7,9), (9,10):],
+     [:(9,5), (10,3), (8,1):],
+     [:(4,0):]
+  :]
+
+                        %$\Downarrow$%
+
+segd: [ 1, 4, 4, 3, 1 ]
+        %\seg{1}~~\seg{10}~~\seg{11}~~\seg{8}~~\seg{1}%
+xs:   [ 3, 4, 2, 2, 4, 8, 7, 7,  9, 9, 10, 8, 4 ]
+ys:   [ 3, 7, 8, 9, 9, 8, 7, 9, 10, 5,  3, 1, 0 ]
+\end{hscode}
+
 
 \subsection{The heart of QuickHull}
 

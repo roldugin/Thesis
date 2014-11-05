@@ -126,9 +126,9 @@ The following nested parallel array may have been the deepest level of the discu
 At runtime it would be stored as an array of data values together with the segment descriptor containing the lengths and the starting index positions of the contained arrays (offsets into the data array):%\footnote{Technically the array of index offsets can be computed from the array of lengths. It is stored with the segment descriptor for efficiency reasons.}:
 
 \begin{hscode}
-[# 5, 4, 2, 3, 17, 11 #]       -- data
+[ 5, 4, 2, 3, 17, 11 ]       -- data
 
-[# 1, 0, 2, 0, 1, 1, 0, 1 #]   -- lengths (segment descriptor)
+[ 1, 0, 2, 0, 1, 1, 0, 1 ]   -- lengths (segment descriptor)
 \end{hscode}
 %[# 0, 1, 1, 3, 3, 4, 5, 5 #]   -- indices
 
