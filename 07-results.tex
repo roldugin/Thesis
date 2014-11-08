@@ -200,16 +200,53 @@ In the previous section we have identified groups of combinators \*a* to \*e* th
 
 However, the fusion stops at the boundaries of each of these groups.
 
-The \FilterMax example exhibits both problems with \StreamFusion identified in Section~\ref{sec:problems}: the inability to fuse producers with multiple consumers and the duplicated counters (\ref{sec:duplicated-counters}).
+The \FilterMax example exhibits both problems with \StreamFusion identified in Section~\ref{sec:problems}: the inability to fuse producers with multiple consumers and the duplicated counters.
 
-Both the filtering part of \FilterMax, finding points above the lines (\*c*, \*d*, \*e*) and the part finding the farthest points (\*b*) rely on the distances to be computed first (\*a*). Because of inherent limitation of \StreamFusion covered in Section~\ref{sec:multiple-consumers}, the producer of the segmented @distances_s@ array is unable to be fused into the two consumers albeit they could easily be computed in the same loop.
+
+\subsubsection{Multiple consumers}
+
+Both the filtering part of \FilterMax, finding points above the lines (\*c*, \*d*, \*e*) and the part finding the farthest points (\*b*) rely on the distances to be computed first (\*a*). Because of inherent limitation of fusion systems based on rewrite rules covered in Section~\ref{sec:multiple-consumers}, \StreamFusion is unable to fuse the producer of the segmented @distances_s@ array into the two consumers albeit they could easily be computed in the same loop.
+
+For the same reason combinator groups \*d* and \*e* cannot be fused with group \*c* that produces an array of boolean tags specifying which points should be kept and which filtered out.
+
+\LiveFusion on the other hand is able to fuse all combinator groubs \*a* through \*e* into a single (nested) loop.
+
+
+\subsubsection{Duplicated loop counters}
+
+With arrays of points being represented by two arrays and arrays of lines -- by four arrays, any computation involving their point-wise processing adds a separate counter variable and bounds check in \StreamFusion. This problem has been discussed in Section~\ref{sec:duplicated-counters} and solved in \LiveFusion using rates (Section~\ref{sec:rates}).
+
+Referring to the \FilterMax example, @zipWith6@ combinator from group \*a* uses 6 separate counters for each of the input arrays and one for the output. Similarly, @zip@ and @zipWith@ combinators of groups \*b* and \*c* use 3 counters each.
+
 
 
 \subsection{Evaluation}
 
+The benchmarking in this section has been carried out using an implementation of \QuickHull vectorised by hand replicating the intermediate \name{GHC Core} code produced by \DPH vectoriser. It is expressed using array combinators that can be compiled either using a \StreamFusion or a \LiveFusion based backend library.
+
+A variant of \QuickHull that uses \LiveFusion to compute \FilterMax has been compiled. As of this writing \LiveFusion is able to dynamically generate and load fused code. However, it does not cache the compiled code. To avoid recompiling the same combinator graph in each recursive step of \QuickHull, the pre-generated code of \FilterMax has been compiled in. Additional compilation costs are factored into the results where appropriate.
+
+Both programs have been run on 10, 20, 25, 40 and 50 million points.
+Figure~\ref{fig:Eval-QuickHull} shows the runtime of the complete \QuickHull program. In one instance it uses \StreamFusion throughout. In another it substitutes \LiveFusion generated code to compute \FilterMax.
+
+\ref{fig:Eval-QuickHull-numbers}
+
+
 \begin{figure}
 \includegraphics[center]{img/Eval-QuickHull}
+\caption{Runtime of vectorised QuickHull with \FilterMax fused by \StreamFusion and \LiveFusion.}
+\label{fig:Eval-QuickHull}
 \end{figure}
+
+
+\begin{figure}
+\csvautotabular{Results-QuickHull.csv}
+\caption{Runtime of vectorised QuickHull with \FilterMax fused by \StreamFusion and \LiveFusion (measured in milliseconds).}
+\label{fig:Eval-QuickHull-numbers}
+\end{figure}
+
+
+However, given the divide-and-conquer nature of \QuickHull and the decreasing number of points at every step
 
 \begin{figure}
 \includegraphics[center]{img/Eval-FarAndAboves}
