@@ -212,7 +212,14 @@ bottom_1/_4:
 \label{fig:Loop-scanl-s-complete}
 \end{figure}
 
+
 \clearpage
+\section*{Segmented FilterMax in \LiveFusion}
+\label{sec:FilterMax-implementation}
+
+The following is the complete source of the program representing the FilterMax component of vectorised QuickHull. QuickHull was discussed in Section~\ref{sec:QuickHull} on page~\pageref{sec:QuickHull} with \name{Data Parallel Haskell} source given in Figure~\ref{fig:dph-qh} on page~\pageref{fig:dph-qh}.
+
+
 \begin{hscode}
 -- The heart of vectorised QuickHull.
 -- Based on hand-vectorised version of QuickHull found in:
@@ -248,6 +255,8 @@ filterMax npts segd xs ys x1s y1s x2s y2s
 
 \end{hscode}
 
+
+\clearpage
 \begin{hscode}
 
 -- | Find (relative) distances of points from line.
@@ -293,9 +302,9 @@ distance xo yo x1 y1 x2 y2
 
 \end{hscode}
 
+
+\clearpage
 \begin{hscode}
-
-
 -- | Find points above the lines given distance-like measures.
 --
 -- Corresponds to 'packed' in the original program:
@@ -324,9 +333,9 @@ calcAbove npts segd xs ys distances
 
 \end{hscode}
 
+
+\clearpage
 \begin{hscode}
-
-
 -- | For each line find a point farthest from that line.
 --
 -- Each segment is a collection of points above a certain line.
