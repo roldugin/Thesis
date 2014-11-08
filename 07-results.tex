@@ -227,9 +227,11 @@ The benchmarking in this section has been carried out using an implementation of
 A variant of \QuickHull that uses \LiveFusion to compute \FilterMax has been compiled. As of this writing \LiveFusion is able to dynamically generate and load fused code. However, it does not cache the compiled code. To avoid recompiling the same combinator graph in each recursive step of \QuickHull, the pre-generated code of \FilterMax has been compiled in. Additional compilation costs are factored into the results where appropriate.
 
 Both programs have been run on 10, 20, 25, 40 and 50 million points.
-Figure~\ref{fig:Eval-QuickHull} shows the runtime of the complete \QuickHull program. In one instance it uses \StreamFusion throughout. In another it substitutes \LiveFusion generated code to compute \FilterMax.
 
-\ref{fig:Eval-QuickHull-numbers}
+
+\subsubsection{Overall performance}
+
+Figure~\ref{fig:Eval-QuickHull} shows the runtime of the complete \QuickHull program. In one instance it uses \StreamFusion throughout. In another it substitutes \LiveFusion generated code to compute \FilterMax. The results are shown numerically in Figure~\ref{fig:Eval-QuickHull-numbers} showing 1.46 -- 1.84 speedups even with amostised compilation costs factored in ($\approx 650\ ms$). It should be noted that \FilterMax only accounts for $^2/_3$ of the runtime so a complete \LiveFusion implementation is expected to yield further speedups.
 
 
 \begin{figure}
@@ -246,18 +248,30 @@ Figure~\ref{fig:Eval-QuickHull} shows the runtime of the complete \QuickHull pro
 \end{figure}
 
 
-However, given the divide-and-conquer nature of \QuickHull and the decreasing number of points at every step
+\subsubsection{\FilterMax performance}
+
+To compare \LiveFusion and \StreamFusion directly, Figures \ref{fig:DFD-QuickHull} and \ref{fig:Eval-QuickHull-numbers} show the performance of each running just the \FilterMax. The runtimes given are for 100 million points and less. Runtimes for fewer than 65 thousand points have been omitted even though they show at least as good performance of \LiveFusion as compared to \StreamFusion.
+
 
 \begin{figure}
 \includegraphics[center]{img/Eval-FarAndAboves}
+\caption{Runtime of \FilterMax fused by \StreamFusion and \LiveFusion.}
+\label{fig:Eval-FarAndAboves}
 \end{figure}
 
 \begin{figure}
-\includegraphics[center]{img/Eval-FarAndAboves-Overall}
+\csvautotabular{Results-FarAndAboves.csv}
+\caption{Runtime of \FilterMax fused by \StreamFusion and \LiveFusion (measured in milliseconds).}
+\label{fig:Eval-FarAndAboves-numbers}
 \end{figure}
 
+
+% \begin{figure}
+% \includegraphics[center]{img/Eval-FarAndAboves-Overall}
+% \end{figure}
+
 \clearpage
-\section{Compilation time and amortisation}
+\section{Discussion}
 
 
 \IfNotCompilingAll{\bibliography{bib}}
