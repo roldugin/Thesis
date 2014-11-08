@@ -225,9 +225,9 @@ The following is the complete source of the program representing the FilterMax c
 -- Based on hand-vectorised version of QuickHull found in:
 -- ghc/libraries/dph/dph-examples/examples/spectral/QuickHull/handvec/Handvec.hs
 {-# LANGUAGE RebindableSyntax #-}
-module QuickHull where
+module FilterMax where
 
-import Data.LiveFusion as LF
+import Data.LiveFusion
 
 import Prelude as P hiding ( map, replicate, zip, zipWith,
                              filter, fst, snd, unzip )
@@ -243,9 +243,9 @@ filterMax :: (IsNum a, IsOrd a, Elt a)
               Array Int)         -- New segd
 filterMax npts segd xs ys x1s y1s x2s y2s
   = let -- Find distance-like measures between each point and its respective line.
-        distances = calcCross npts segd xs ys x1s y1s x2s y2s
+        distances = calcDistances npts segd xs ys x1s y1s x2s y2s
 
-        -- Throw out all the points which are below the line (i.e. distance <= 0).
+        -- Throw out all the points which are below the line.
         (above_xs, above_ys, aboveSegd) = calcAbove npts segd xs ys distances
 
         -- Find points farthest from each line.
@@ -258,22 +258,21 @@ filterMax npts segd xs ys x1s y1s x2s y2s
 
 \clearpage
 \begin{hscode}
-
 -- | Find (relative) distances of points from line.
 --
 -- Each point can be above (positive distance) or below (negative distance)
 -- a line as looking from the centre of the convex hull.
 --
--- Corresponds to 'cross' in the original program:
--- > cross  = [: distance p line | p <- points :]
-calcCross :: (IsNum a, IsOrd a, Elt a)
-          => Term Int            -- Number of points
-          -> Array Int           -- Segd
-          -> Array a -> Array a  -- Points
-          -> Array a -> Array a  -- Line starts
-          -> Array a -> Array a  -- Line ends
-          -> Array a             -- Relative distances from lines
-calcCross npts segd xs ys x1s y1s x2s y2s
+-- Corresponds to 'distances' in the original program:
+-- > distances = [: distance p line | p ← points :]
+calcDistances :: (IsNum a, IsOrd a, Elt a)
+              => Term Int            -- Number of points
+              -> Array Int           -- Segd
+              -> Array a -> Array a  -- Points
+              -> Array a -> Array a  -- Line starts
+              -> Array a -> Array a  -- Line ends
+              -> Array a             -- Relative distances from lines
+calcDistances npts segd xs ys x1s y1s x2s y2s
   = zipWith6 distance xs
                       ys
                       (replicate_s npts segd x1s)
@@ -283,22 +282,15 @@ calcCross npts segd xs ys x1s y1s x2s y2s
 
 
 
--- | Calculate cross product between vectors formed between a point and
---   each of the two line ends.
---
--- I.e. |x1-xo|   |x2-xo|
---      |     | x |     | = (x1-xo)(y2-yo)-(y1-yo)(x2-xo)
---      |y1-yo|   |y2-yo|
---
--- Not changed from the original source version thanks to vectavoid
--- (except tuples are dissolved).
+-- | Compute cross product between vectors formed between a point (x,y)
+--   and each of the two line ends: (x1,y1) and (x2,y2).
 distance :: (IsNum a, IsOrd a, Elt a)
          => Term a -> Term a  -- Point
          -> Term a -> Term a  -- Line start
          -> Term a -> Term a  -- Line end
          -> Term a            -- Distance
-distance xo yo x1 y1 x2 y2
-  = (x1 - xo) * (y2 - yo) - (y1 - yo) * (x2 - xo)
+distance x y x1 y1 x2 y2
+  = (x1 - x) * (y2 - y) - (y1 - y) * (x2 - x)
 
 \end{hscode}
 
@@ -307,8 +299,8 @@ distance xo yo x1 y1 x2 y2
 \begin{hscode}
 -- | Find points above the lines given distance-like measures.
 --
--- Corresponds to 'packed' in the original program:
--- > packed = [: p | (p,c) <- zipP points cross, c D.> 0.0 :]
+-- Corresponds to 'above' in the original program:
+-- > above = [: p | (p,c) ← zipP points distances, c > 0.0 :]
 calcAbove :: (IsNum a, IsOrd a, Elt a)
           => Term Int            -- Number of points
           -> Array Int           -- Segd
@@ -317,7 +309,7 @@ calcAbove :: (IsNum a, IsOrd a, Elt a)
           -> (Array a, Array a,  -- Points with positive distances
               Array Int       )  -- New Segd
 calcAbove npts segd xs ys distances
-  = let -- Compute emptySelctor for positive elements ((>0) -> 1; otherwise -> 0)
+  = let -- Compute selector for positive elements
         aboveTags  = zipWith (>.) distances (replicate npts 0)
 
         -- Compute segd for just the positive elements
@@ -341,8 +333,8 @@ calcAbove npts segd xs ys distances
 -- Each segment is a collection of points above a certain line.
 -- The array of Doubles gives (relative) distances of points from the line.
 --
--- Corresponds to 'pm' in the original program:
--- > pm = points !: maxIndexP cross
+-- Corresponds to 'far' in the original program:
+-- > far = points !: maxIndexP distances
 calcFarthest :: (IsNum a, IsOrd a, Elt a)
              => Term Int            -- Number of points
              -> Array Int           -- Segment descriptor
@@ -370,10 +362,10 @@ calcFarthest npts segd xs ys distances
     in (max_xs, max_ys)
 
 
-
+-- | Compute array containing starting indices of each segment
+--   of a segment descriptor.
 indicesSegd :: Array Int -> Array Int
 indicesSegd = scan (+) 0
-
 
 
 -- | Find pair with the biggest second element.
