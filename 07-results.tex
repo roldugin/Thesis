@@ -153,7 +153,7 @@ y2s = [5,10, 6, 0, 1]
 \end{hscode}
 
 
-Overall, the time @quckHullR^@ function goes through the following transformations before it is compiled using the backend library of collective array operations (such as \LiveFusion)\footnote{I omit certain internal wrapper types to simplify the example.}:
+Overall, the @quckHullR^@ function goes through the following transformations before it is compiled using the backend library of collective array operations (such as \LiveFusion)\footnote{I omit certain internal wrapper types to simplify the example.}:
 
 \begin{hscode}[literate={^}{{$^\uparrow$}}1,]
 quickHullR  :: [:Point:] -> Line -> [:Point:]
@@ -209,12 +209,16 @@ Both the filtering part of \FilterMax, finding points above the lines (\*c*, \*d
 
 For the same reason combinator groups \*d* and \*e* cannot be fused with group \*c* that produces an array of boolean tags specifying which points should be kept and which filtered out.
 
-\LiveFusion on the other hand is able to fuse all combinator groubs \*a* through \*e* into a single (nested) loop.
+\begin{bluebox}
+In fact, the pattern formed by combinator groups \*c*, \*d* and \*e* is very common to \DPH programs. Based on the result of some computation in \*c*, a new segmented array\isegarray is produced in \*d* \*AND* a new accompanying segment descriptor\isegd in \*e*.
+\end{bluebox}
+
+\LiveFusion on the other hand is able to fuse all combinator groups \*a* through \*e* into a single (nested) loop.
 
 
 \subsubsection{Duplicated loop counters}
 
-With arrays of points being represented by two arrays and arrays of lines -- by four arrays, any computation involving their point-wise processing adds a separate counter variable and bounds check in \StreamFusion. This problem has been discussed in Section~\ref{sec:duplicated-counters} and solved in \LiveFusion using rates (Section~\ref{sec:rates}).
+With arrays of points being represented by two arrays and arrays of lines -- by four arrays, any computation involving their point-wise processing adds a separate counter variable and bounds check in \StreamFusion. This problem was discussed in Section~\ref{sec:duplicated-counters} and solved in \LiveFusion using rates (Section~\ref{sec:rates}).
 
 Referring to the \FilterMax example, @zipWith6@ combinator from group \*a* uses 6 separate counters for each of the input arrays and one for the output. Similarly, @zip@ and @zipWith@ combinators of groups \*b* and \*c* use 3 counters each.
 
@@ -252,6 +256,10 @@ Figure~\ref{fig:Eval-QuickHull} shows the runtime of the complete \QuickHull pro
 
 To compare \LiveFusion and \StreamFusion directly, Figures \ref{fig:DFD-QuickHull} and \ref{fig:Eval-QuickHull-numbers} show the performance of each running just the \FilterMax. The runtimes given are for 100 million points and less. Runtimes for fewer than 65 thousand points have been omitted even though they show at least as good performance of \LiveFusion as compared to \StreamFusion.
 
+Excluding the speedups for smaller number of points which tend to be higher, the average speedup is 3.2.
+
+It is important to note that the both \LiveFusion and \StreamFusion are able to generate highly optimised code. The speedup of \LiveFusion for the most part comes from its ability to exploit more fusion opportunities than \SteamFusion. In the case of \FilterMax, \LiveFusion was able to fuse into one loop what \StreamFusion fused into five separate loops. Importantly each of those five loops were running at the rate of the number of points. The overhead of reading and writing large arrays to the memory had a significant impact on the runtime of the algorithm. \LiveFusion's improved performance is in a major attributed to significantly reducing memory traffic.
+
 
 \begin{figure}
 \includegraphics[center]{img/Eval-FarAndAboves}
@@ -272,6 +280,9 @@ To compare \LiveFusion and \StreamFusion directly, Figures \ref{fig:DFD-QuickHul
 
 \clearpage
 \section{Discussion}
+
+In this chapter we discussed the performance of \LiveFusion applied to \QuickHull.
+
 
 
 \IfNotCompilingAll{\bibliography{bib}}
