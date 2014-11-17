@@ -300,9 +300,10 @@ This leaves the door open to the user and makes the library more flexible and ex
 
 This section compared several EDSL approaches to fusion as well as discusses basis sharing.
 
-\name{DESOLA} (\name{Delayed Evaluation Self Optimising Linear Algebra}) \cite{RMKB06} is a \name{C++} library designed to explore the benefits of runtime code generation and optimisation for scientific computing. In contrast to \DPH, \name{DESOLA} does not support higher order combinators or segmented operations, although it does support regular multidimentional arrays.
+\name{DESOLA} (\name{Delayed Evaluation Self Optimising Linear Algebra}) \cite{RMKB06} is an experimental \name{C++} library designed to explore the benefits of runtime code generation and optimisation for scientific computing. In contrast to \DPH, \name{DESOLA} does not support higher order combinators or segmented operations, although it does support regular multidimentional arrays.
 
-\name{Accelerate} \cite{CKL+11}, \cite{McDonell:2013wi} is probably the 
+\name{Accelerate} EDSL \cite{CKL+11}, \cite{McDonell:2013wi}, \cite{CliftonEverest:2014vi} is probably the most similar, by design, to \LiveFusion. It was initially designed to offer a simple but powerful programming model targetting General Purpose GPU computing. When I was starting my work on \LiveFusion, \name{Accelerate} was able to generate efficient code for GPUs but lacked fusion. Until recently, it has also only supported regular arrays (although with a very powerful \*shape-polymorphic* model similar to that of \Repa \cite{KCL+10}). \name{Accelerate} is currently moving towards having more sophisticated fusion, nested parallelism and generating code for CPUs.
+
 
 
 
