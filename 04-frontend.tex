@@ -298,13 +298,28 @@ This leaves the door open to the user and makes the library more flexible and ex
 \clearpage
 \section{Related work}
 
-This section compared several EDSL approaches to fusion as well as discusses basis sharing.
+This section compares several approaches to fusion as well as discusses basic sharing recovery approaches.
+
+
+\subsection{\name{DESOLA}}
 
 \name{DESOLA} (\name{Delayed Evaluation Self Optimising Linear Algebra}) \cite{RMKB06} is an experimental \name{C++} library designed to explore the benefits of runtime code generation and optimisation for scientific computing. In contrast to \DPH, \name{DESOLA} does not support higher order combinators or segmented operations, although it does support regular multidimentional arrays.
 
-\name{Accelerate} EDSL \cite{CKL+11}, \cite{McDonell:2013wi}, \cite{CliftonEverest:2014vi} is probably the most similar, by design, to \LiveFusion. It was initially designed to offer a simple but powerful programming model targetting General Purpose GPU computing. When I was starting my work on \LiveFusion, \name{Accelerate} was able to generate efficient code for GPUs but lacked fusion. Until recently, it has also only supported regular arrays (although with a very powerful \*shape-polymorphic* model similar to that of \Repa \cite{KCL+10}). \name{Accelerate} is currently moving towards having more sophisticated fusion, nested parallelism and generating code for CPUs.
+
+\subsection{\name{Accelerate}}
+
+\name{Accelerate} EDSL\iedsl \cite{CKL+11, McDonell:2013wi, CliftonEverest:2014vi} is probably the closest, by design, to \LiveFusion. It was initially designed to offer a simple but powerful programming model targetting General Purpose GPU computing. When I was starting my work on \LiveFusion, \name{Accelerate} was able to generate efficient code for GPUs but lacked fusion. Until recently, it has also only supported regular arrays (although with a very powerful \*shape-polymorphic* model similar to that of \Repa \cite{KCL+10}). \name{Accelerate} is currently moving towards having more sophisticated fusion, nested parallelism and generating code for CPUs.
 
 
+\subsection{\FlowFusion}
+
+Embedding EDSLs in a way that they construct their intermediate data structures at the runtime of the program is by far the most common approach but not the only one. An EDSL can also be implemented in a host language compiler.
+
+In particular \GHC allows to specify transformations of its internal \name{Core} language in the form of plugins integrating into the compilation pipeline. \FlowFusion framework \cite{FlowFusion, FusingFiltersILP} was designed to fuse combinator graphs at compile time. The data flow graph to be fused is translated to \name{DDC Core} language -- the intermediate language of \name{Disciplined Disciple Compiler} \cite{DDC} -- where it is fused using  techniques that inspired the work on \LiveFusion and are discussed in the next chapter: rate inference (Section~\ref{sec:rates}) and compiling to a common imperative loop structure (Section~\ref{sec:anatomy}).
+
+The approach of \FlowFusion solves sharing by analysing the entire graphs of combinators and avoids runtime overheads of building, analysis and compilation of ASTs. The downsides of \FlowFusion are that control flow breaks fusion. However, in \DPH control flow is not an issue since most of control flow is transformed into data flow by the vectoriser.
+
+\FlowFusion is currently in its early development stages and is not yet able to fuse segmented combinator. In the future it may be a very comprehensive fusion platform. In fact there are plans for build CPU backend for \Accelerate on top of \FlowFusion.
 
 
 
