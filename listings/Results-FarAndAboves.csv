@@ -1,14 +1,3 @@
-\begin{filecontents*}{Results-QuickHull.csv}
-Number of points,LiveFusion,Stream Fusion,LiveFusion + compilation,Speedup
-10000000,2631,4803,3281,1.46
-15000000,4026,7322,4676,1.57
-20000000,5378,9715,6028,1.61
-25000000,6714,12227,7364,1.66
-40000000,10627,19423,11277,1.72
-50000000,12798,24715,13448,1.84
-\end{filecontents*}
-
-\begin{filecontents*}{Results-FarAndAboves.csv}
 Number of lines,Number of points,LiveFusion,Stream Fusion,Speedup
 2,100000000,2342,7828,3.3
 4,99999996,1638,5699,3.5
@@ -50,4 +39,3 @@ Number of lines,Number of points,LiveFusion,Stream Fusion,Speedup
 64,128766,4,8,2
 128,81172,1,5,5
 128,65086,1,5,5
-\end{filecontents*}
