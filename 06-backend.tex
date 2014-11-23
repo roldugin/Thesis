@@ -400,6 +400,15 @@ compileAndLoad hsFilePath moduleName entryFnName =
 
 \section{Related work}
 
+\subsection{Alternative backends}
+
+This chapter has introduced the \Haskell backend for \LiveFusion. However, it was mentioned that the system is not limited to only that backend. Indeed, in order to extend the framework to other backends an interpretation of the \Loop language is required, together with an appropriate implementation of the scalar language functions.
+
+One particularly attractive alternative is \LLVM framework \cite{LLVM:CGO04}. \GHC already uses \LLVM to produce highly efficient code. However, using a framework such as \LLVM for compiling \LiveFusion generated code may avoid the costs associated with running the generated code through the complete \GHC compilation pipeline. As it will be seen in the next chapter, a compilation overhead of 600 ms is not uncommon when compiling the generated code with \GHC. Reducing those costs may make \LiveFusion more widely applicable to use cases where many pieces of code must be compiled independently and amortisation cannot be as easily exploited.
+
+With \LiveFusion is already produces optimised procedural style code that is likely to be optimisable by \LLVM, it still relies on \GHC to perform some optimisations. In particular user defined scalar functions that parametrise higher-order combinators are inlined without further analysis in hopes that \GHC will subsequently perform all the necessary optimisations on them. This may not be sufficient if \LLVM code is generated directly and \LiveFusion might need extra optimisation passes before the emitted code can target \LLVM.
+
+- Distributed types
 
 - Haskell, LLVM
 - SSA
@@ -407,6 +416,13 @@ compileAndLoad hsFilePath moduleName entryFnName =
 - FlowFusion now targets LLVM
 - Shievers -
 - With loop - SAC
+
+
+\subsection{Liveness Analysis}
+
+
+\subsection{Vectorisation and parallelisation}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
