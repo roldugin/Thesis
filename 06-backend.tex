@@ -251,7 +251,7 @@ The problem, however, is that there is no fixed state alive in the loop at any g
 \item some variable are bound in \[init] and are persistent for the whole duration of the loop. These are of course counters and accumulators.
 \end{itemize}
 
-In order to appropriately generate the argument lists to the functions representing loop blocks I have implemented a \name{liveness analysis} pass in my \LiveFusion EDSL compiler.
+In order to appropriately generate the argument lists to the functions representing loop blocks I have implemented a \name{liveness analysis} pass in the \LiveFusion EDSL compiler.
 
 \begin{bluebox}
 \textbf{\large{Liveness analysis is not a backend feature}}
@@ -408,20 +408,20 @@ One particularly attractive alternative is \LLVM framework \cite{LLVM:CGO04}. \G
 
 With \LiveFusion is already produces optimised procedural style code that is likely to be optimisable by \LLVM, it still relies on \GHC to perform some optimisations. In particular user defined scalar functions that parametrise higher-order combinators are inlined without further analysis in hopes that \GHC will subsequently perform all the necessary optimisations on them. This may not be sufficient if \LLVM code is generated directly and \LiveFusion might need extra optimisation passes before the emitted code can target \LLVM.
 
-- Distributed types
+Direct \LLVM code generation is becoming popular with EDSL for high performance computations. Both \FlowFusion \cite{FlowFusion} and \Accelerate \cite{acc-llvm} are targeting it. The former first converts the AST to \name{DDC Core} \cite{DDC}, an intermediate compiler language similar to \name{GHC Core}. \LLVM has also been successfully used for compiling a digital signal processing EDSL \cite{Thielemann-LLVM, Thielemann-Audio-LLVM}. 
 
-- Haskell, LLVM
-- SSA
-- Waters Paskall goto
-- FlowFusion now targets LLVM
-- Shievers -
-- With loop - SAC
+Generating \Haskell and \LLVM are not the only options. \cite{RMKB06} offers a comparative study of \name{TaskGraph}, \name{Fabius} and \name{Tick C} system that are suitable for runtime generation of numeric code (referenced implicitly) before settling with \name{TaskGraph} for \name{DESOLA} (\name{Delayed Evaluation Self Optimising Linear Algebra}), a C++ library mentioned in Section~\ref{sec:DESOLA}. However, \Haskell and \LLVM may be the most suitable targets due to their maturity and availability as part of \Haskell development toolchain.
 
 
-\subsection{Liveness Analysis}
 
+\subsection{Liveness Analysis and Mutability}
 
-\subsection{Vectorisation and parallelisation}
+\LiveFusion takes a very high level specification of the program and converts in into an intermediate assembly-style \Loop language. The \Loop language has unconstrained control flow and destructive update which poses a problem when generating code targeting \*single assignment* backends such as \Haskell where all variables are immutable by default. \LLVM, similarly, requires that all registers are in \name{SSA} (\name{Static Single Assignment}) form.
+
+In order to determine appropriate scoping of bound variables in the generated code and ensure that all destructive updates are represented as fresh variables, a liveness analysis pass was implemented (Section~\ref{sec:Liveness-analysis}). The analysis has been developed independently, however, in retrospect it is similar to the ubiquitous data flow analysis of control flow graphs employed by optimising compilers \cite{SSA-Braun13,WatersSeries} including \GHC's own \name{Cmm} language.
+
+While \LiveFusion sports its own implementation of data flow analysis is may be possible to reuse a more easily extensible library for this purpose. For example, \name{Hoopl} \cite{Hoopl} which provides a way to encode data flow analysis and transformations.
+
 
 
 
