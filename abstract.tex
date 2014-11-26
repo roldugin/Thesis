@@ -5,7 +5,19 @@
 \clearpage
 
 \chapter*{Abstract}
-42
 
+The benefits of high level approach to parallel programming are well understood and are often desired in order to separate the \*domain view* of the problem from the intricate implementation details. However, in many cases one is not prepared to pay the performance costs that naive execution of such programs incurs.
+
+One convenient way of expressing a program is by composing collective operations on large data structures together. Even if these collective operations are implemented efficiently and provide a high degree of parallelism, the result of each operation must be fully computed and written into memory before the next operation can consume it as input. The cost of transferring these intermediate results to and from memory has a very noticeable impact on the performance of the algorithm and becomes a serious drawback of this high level approach.
+
+The program optimisation that attempts to detect and eliminate the creation of intermediate results by combining multiple operations into one is called \*fusion*. While it is a well studied problem, there are unfilled gaps when it comes to fusing data parallel programs. In particular, I demonstrate a solution to the problems of multiple consumers and tupling.
+
+I design and implement an embedded domain specific language called \LiveFusion that offers fusible combinators operating on \*flat* and \*segmented* arrays. To achieve fusion I propose a generic loop representation and introduce the powerful concept of \*rates*.
+
+The results show that \LiveFusion is able to exploit considerably more opportunities for fusion than previous systems. The average speedups of 3.2 that were attained for non-trivial programs demonstrate the attractiveness of the approach and they are not the limit.
+
+% The performance gains are in correlation with the seized opportunities
+
+% However, naive execution of high level programs may incur such prohibitive performance costs that it defeats the purpose
 
 \end{document}
