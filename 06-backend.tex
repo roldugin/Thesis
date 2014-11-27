@@ -244,7 +244,7 @@ We have discussed that the individual basic blocks of the \Loop language become 
 
 How does one pass state as pure \Haskell values? Each loop potentially has a lot of state that is written and read in different blocks of the loop. Since these blocks are functions it would be natural to assume that the state is passed in function arguments.
 
-The problem, however, is that there is no fixed state alive in the loop at any given time. Referencing the original example in Figure~\ref{fig:time100-hs-loop}:
+The problem, however, is that there is no fixed state alive in the loop at any given time. Referencing the original example in Figure~\ref{fig:times100-hs-loop}:
 \begin{itemize}
 \item some intermediate variables like @elt@\sub{xs} are only used inside the block they are defined in (\[body])
 \item some variable like @elt@\sub{map} are bound in \[body] and are later used in \[yield] but are unused after that
