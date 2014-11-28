@@ -61,24 +61,35 @@ Figure~\ref{fig:Overview} presents the overview of the \LiveFusion language and 
 \LiveFusion EDSL offers a library of flat\iflatcomb and segmented array combinators\isegcomb some of which are presented in Listing \ref{lst:LiveFusion-interface}.
 
 \begin{hscode2}[%
-    caption={\LiveFusion interface functions. Typeclass constraints on array elements have been omitted for brevity.},%
+    caption={\LiveFusion interface functions (partial list). Typeclass constraints on array elements have been omitted for brevity.},%
     label=lst:LiveFusion-interface,%
 ]
 type Array a = ArrayAST a
 
--- * Flat array combinators
+%\CommentPlusPlus{Flat array combinators}%
 map      :: (Term a -> Term b) -> Array a -> Array b
 filter   :: (Term a -> Term Bool) -> Array a -> Array a
 zipWith  :: (Term a -> Term b -> Term c) -> Array a -> Array b -> Array c
 zip      :: Array a -> Array b -> Array (a,b)
 fold     :: (Term a -> Term a -> Term a) -> Term a -> Array a -> a
 scan     :: (Term a -> Term a -> Term a) -> Term a -> Array a -> Array a
+replicate :: Term Int -> Term a -> Array a
+bpermute :: Array a      -- Source array
+         -> Array Int    -- Indices to pick elements from
+         -> Array a
+packByTag :: Term Bool -> Array Bool -> Array a -> Array a
 
--- * Segmented array combinators
+%\CommentPlusPlus{Segmented array combinators}%
 scan_s   :: (Term a -> Term a -> Term a) -> Term a
          -> Array Int -> Array a -> Array a
 fold_s   :: (Term a -> Term a -> Term a) -> Term a
          -> Array Int -> Array a -> Array a
+replicate_s :: Term Int -> Array Int -> Array a -> Array a
+
+%\CommentPlusPlus{Explicit tupling. Compute both results.}%
+(|*|)    :: (Typeable t1, Typeable t2)
+         => AST t1 -> AST t2 -> AST (t1,t2)
+         % %
 \end{hscode2}
 
 
@@ -105,7 +116,7 @@ data AST t where
               -> Term a
               -> ArrayAST a
               -> AST a
-              
+
   Replicate   :: Elt a
               => Term Int
               -> Term a
@@ -141,7 +152,7 @@ The AST is the topmost layer of \LiveFusion system. Most of the library's user-f
 
 \LiveFusion AST is a \*Generalised Algebraic Data Type* (GADT) \cite{Jones:2006eh} whose individual constructors correspond to delayed array operations.
 
-In principle, given an interpreting function such as @eval :: AST t -> t@, a value of type @t@ encoded in the @AST@ language can be computed.Notably, @t@ in @AST t@ is not necessarily an array. In fact we know not all of the array combinators return an array: in particular @fold@ and several others return a scalar value.
+In principle, given an interpreting function such as @eval :: AST t -> t@, a value of type @t@ encoded in the @AST@ language can be computed. Notably, @t@ in @AST t@ is not necessarily an array. In fact we know not all of the array combinators return an array: in particular @fold@ and several others return a scalar value.
 
 \section{LiveFusion EDSL by example}
 
