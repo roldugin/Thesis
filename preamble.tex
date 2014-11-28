@@ -103,7 +103,11 @@
 }
 
 \providecommand\CommentsColor{\color{MidnightBlue}}
-\providecommand\CommentPlusPlus[1]{\enrule[\CommentsColor]{0.95\textwidth}{#1}}
+\providecommand\CommentPlusPlus[2][0.95\textwidth]{\enrule[\CommentsColor]{#1}{#2}}
+% Usage:
+%   %\CommentPlus[25em]{Foo}%
+% OR (for almost full textwidth):
+%   %\CommentPlus{Bar}% 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
