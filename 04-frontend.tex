@@ -87,41 +87,52 @@ fold_s   :: (Term a -> Term a -> Term a) -> Term a
     label=lst:LiveFusion-AST,%
 ]
 type ArrayAST a = AST (Vector a)
-type ScalarAST a = AST a
 
 data AST t where
-  Map      :: (Elt a, Elt b)
-           => (Term a -> Term b)
-           -> ArrayAST a
-           -> ArrayAST b
+  %\CommentPlusPlus[20em]{Flat combinators}% 
+  Map         :: (Elt a, Elt b)
+              => (Term a -> Term b)
+              -> ArrayAST a
+              -> ArrayAST b
 
-  Filter   :: Elt a
-           => (Term a -> Term Bool)
-           -> ArrayAST a
-           -> ArrayAST a
+  Filter      :: Elt a
+              => (Term a -> Term Bool)
+              -> ArrayAST a
+              -> ArrayAST a
 
-  Fold     :: Elt a
-           => (Term a -> Term a -> Term a)
-           -> Term a
-           -> ArrayAST a
-           -> AST a
+  Fold        :: Elt a
+              => (Term a -> Term a -> Term a)
+              -> Term a
+              -> ArrayAST a
+              -> AST a
+              
+  Replicate   :: Elt a
+              => Term Int
+              -> Term a
+              -> ArrayAST a
+  %\CommentPlusPlus[20em]{Segmented combinators}%
+  Fold_s      :: Elt a
+              => (Term a -> Term a -> Term a)
+              -> Term a
+              -> ArrayAST Int
+              -> ArrayAST a
+              -> ArrayAST a
 
-  Scan     :: Elt a
-           => (Term a -> Term a -> Term a)
-           -> Term a
-           -> ArrayAST a
-           -> ArrayAST a
-
-  Scan_s   :: Elt a
-           => (Term a -> Term a -> Term a)
-           -> Term a
-           -> ArrayAST Int
-           -> ArrayAST a
-           -> ArrayAST a
-
-  Manifest :: Elt a
-           => Vector a
-           -> ArrayAST a
+  Replicate_s :: Elt a
+              => Term Int
+              -> ArrayAST Int
+              -> ArrayAST a
+              -> ArrayAST a
+  %\CommentPlusPlus[20em]{Manifest arrays}%
+  Manifest    :: Elt a
+              => Vector a
+              -> ArrayAST a
+  %\CommentPlusPlus[20em]{Explicit tupling}%
+  Both        :: (Typeable t1, Typeable t2)
+              => AST t1
+              -> AST t2
+              -> AST (t1,t2)
+           % %
 \end{hscode2}
 
 The fundamental concept by which \LiveFusion makes fusion possible is constructing an AST\iast of pending array operations at runtime and compiling that AST to fast code when the result is required in the host program. By constructing an AST of a pipeline of array operations in a running program, the actual computations are \*delayed* to be performed at a later time.
