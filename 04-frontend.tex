@@ -100,7 +100,7 @@ replicate_s :: Term Int -> Array Int -> Array a -> Array a
 type ArrayAST a = AST (Vector a)
 
 data AST t where
-  %\CommentPlusPlus[20em]{Flat combinators}% 
+  %\CommentPlusPlus[21em]{Flat combinators}% 
   Map         :: (Elt a, Elt b)
               => (Term a -> Term b)
               -> ArrayAST a
@@ -121,7 +121,7 @@ data AST t where
               => Term Int
               -> Term a
               -> ArrayAST a
-  %\CommentPlusPlus[20em]{Segmented combinators}%
+  %\CommentPlusPlus[21em]{Segmented combinators}%
   Fold_s      :: Elt a
               => (Term a -> Term a -> Term a)
               -> Term a
@@ -134,11 +134,11 @@ data AST t where
               -> ArrayAST Int
               -> ArrayAST a
               -> ArrayAST a
-  %\CommentPlusPlus[20em]{Manifest arrays}%
+  %\CommentPlusPlus[21em]{Manifest arrays}%
   Manifest    :: Elt a
               => Vector a
               -> ArrayAST a
-  %\CommentPlusPlus[20em]{Explicit tupling}%
+  %\CommentPlusPlus[21em]{Explicit tupling}%
   Both        :: (Typeable t1, Typeable t2)
               => AST t1
               -> AST t2
