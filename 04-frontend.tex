@@ -320,7 +320,7 @@ The reasons for using \name{Template Haskell} expressions (is the following):
 
 \subsection{User-defined implementation of parametrising functions}
 
-The library provides backend-specific implementations for many standard functions including all of the functions from such type classes as @Num@, @Floating@, @Ord@-like and @Eq@-like, as well as a the ability to compose them into more complex functions.
+The library provides backend-specific implementations for many standard functions including all of the functions from such type classes as @Num@, @Floating@, @Ord@-like and @Eq@-like, as well as the ability to compose them into more complex functions.
 
 However, the flexibility of the library does not end there. One feature of the given scalar functions representation is that it allows the user of the library to define new functions. After all, it only requires creating a new record of type @Impl t@ where @t@ is the type of the desired function. Library user can then provide the internals of function implementation to appear in the generated code.
 
