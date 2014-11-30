@@ -192,8 +192,71 @@ In principle, given an interpreting function such as @eval :: AST t -> t@, a val
 
 \subsection{Sharing recovery}
 
-\subsection{Tupling}
+In pure functional languages like \Haskell sharing of terms is \*not observable*. That is, given two terms it is not possible to tell whether or not they reside at the same memory address (as it is possible with pointers in a procedural language). Thus, if \LiveFusion AST constructed for the earlier @filterMax@ example (Figure~\ref{fig:Flat-FilterMax}) was traversed, @Map@ and @Manifest@ nodes would be encountered twice as in Figure~\ref{fig:Flat-FilterMax-Sharing} (left). Naively compiling such code would result in two computations of the result of @Map@.\footnote{Notably, this is an instance of fusion into multiple consumers identified as a major challenge for a fusion system to overcome in Section~\ref{sec:multiple-consumers}.}
 
+Nonetheless, implementing support for sharing in an EDSL is possible. An overview of several approaches is given in \cite{ImplicitExplicitSharing}. There is a distinction between \*explicit* and \*implicit* sharing. When using explicit sharing, the sharing of terms is specified by the programmer using some explicit construct.
+
+Moving on to \*implicit* sharing, there are techniques based of \*structural equality* of terms where two subtree of terms are considered shared if they are equal in structure and values. This approach is possible to implement without leaving the pure context (provided terms can be compared for equality). However, the experience of \Accelerate language authors \cite{CKL+11} shows that this approach suffers from severe complexity blowups for sufficiently large problems.
+
+The second group of \*implicit* sharing approaches involves using techniques to escape the pure context to acquire pointers or otherwise stable references to a term. Sharing recovery using this approach grows linearly in the size of the tree. \LiveFusion incorporates sharing recovery of this type. The approach is called \name{Observable Sharing} and is described in \cite{ObservableSharing}.
+
+\begin{figure}
+\includegraphics[scale=0.7]{img/AST-Flat-FilterMax-Unshared}%
+\includegraphics[scale=0.7]{img/AST-Flat-FilterMax-Shared}
+\caption{\*Left:* Conceptual representation of \code{filterMax} AST in a pure context.\\\*Right:* Likely runtime representation of \code{filterMax} node graph. Desired result of sharing recovery.}
+\label{fig:Flat-FilterMax-Sharing}
+\end{figure}
+
+More specifically, the approach is adapted to support a GADT AST \cite{GADTSharing}. An \*abstract semantic graph* data type is specified (Listing~\ref{lst:ASG}) which has the same constructors as the original AST in addition to @VarG@ -- a representation of a shared variable in the graph. Then a @mapDeRef@ function is implemented that converts the AST to ASG, \*replacing every point of recursion with a* @VarG@ node. Sharing recovery of @filterMax@ results in the following graph, where recursive variable references have been replaced with unique integers:
+
+
+\begin{hscode}
+-- Nodes:
+[
+  (1,Wrap (BothG (VarG 2) (VarG 5))),
+  (2,Wrap (FilterG <function> (VarG 3))),
+  (3,Wrap (MapG <function> (VarG 4))),
+  (4,Wrap (ManifestG (fromList [1,-2,5,0]))),
+  (5,Wrap (FoldG <function> 0 (VarG 3))),
+]
+-- Entry node:
+1
+\end{hscode}
+
+
+While the approaches to sharing recovery based on obtaining unique references to the term are generally non-portable and unsafe, it is guaranteed to be free of false positives. That is no erroneous sharing of terms that are not shared will occur. While false negatives are a possibility (i.e. unrecovered sharing), they are rare in practice.
+
+\begin{hscode2}[%
+  caption={Abstract semantic graph type for \LiveFusion AST and AST conversion function.},%
+  label={lst:ASG}%
+]
+data ASG t s where
+  MapG      :: (Elt a, Elt b)
+            => (Term a -> Term b)
+            -> ArrayASG a s
+            -> ArrayASG b s
+  ...
+
+  VarG      :: Typeable t
+            => s
+            -> ASG t s
+
+
+instance Typeable t => MuRef (AST t) where
+  type DeRef (AST t) = WrappedASG
+  mapDeRef ap t = Wrap <$> mapDeRef' ap t
+    where
+      mapDeRef' :: Applicative ap
+                => (forall b. (MuRef b, WrappedASG ~ DeRef b) => b -> ap u)
+                -> AST t
+                -> ap (ASG t u)
+
+      mapDeRef' ap (Map f arr)
+        = MapG f
+          <$> (VarG <$> ap arr)
+
+      mapDeRef' ...
+\end{hscode2}
 
 
 \section{Parametrising higher-order combinators}
