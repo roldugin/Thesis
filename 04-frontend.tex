@@ -55,8 +55,45 @@ Figure~\ref{fig:Overview} presents the overview of the \LiveFusion language and 
 
 
 \clearpage
+\section{\LiveFusion EDSL by example}
 
-\section{LiveFusion AST}
+Figure \ref{fig:Flat-FilterMax} presents a program that can be written using \LiveFusion library as well as the corresponding data flow diagram.
+
+\begin{figure}
+\begin{subfigure}{0.5\textwidth}
+\begin{hscode}
+{-# LANGUAGE OverloadedLists #-}
+
+filterMax xs 
+  = let xs' = map (+1) xs
+        pos = filter (>. 0) xs'
+        mx  = fold max 0 xs'
+    in  (pos :*: mx)
+
+main = print
+     $ filterMax [1,-2,5,0]
+
+-- Output: (fromList [2,6,1], 6)
+\end{hscode}
+\end{subfigure}
+%
+\begin{subfigure}{.5\textwidth}%
+\includegraphics[center,scale=\omniscale]{img/DFD-Flat-FilterMax}%
+\end{subfigure}%
+
+\caption{Example of a \LiveFusion program (left) and its data flow diagram (right).}
+\label{fig:Flat-FilterMax}
+\end{figure}
+
+The function uses the familiar @map@, @filter@ and @fold@ combinators. Operators and functions of @Num@ type class (@+@, @-@, @abs@...) and number literals (0, 0.5, 1...) are supported directly. Versions of @Ord@ and @Eq@ operators are available postfixed with a dot (@>.@, @==.@ ...).
+
+The example employs the explicit tuple constructor @:*:@, which brings together the branches computing @pos@ and @mx@ to be analysed for fusion. It addresses the problem of \*tupling* that prohibits fusion of independent terms in a pure context.
+
+A vectorised version of this function will be presented in the Section~\ref{sec:FilterMax} when we look at the \QuickHull algorithm implementation in \DPH.
+
+%\LiveFusion maps most of its combinators to AST nodes discussed next.%It is now time to show the AST node constructors these combinators correspond to. 
+
+\section{\LiveFusion interface and AST}
 
 \LiveFusion EDSL offers a library of flat\iflatcomb and segmented array combinators\isegcomb some of which are presented in Listing \ref{lst:LiveFusion-interface}.
 
@@ -64,14 +101,15 @@ Figure~\ref{fig:Overview} presents the overview of the \LiveFusion language and 
     caption={\LiveFusion interface functions. Typeclass constraints on array elements have been omitted for brevity.},%
     label=lst:LiveFusion-interface,%
 ]
-type Array a = ArrayAST a
+type Array  a = ArrayAST  a
+type Scalar a = ScalarAST a
 
 %\CommentPlusPlus{Flat array combinators}%
 map      :: (Term a -> Term b) -> Array a -> Array b
 filter   :: (Term a -> Term Bool) -> Array a -> Array a
 zipWith  :: (Term a -> Term b -> Term c) -> Array a -> Array b -> Array c
 zip      :: Array a -> Array b -> Array (a,b)
-fold     :: (Term a -> Term a -> Term a) -> Term a -> Array a -> a
+fold     :: (Term a -> Term a -> Term a) -> Term a -> Array a -> Scalar a
 scan     :: (Term a -> Term a -> Term a) -> Term a -> Array a -> Array a
 replicate :: Term Int -> Term a -> Array a
 bpermute :: Array a      -- Source array
@@ -85,10 +123,6 @@ scan_s   :: (Term a -> Term a -> Term a) -> Term a
 fold_s   :: (Term a -> Term a -> Term a) -> Term a
          -> Array Int -> Array a -> Array a
 replicate_s :: Term Int -> Array Int -> Array a -> Array a
-
-%\CommentPlusPlus{Explicit tupling. Compute both results.}%
-(|*|)    :: (Typeable t1, Typeable t2)
-         => AST t1 -> AST t2 -> AST (t1,t2)
          % %
 \end{hscode2}
 
@@ -97,7 +131,8 @@ replicate_s :: Term Int -> Array Int -> Array a -> Array a
     caption={\LiveFusion AST (partial).},%
     label=lst:LiveFusion-AST,%
 ]
-type ArrayAST a = AST (Vector a)
+type ArrayAST  a = AST (Vector a)
+type ScalarAST a = AST a
 
 data AST t where
   %\CommentPlusPlus[21em]{Flat combinators}% 
@@ -115,7 +150,7 @@ data AST t where
               => (Term a -> Term a -> Term a)
               -> Term a
               -> ArrayAST a
-              -> AST a
+              -> ScalarAST a
 
   Replicate   :: Elt a
               => Term Int
@@ -139,59 +174,26 @@ data AST t where
               => Vector a
               -> ArrayAST a
   %\CommentPlusPlus[21em]{Explicit tupling}%
-  Both        :: (Typeable t1, Typeable t2)
+  (:*:)       :: (Typeable t1, Typeable t2)
               => AST t1
               -> AST t2
               -> AST (t1,t2)
            % %
 \end{hscode2}
 
-The fundamental concept by which \LiveFusion makes fusion possible is constructing an AST\iast of pending array operations at runtime and compiling that AST to fast code when the result is required in the host program. By constructing an AST of a pipeline of array operations in a running program, the actual computations are \*delayed* to be performed at a later time.
+The fundamental concept by which \LiveFusion makes fusion possible is constructing an abstract syntax tree (AST)\iast of pending array operations at runtime and compiling that AST to efficient code when the result is required in the host program. Thus the compile time of \LiveFusion language maps to the runtime of its host language -- \Haskell.%By constructing an AST in a running program, the actual computations are \*delayed* to be performed at a later time.
 
-The AST is the topmost layer of \LiveFusion system. Most of the library's user-facing functions are just constructing the nodes of the AST. Parts of \LiveFusion AST are presented in Listing \ref{lst:LiveFusion-AST}. Is it easy to spot the correspondence between the user-facing functions in Listing \ref{lst:LiveFusion-interface} and the constructors of the AST.
+The AST is the topmost layer of \LiveFusion system. Most of the library's user-facing functions are just constructing the nodes of the AST. Parts of \LiveFusion AST are presented in Listing~\ref{lst:LiveFusion-AST}. Is it easy to spot the correspondence between the user-facing functions from Listing~\ref{lst:LiveFusion-interface} and the constructors of the AST.
 
-\LiveFusion AST is a \*Generalised Algebraic Data Type* (GADT) \cite{Jones:2006eh} whose individual constructors correspond to delayed array operations.
+\LiveFusion AST is implemented as a \*Generalised Algebraic Data Type* (GADT) \cite{Jones:2006eh} in order to have more control over the types of individual constructors.
 
-In principle, given an interpreting function such as @eval :: AST t -> t@, a value of type @t@ encoded in the @AST@ language can be computed. Notably, @t@ in @AST t@ is not necessarily an array. In fact we know not all of the array combinators return an array: in particular @fold@ and several others return a scalar value.
+In principle, given an interpreting function such as @eval :: AST t -> t@, a value of type @t@ encoded in the @AST@ language can be computed. Notably, @t@ in @AST t@ is not necessarily an array. In fact not all of the array combinators return an array: in particular @fold@ and several others return a scalar value.
 
-\section{LiveFusion EDSL by example}
 
-I will now present a simple user program that can be written using \LiveFusion library. Listing \ref{lst:farAndAbove} presents the core of the QuickHull algorithm. The corresponding runtime AST for the same function is given in Figure \ref{fig:QuickHull-flat}.
+\subsection{Sharing recovery}
 
-\todo{TODO}
-\textsc{TODO: Offer a simple flat version of QuickHull and elaborate it into a proper segmented one. Aternatively give dotp as example.}
+\subsection{Tupling}
 
-\begin{hscode2}[%
-    caption={\code{farAndAbove} function, core of QuickHull.},%
-    label=lst:farAndAbove,%
-]
-farAndAbove :: (Point,Point) -> Array Point -> (Array Point, Point)
-farAndAbove line points
-  = let distances = map (dist line) points
-
-        -- Find maximum point
-        indexed     = zip (indices distances) distances
-        farthest_ix = fst $ fold maxSnd 0 distances
-        farthest    = points ! farthest_ix
-        maxSnd x y  = if snd x >. snd y
-                      then x
-                      else y
-
-        -- Find all points above the line
-        positive    = map (>. 0) distances
-        above       = packByTag positive points
-
-    in  (above, farthest)
-\end{hscode2}
-
-\begin{figure}
-\includegraphics[width=0.4\textwidth,center]{img/QuickHull-flat-but-true}
-\caption{\label{fig:QuickHull-flat}{AST for the core of QuickHull example: arrow labels are AST nodes, coloured boxes are potentially manifest arrays.}}
-\end{figure}
-
-%The above example uses six array combinators: @map@, @zip@, @indices@, @pack@, @fold@ and the indexing combinator @(!!)@. The first four of them are \*array transducers* in that they both consume and produce arrays. On the other hand @fold@ and @(!!)@ consume arrays and return a scalar value, so we call them pure consumers.
-
-%It is now time to show the AST node constructors these combinators correspond to. 
 
 
 \section{Parametrising higher-order combinators}
@@ -201,8 +203,10 @@ farAndAbove line points
 Another notable feature of the interface to note here is the type of functions that parametrise higher-order combinators:
 
 \begin{hscode}
-map    :: (Term a -> Term b) -> Array a -> Array b
-filter :: (Term a -> Term Bool) -> Array a -> Array Bool
+map    :: Elt a => (Term a -> Term b) -> Array a -> Array b
+filter :: Elt a => (Term a -> Term Bool) -> Array a -> Array Bool
+fold   :: Elt a => (Term a -> Term a -> Term a) -> Term a -> Array a
+                                                          -> Scalar a
 \end{hscode}
 
 The corresponding Haskell list functions or array libraries like @Vector@ or @Repa@ \cite{KCL+10} accept as arguments vanilla Haskell functions like @a -> b@ or @a -> a -> a@ as long as the types match.
