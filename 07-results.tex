@@ -20,17 +20,17 @@ Figure~\ref{fig:qh-result} depicts three steps of a sample run of \QuickHull alg
 
 \name{Data Parallel Haskell} implementation of \QuickHull in Listing~\ref{lst:dph-qh} closely follows the recursive solution:
 \begin{enumerate}
-  \item Find the points with smallest and largest $x$ coordinates (lines 12 and 13 as well as Figure~\ref{fig:qh-result}). These points are bound to be in the convex hull.
+  \item Find the points with smallest and largest $x$ coordinates (lines 12 and 13 as well as left of Figure~\ref{fig:qh-result}). These points are bound to be in the convex hull.
 
   \item The line between the two points forms two subsets of points, which will be processed recursively (line 8) by @QuickHullR@ function.
 
-  \item The recursive @QuickHullR@ function, given a subset of points and a line, determines the point, on one side of the line, @far@thest from it (line 27). This point is also in the convex hull.
+  \item The recursive @QuickHullR@ function, given a subset of points and a line, determines the point, on one side of the line, farthest from it (line 27). This point is also in the convex hull.
 
   \item @QuickHullR@ also filters out all points on the other side of the line (line 25), keeping only the points @above@ the line.
 
   \item The two ends of the line each form a new line with the @far@ point to be recursively processed (line 19).
 
-  \item The previous three steps are repeated expanding the convex hull until no more points are left above any of the lines. The recursion has finished and the points forming the lines constitute the convex hull.
+  \item The previous three steps are repeated, expanding the convex hull until no more points are left above any of the lines. When recursion is finished, points forming the lines constitute the convex hull.
 \end{enumerate}
 
 
@@ -50,22 +50,22 @@ Figure~\ref{fig:qh-result} depicts three steps of a sample run of \QuickHull alg
 type Point = (Double, Double)
 type Line  = (Point,  Point)
 
-\QuickHull :: [:Point:] -> [:Point:]
-\QuickHull points
+QuickHull :: [:Point:] -> [:Point:]
+QuickHull points
   | lengthP points == 0 = points
   | otherwise
-  = concatP [: \QuickHullR points ends
+  = concatP [: QuickHullR points ends
                  | ends <- [: (minx, maxx), (maxx, minx) :] :]
   where
     xs   = [: x | (x, y) <- points :]
     minx = points !: minIndexP xs
     maxx = points !: maxIndexP xs
 
-\QuickHullR :: [:Point:] -> Line -> [:Point:]
-\QuickHullR points line@(start, end)
+QuickHullR :: [:Point:] -> Line -> [:Point:]
+QuickHullR points line@(start, end)
   | lengthP above == 0 = [:start:]
   | otherwise
-  = concatP [: \QuickHullR above ends
+  = concatP [: QuickHullR above ends
                  | ends <- [:(start, far), (far, end):] :]
   where
     -- Find relative distance from each point to the line
@@ -85,14 +85,14 @@ distance (xo, yo) ((x1, y1), (x2, y2))
 
 \section{\QuickHull vectorisation}
 
-The \QuickHull program presented is a typical example of a divide and conquer algorithm. Recursive calls of @quickHullR@ function in most languages would be processed sequentially one at a time. However, in \DPH, the function is vectorised as described in Section~\ref{sec:Vectorisation} to give @quickHullR^@ of the following type:
+\QuickHull program presented is a typical example of a divide and conquer algorithm. Recursive calls of @quickHullR@ function in most languages would be processed sequentially one at a time. However, in \DPH the function is vectorised as described in Section~\ref{sec:Vectorisation} to give @quickHullR^@ of the following type:
 
 
 \begin{hscode}[literate={^}{{$^\uparrow$}}1,]
 -- Original
-\QuickHullR  :: [:Point:] -> Line -> [:Point:]
+QuickHullR  :: [:Point:] -> Line -> [:Point:]
 -- Vectorised
-\QuickHullR^ :: [:[:Point:]:] -> [:Line:] -> [:[:Point:]:]
+QuickHullR^ :: [:[:Point:]:] -> [:Line:] -> [:[:Point:]:]
 \end{hscode}
 
 
@@ -102,7 +102,7 @@ The vectorised function is able to process not one, but an array of lines at a t
 
 \section{\QuickHull in the backend}
 
-The vectorised @quickHullR^@ function takes a \*nested parallel array* of points @[:[:Point:]:]@ as its first argument. It was discussed in Section~\ref{sec:Flattening}, that such nested arrays are represented using \*segmented* arrays in the backend.
+The vectorised @quickHullR^@ function takes a \*nested parallel array* of points @[:[:Point:]:]@ as its first argument. It was discussed in Section~\ref{sec:Flattening} that such nested arrays are represented using \*segmented* arrays in the backend.
 
 Recalling that an \*array of pairs* is repesented as a \*pair of arrays* (Section~\ref{sec:DPH-Data-Representation}), the \*Flattening transform* represents a \*nested array* of @Point@ as two data arrays and a segment descriptor:
 
@@ -137,7 +137,7 @@ ys:   [ 3, 7, 8, 9, 9, 8, 7, 9, 10, 5,  3, 1, 0 ]
 \end{hscode}
 
 
-While the the second argument to the function is a \*flat* array of @Line@, it too is represented as four separate arrays in accordance to the type of @Line@. For example:
+Since the the second argument to the function is a \*flat* array of @Line@, no segment descriptor is required. However, it does need four separate arrays in accordance with the type of @Line@. For example:
 
 
 \begin{hscode}
@@ -150,18 +150,18 @@ y2s = [5,10, 6, 0, 1]
 \end{hscode}
 
 
-Overall, the @quckHullR^@ function goes through the following transformations before it is compiled using the backend library of collective array operations (such as \LiveFusion)\footnote{I omit certain internal wrapper types to simplify the example.}:
+Overall, @quckHullR^@ function goes through the following transformations before it is compiled using the backend library of collective array operations (such as \LiveFusion)\footnote{I omit certain internal wrapper types to simplify the example.}:
 
 \begin{hscode}[literate={^}{{$^\uparrow$}}1,]
-\QuickHullR  :: [:Point:] -> Line -> [:Point:]
+QuickHullR  :: [:Point:] -> Line -> [:Point:]
 
                         %$\Downarrow$%   Lifting transform
 
-\QuickHullR^ :: [:[:Point:]:] -> [:Line:] -> [:[:Point:]:]
+QuickHullR^ :: [:[:Point:]:] -> [:Line:] -> [:[:Point:]:]
 
                         %$\Downarrow$%   Flattening transform
 
-\QuickHullR_ :: Array Int                      -- segment descriptor
+QuickHullR_ :: Array Int                      -- segment descriptor
             -> Array Double -> Array Double   -- points
             -> Array Double -> Array Double   -- line starts
             -> Array Double -> Array Double   -- line ends            
@@ -170,12 +170,10 @@ Overall, the @quckHullR^@ function goes through the following transformations be
 
 
 
-\section{The heart of \QuickHull: Segmented FilterMax}
+\section{The heart of \QuickHull: segmented \FilterMax}
 \label{sec:FilterMax}
 
-By the time a \DPH program is compiled in the backend, it is composed of a large data flow graph of flat and segmented array combinators.
-
-For example the complete data flow diagram for \QuickHull is shown on Figure~\ref{fig:DFD-QuickHull}.
+By the time a \DPH program is compiled in the backend, it is composed of a large data flow graph of flat and segmented array combinators. The complete data flow graph for \QuickHull is shown in Figure~\ref{fig:DFD-QuickHull}.
 
 
 \begin{figure}
@@ -185,24 +183,24 @@ For example the complete data flow diagram for \QuickHull is shown on Figure~\re
 \end{figure}
 
 
-While the graph consists of over 40 array combinators, roughly $^2/_3$ of its runtime the \QuickHull program spends in what we will refer to as \name{segmented FilterMax}. With reference to the data flow diagram, in each recursive step of \QuickHull it uses relative distances computed by group of combinators \*a* to finds points above a number of lines (\*c*, \*d* and \*e*) as well as points farthest from each line (\*b*).
+While the graph consists of over 40 array combinators, roughly $^2/_3$ of its runtime the \QuickHull program spends in what we will refer to as \name{segmented FilterMax}. The data flow diagram groups logically groups the constituent parts of \FilterMax in boxes labelled \*a* through \*e*. In each recursive step of \QuickHull it uses relative distances computed by group of combinators \*a* to find points above the lines (\*c*, \*d* and \*e*) as well as points farthest from each line (\*b*).
 
-The complete implementation of \name{segmented FilterMax} using \LiveFusion interface is given in Appendix~\ref{sec:FilterMax-implementation}. It closely follows the implementation of \QuickHull, done by the author by studying the \name{GHC Core} code generated by \DPH vectoriser\footnote{The complete hand-vectorised implementation of \QuickHull is available at \url{http://github.com/ghc/packages-dph/tree/master/dph-examples/examples/spectral/QuickHull/handvec}}.
+The complete implementation of \FilterMax using \LiveFusion interface is given in Appendix~\ref{sec:FilterMax-implementation}. I have implemented it by studying the \name{GHC Core} code generated by \DPH vectoriser\footnote{The complete hand-vectorised implementation of \QuickHull is available at \url{http://github.com/ghc/packages-dph/tree/master/dph-examples/examples/spectral/QuickHull/handvec}}.
 
 
 
 \section{\StreamFusion and \FilterMax}
 
-In the previous section we have identified groups of combinators \*a* to \*e* that make up the functionality of segmented \FilterMax. The grouping is not incidental. When vectorised \QuickHull is compiled using the \StreamFusion framework the combinators in each of these groups get fused together.
+In the previous section we have identified groups of combinators \*a* through \*e* that make up the functionality of segmented \FilterMax. The grouping is not incidental. When vectorised \QuickHull is compiled using \StreamFusion framework the combinators in each of these groups get fused together.
 
-However, the fusion stops at the boundaries of each of these groups.
+However, \*the fusion stops at the boundaries of these groups*.
 
 The \FilterMax example exhibits both problems with \StreamFusion identified in Section~\ref{sec:problems}: the inability to fuse producers with multiple consumers and the duplicated counters.
 
 
 \subsection{Multiple consumers}
 
-Both the filtering part of \FilterMax, finding points above the lines (\*c*, \*d*, \*e*) and the part finding the farthest points (\*b*) rely on the distances to be computed first (\*a*). Because of inherent limitation of fusion systems based on rewrite rules covered in Section~\ref{sec:multiple-consumers}, \StreamFusion is unable to fuse the producer of the segmented @distances_s@ array into the two consumers albeit they could easily be computed in the same loop.
+Both the filtering part of \FilterMax finding points above the lines (\*c*, \*d*, \*e*), and the part finding the farthest points (\*b*), rely on the distances to be computed first (\*a*). Because of the inherent limitation of fusion systems that are based on rewrite rules (Section~\ref{sec:multiple-consumers}), \StreamFusion is unable to fuse the producer of the segmented @distances_s@ array into the two consumers although they could easily be computed in the same loop.
 
 For the same reason combinator groups \*d* and \*e* cannot be fused with group \*c* that produces an array of boolean tags specifying which points should be kept and which filtered out.
 
@@ -215,7 +213,7 @@ In fact, the pattern formed by combinator groups \*c*, \*d* and \*e* is very com
 
 \subsection{Duplicated loop counters}
 
-With arrays of points being represented by two arrays and arrays of lines -- by four arrays, any computation involving their point-wise processing adds a separate counter variable and bounds check in \StreamFusion. This problem was discussed in Section~\ref{sec:duplicated-counters} and solved in \LiveFusion using rates (Section~\ref{sec:rates}).
+With arrays of points being represented by two arrays and arrays of lines -- by four arrays, any computation involving their point-wise processing introduces at superfluous counter variable \*and* bounds checks in \StreamFusion. This problem was discussed in Section~\ref{sec:duplicated-counters} and solved in \LiveFusion using rates (Section~\ref{sec:rates}).
 
 Referring to the \FilterMax example, @zipWith6@ combinator from group \*a* uses 6 separate counters for each of the input arrays and one for the output. Similarly, @zip@ and @zipWith@ combinators of groups \*b* and \*c* use 3 counters each.
 
@@ -223,20 +221,22 @@ Referring to the \FilterMax example, @zipWith6@ combinator from group \*a* uses 
 
 \section{Evaluation}
 
-The benchmarking in this section has been carried out using an implementation of \QuickHull vectorised by hand replicating the intermediate \name{GHC Core} code produced by \DPH vectoriser. It is expressed using array combinators that can be compiled either using a \StreamFusion or a \LiveFusion based backend library.
+Benchmarking in this section has been carried out using an implementation of \QuickHull that was vectorised by hand, closely following the intermediate \name{GHC Core} code produced by \DPH vectoriser. It is expressed using array combinators.
 
 A variant of \QuickHull that uses \LiveFusion to compute \FilterMax has been compiled. As of this writing \LiveFusion is able to dynamically generate and load fused code. However, it does not cache the compiled code. To avoid recompiling the same combinator graph in each recursive step of \QuickHull, the pre-generated code of \FilterMax has been compiled in. Additional compilation costs are factored into the results where appropriate.
 
-Both programs have been run on 10, 20, 25, 40 and 50 million points. The experiments were conducted on an Apple Macbook Pro 8.2 with a 2 GHz Intel Core i7 CPU having 256 KB L2 and 6 MB L3 cache and 16 GB of system memory. The benchmarks were compiled with a development version of GHC (7.9.20140514).\footnote{Patched for \name{Template Haskell} pretty printing bug \#9022 \url{http://ghc.haskell.org/trac/ghc/ticket/9022}.}
+The \StreamFusion variant was compiled agains @dph-prin-seq@ library found in the \DPH distribution.
+
+Both programs have been run on 10, 20, 25, 40 and 50 million points. The experiments were conducted on an Apple Macbook Pro 8.2 with a 2 GHz Intel Core i7 CPU with 256 KB L2 and 6 MB L3 cache and 16 GB of system memory. The benchmarks were compiled with a development version of GHC (7.9.20140514).\footnote{Patched for \name{Template Haskell} pretty printing bug \#9022 \url{http://ghc.haskell.org/trac/ghc/ticket/9022}.}
 
 
 \subsection{Overall performance}
 
-Figure~\ref{fig:Eval-QuickHull} shows the runtime of the complete \QuickHull program. In one instance it uses \StreamFusion throughout. In another it substitutes \LiveFusion generated code to compute \FilterMax. The results are shown numerically in Figure~\ref{fig:Eval-QuickHull-numbers} showing 1.46 -- 1.84 speedups even with amostised compilation costs factored in ($\approx 650\ ms$). It should be noted that \FilterMax only accounts for $^2/_3$ of the runtime so a complete \LiveFusion implementation is expected to yield further speedups.
+Figure~\ref{fig:Eval-QuickHull} shows the runtime of the complete \QuickHull program. In one instance it uses \StreamFusion throughout. In another it substitutes \LiveFusion generated code to compute \FilterMax. The results are shown numerically in Figure~\ref{fig:Eval-QuickHull-numbers} exhibiting 1.46 -- 1.84 speedups even with amostised compilation costs factored in ($\approx 650\ ms$). It should be noted that \FilterMax only accounts for $^2/_3$ of the runtime so a complete \LiveFusion implementation is expected to yield further speedups.
 
 
 \begin{figure}
-\includegraphics[center]{img/Eval-QuickHull}
+\includegraphics[scale=0.85,center]{img/Eval-QuickHull}
 \caption{Runtime of vectorised \QuickHull with \FilterMax fused by \StreamFusion and \LiveFusion.}
 \label{fig:Eval-QuickHull}
 \end{figure}
@@ -251,15 +251,18 @@ Figure~\ref{fig:Eval-QuickHull} shows the runtime of the complete \QuickHull pro
 
 \subsection{\FilterMax performance}
 
-To compare \LiveFusion and \StreamFusion directly, Figures \ref{fig:DFD-QuickHull} and \ref{fig:Eval-QuickHull-numbers} show the performance of each running just the \FilterMax. The runtimes given are for 100 million points and less. Runtimes for fewer than 65 thousand points have been omitted even though they show at least as good performance of \LiveFusion as compared to \StreamFusion.
+To compare \LiveFusion and \StreamFusion directly, Figures \ref{fig:DFD-QuickHull} and \ref{fig:Eval-QuickHull-numbers} show the performance of each running just \FilterMax. The running times given are for 100 million points and less. Timing for fewer than 65 thousand points has been omitted even though it shows at least as good performance of \LiveFusion as compared to \StreamFusion.
 
-Excluding the speedups for smaller number of points which tend to be higher, the average speedup is 3.2.
+Excluding the speedups for smaller number of points (which tend to be higher), the average speedup observed is 3.2.
 
-It is important to note that the both \LiveFusion and \StreamFusion are able to generate highly optimised code. The speedup of \LiveFusion for the most part comes from its ability to exploit more fusion opportunities than \StreamFusion. In the case of \FilterMax, \LiveFusion was able to fuse into one loop what \StreamFusion fused into five separate loops. Importantly each of those five loops were running at the rate of the number of points. The overhead of reading and writing large arrays to the memory had a significant impact on the runtime of the algorithm. \LiveFusion's improved performance is in a major attributed to significantly reducing memory traffic.
+
+\begin{bluebox}
+It is important to note that the both \LiveFusion and \StreamFusion are able to generate highly optimised code. The speedup of \LiveFusion for the most part comes from its ability to exploit more fusion opportunities than \StreamFusion. In the case of \FilterMax, \LiveFusion was able to fuse into one loop what \StreamFusion fused into five separate loops. Importantly each of those five loops were running at the rate of the number of points. The overhead of reading and writing large arrays to the memory had significant impact on the runtime of the algorithm. \LiveFusion's improved performance is in a major way attributed to reduced memory traffic.
+\end{bluebox}
 
 
 \begin{figure}
-\includegraphics[center]{img/Eval-FarAndAboves}
+\includegraphics[scale=0.85,center]{img/Eval-FarAndAboves}
 \caption{Runtime of \FilterMax fused by \StreamFusion and \LiveFusion.}
 \label{fig:Eval-FarAndAboves}
 \end{figure}
