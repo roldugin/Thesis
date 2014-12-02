@@ -191,6 +191,7 @@ In principle, given an interpreting function such as @eval :: AST t -> t@, a val
 
 
 \subsection{Sharing recovery}
+\label{sec:sharing-recovery}
 
 In pure functional languages like \Haskell sharing of terms is \*not observable*. That is, given two terms it is not possible to tell whether or not they reside at the same memory address (as it is possible with pointers in a procedural language). Thus, if \LiveFusion AST constructed for the earlier @filterMax@ example (Figure~\ref{fig:Flat-FilterMax}) was traversed, @Map@ and @Manifest@ nodes would be encountered twice as in Figure~\ref{fig:Flat-FilterMax-Sharing} (left). Naively compiling such code would result in two computations of the result of @Map@.\footnote{Notably, this is an instance of fusion into multiple consumers identified as a major challenge for a fusion system to overcome in Section~\ref{sec:multiple-consumers}.}
 
