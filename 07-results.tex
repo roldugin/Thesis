@@ -9,18 +9,18 @@
 \label{ch:results}
 \label{sec:QuickHull}
 
-Throughout this chapter we will use a \name{Data Parallel Haskell} implementation of the QuickHull algorithm that computes the convex hull of a finite set of points in the plane. It derives its name from the QuickSort algorithm and similarly uses a divide and conquer approach.
+Throughout this chapter we will use a \name{Data Parallel Haskell} implementation of \QuickHull algorithm that computes the convex hull of a finite set of points in the plane. It derives its name from the QuickSort algorithm and similarly uses a divide and conquer approach.
 
-The convex hull for a set of points in the plane can be visualised as a polygon formed by a rubber band stretched around the points. The smallest set of points forming the polygon that encloses all other points is called the convex hull.
+The convex hull for a set of points in the plane can be visualised as a polygon formed by a rubber band stretched around the points. More convex hull is the smallest set of points forming the polygon that encloses all other points.
 
-The result of finding convex hull of a set of points can be seen on the right of Figure~\ref{fig:qh-result}. The same figure depicts the three steps of the sample run of QuickHull algorithm.
+Figure~\ref{fig:qh-result} depicts three steps of a sample run of \QuickHull algorithm with the final result shown on the right.
 
 
-\section{QuickHull in \DPH}
+\section{\QuickHull in \DPH}
 
-The \DPH implementation of QuickHull closely follows the recursive solution:
+\name{Data Parallel Haskell} implementation of \QuickHull in Listing~\ref{lst:dph-qh} closely follows the recursive solution:
 \begin{enumerate}
-  \item Finds the points with smallest and largest $x$ coordinates (lines 12 and 13 and Figure~\ref{fig:qh-result} left). These points are bound to be in the convex hull.
+  \item Find the points with smallest and largest $x$ coordinates (lines 12 and 13 as well as Figure~\ref{fig:qh-result}). These points are bound to be in the convex hull.
 
   \item The line between the two points forms two subsets of points, which will be processed recursively (line 8) by @QuickHullR@ function.
 
@@ -38,34 +38,34 @@ The \DPH implementation of QuickHull closely follows the recursive solution:
 \includegraphics[width=0.3\textwidth]{img/Example-QuickHull-step1}~~~~~%
 \includegraphics[width=0.3\textwidth]{img/Example-QuickHull-step2}~~~~~%
 \includegraphics[width=0.3\textwidth]{img/Example-QuickHull-step3}%
-\caption{Three steps of a sample run of data parallel QuickHull algorithm.}
+\caption{Three steps of a sample run of data parallel \QuickHull algorithm.}
 \label{fig:qh-result}
 \end{figure}
 
 
 \begin{hscode2}[%
-  caption={\label{fig:dph-qh}\name{Data Parallel Haskell} implementation of QuickHull.},
+  caption={\label{lst:dph-qh}\name{Data Parallel Haskell} implementation of \QuickHull.},
   numbers=left,
 ]
 type Point = (Double, Double)
 type Line  = (Point,  Point)
 
-quickHull :: [:Point:] -> [:Point:]
-quickHull points
+\QuickHull :: [:Point:] -> [:Point:]
+\QuickHull points
   | lengthP points == 0 = points
   | otherwise
-  = concatP [: quickHullR points ends
+  = concatP [: \QuickHullR points ends
                  | ends <- [: (minx, maxx), (maxx, minx) :] :]
   where
     xs   = [: x | (x, y) <- points :]
     minx = points !: minIndexP xs
     maxx = points !: maxIndexP xs
 
-quickHullR :: [:Point:] -> Line -> [:Point:]
-quickHullR points line@(start, end)
+\QuickHullR :: [:Point:] -> Line -> [:Point:]
+\QuickHullR points line@(start, end)
   | lengthP above == 0 = [:start:]
   | otherwise
-  = concatP [: quickHullR above ends
+  = concatP [: \QuickHullR above ends
                  | ends <- [:(start, far), (far, end):] :]
   where
     -- Find relative distance from each point to the line
@@ -83,24 +83,24 @@ distance (xo, yo) ((x1, y1), (x2, y2))
 
 
 
-\section{QuickHull vectorisation}
+\section{\QuickHull vectorisation}
 
-The QuickHull program presented is a typical example of a divide and conquer algorithm. Recursive calls of @quickHullR@ function in most languages would be processed sequentially one at a time. However, in \DPH, the function is vectorised as described in Section~\ref{sec:Vectorisation} to give @quickHullR^@ of the following type:
+The \QuickHull program presented is a typical example of a divide and conquer algorithm. Recursive calls of @quickHullR@ function in most languages would be processed sequentially one at a time. However, in \DPH, the function is vectorised as described in Section~\ref{sec:Vectorisation} to give @quickHullR^@ of the following type:
 
 
 \begin{hscode}[literate={^}{{$^\uparrow$}}1,]
 -- Original
-quickHullR  :: [:Point:] -> Line -> [:Point:]
+\QuickHullR  :: [:Point:] -> Line -> [:Point:]
 -- Vectorised
-quickHullR^ :: [:[:Point:]:] -> [:Line:] -> [:[:Point:]:]
+\QuickHullR^ :: [:[:Point:]:] -> [:Line:] -> [:[:Point:]:]
 \end{hscode}
 
 
-The vectorised function is able to process not one, but an array of lines at a time. This means that the ``expansion'' of convex hull in every direction happens in one call of @quickHullR^@. In fact the three steps of vectorised QuickHull depicted in Figure~\ref{fig:qh-result} faithfully represent the only three calls to @quickHullR^@ required to find the convex hull.
+The vectorised function is able to process not one, but an array of lines at a time. This means that the ``expansion'' of convex hull in every direction happens in one call of @quickHullR^@. In fact the three steps of vectorised \QuickHull depicted in Figure~\ref{fig:qh-result} faithfully represent the only three calls to @quickHullR^@ required to find the convex hull.
 
 
 
-\section{QuickHull in the backend}
+\section{\QuickHull in the backend}
 
 The vectorised @quickHullR^@ function takes a \*nested parallel array* of points @[:[:Point:]:]@ as its first argument. It was discussed in Section~\ref{sec:Flattening}, that such nested arrays are represented using \*segmented* arrays in the backend.
 
@@ -153,15 +153,15 @@ y2s = [5,10, 6, 0, 1]
 Overall, the @quckHullR^@ function goes through the following transformations before it is compiled using the backend library of collective array operations (such as \LiveFusion)\footnote{I omit certain internal wrapper types to simplify the example.}:
 
 \begin{hscode}[literate={^}{{$^\uparrow$}}1,]
-quickHullR  :: [:Point:] -> Line -> [:Point:]
+\QuickHullR  :: [:Point:] -> Line -> [:Point:]
 
                         %$\Downarrow$%   Lifting transform
 
-quickHullR^ :: [:[:Point:]:] -> [:Line:] -> [:[:Point:]:]
+\QuickHullR^ :: [:[:Point:]:] -> [:Line:] -> [:[:Point:]:]
 
                         %$\Downarrow$%   Flattening transform
 
-quickHullR_ :: Array Int                      -- segment descriptor
+\QuickHullR_ :: Array Int                      -- segment descriptor
             -> Array Double -> Array Double   -- points
             -> Array Double -> Array Double   -- line starts
             -> Array Double -> Array Double   -- line ends            
@@ -170,24 +170,24 @@ quickHullR_ :: Array Int                      -- segment descriptor
 
 
 
-\section{The heart of QuickHull: Segmented FilterMax}
+\section{The heart of \QuickHull: Segmented FilterMax}
 \label{sec:FilterMax}
 
 By the time a \DPH program is compiled in the backend, it is composed of a large data flow graph of flat and segmented array combinators.
 
-For example the complete data flow diagram for QuickHull is shown on Figure~\ref{fig:DFD-QuickHull}.
+For example the complete data flow diagram for \QuickHull is shown on Figure~\ref{fig:DFD-QuickHull}.
 
 
 \begin{figure}
 \includegraphics[width=1.1\textwidth, center]{img/DFD-QuickHull}
-\caption{Data flow diagram of array combinators generated by the vectoriser for \code{quickHullR} function.}
+\caption{Data flow diagram of array combinators generated by the vectoriser for \code{QuickHullR} function.}
 \label{fig:DFD-QuickHull}
 \end{figure}
 
 
-While the graph consists of over 40 array combinators, roughly $^2/_3$ of its runtime the QuickHull program spends in what we will refer to as \name{segmented FilterMax}. With reference to the data flow diagram, in each recursive step of QuickHull it uses relative distances computed by group of combinators \*a* to finds points above a number of lines (\*c*, \*d* and \*e*) as well as points farthest from each line (\*b*).
+While the graph consists of over 40 array combinators, roughly $^2/_3$ of its runtime the \QuickHull program spends in what we will refer to as \name{segmented FilterMax}. With reference to the data flow diagram, in each recursive step of \QuickHull it uses relative distances computed by group of combinators \*a* to finds points above a number of lines (\*c*, \*d* and \*e*) as well as points farthest from each line (\*b*).
 
-The complete implementation of \name{segmented FilterMax} using \LiveFusion interface is given in Appendix~\ref{sec:FilterMax-implementation}. It closely follows the implementation of QuickHull, done by the author by studying the \name{GHC Core} code generated by \DPH vectoriser\footnote{The complete hand-vectorised implementation of QuickHull is available at \url{http://github.com/ghc/packages-dph/tree/master/dph-examples/examples/spectral/QuickHull/handvec}}.
+The complete implementation of \name{segmented FilterMax} using \LiveFusion interface is given in Appendix~\ref{sec:FilterMax-implementation}. It closely follows the implementation of \QuickHull, done by the author by studying the \name{GHC Core} code generated by \DPH vectoriser\footnote{The complete hand-vectorised implementation of \QuickHull is available at \url{http://github.com/ghc/packages-dph/tree/master/dph-examples/examples/spectral/QuickHull/handvec}}.
 
 
 
@@ -237,14 +237,14 @@ Figure~\ref{fig:Eval-QuickHull} shows the runtime of the complete \QuickHull pro
 
 \begin{figure}
 \includegraphics[center]{img/Eval-QuickHull}
-\caption{Runtime of vectorised QuickHull with \FilterMax fused by \StreamFusion and \LiveFusion.}
+\caption{Runtime of vectorised \QuickHull with \FilterMax fused by \StreamFusion and \LiveFusion.}
 \label{fig:Eval-QuickHull}
 \end{figure}
 
 
 \begin{figure}
 \csvautotabular{listings/Results-QuickHull.csv}
-\caption{Runtime of vectorised QuickHull with \FilterMax fused by \StreamFusion and \LiveFusion (measured in milliseconds).}
+\caption{Runtime of vectorised \QuickHull with \FilterMax fused by \StreamFusion and \LiveFusion (measured in milliseconds).}
 \label{fig:Eval-QuickHull-numbers}
 \end{figure}
 
