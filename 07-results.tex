@@ -258,9 +258,8 @@ Excluding the speedups for smaller number of points (which tend to be higher), t
 
 \subsection{Discussion}
 
-\begin{bluebox}
 It is important to note that the both \LiveFusion and \StreamFusion are able to generate highly optimised code. Performance advantage of \LiveFusion mainly comes from its ability to exploit more fusion opportunities than \StreamFusion. In the case of \FilterMax, \LiveFusion was able to fuse into one loop what \StreamFusion fused into five separate loops. Importantly each of those five loops were running at the rate of the number of points. The overhead of reading and writing large arrays to the memory had significant impact on the runtime of the algorithm. \LiveFusion's improved performance is in a major way attributed to reduced memory traffic.
-\end{bluebox}
+
 
 
 \begin{figure}
