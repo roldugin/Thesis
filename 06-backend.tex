@@ -371,14 +371,17 @@ three = let xs :: Array Double = ...
 \end{hscode}
 
 
-\clearpage
+
 \subsection{Host side dynamic compilation and loading}
 
+The code for the host side dynamic compilation and loading is relatively straightforward and is presented in Listing~\ref{lst:host}. It uses \name{GHC API} for compilation, which means that the \GHC is linked in as a library into every \LiveFusion binary (provided the linking is static).
+
+At the moment the compiled code is not cached for later reuse. This means that if the same combinator graph is executed multiple times, it is recompiled every time. The ability to amortise compilation costs over multiple recursive calls is important for \name{Data Parallel Haskell} programs as we will see in the next chapter and it is left as future work.
 
 
 \begin{hscode2}[%
-  caption={Host-side dynamic compilation and loading code},%
-  label=lst:host,%
+  caption={Host side dynamic compilation and loading code},%
+  label={lst:host},%
 ]
 -- | Evaluates the AST to a final value.
 evalAST :: Typeable t => AST t -> t
