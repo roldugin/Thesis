@@ -38,7 +38,7 @@ However, as we will see later, the loops are more structured than those in \C an
 Without further delaying the discussion of the matter we will now look at the structure of a typical @for@ loop in a language like \C in an attempt to shape our own loop structure.
 
 
-\subsection{Structure of a \code{for} loop}
+\subsection{Structure of a \texttt{for} loop}
 
 Consider the following fragment of a \C program that creates a new array @ys@, by applying some function @f@ to those elements of array @xs@ that satisfy some predicate function @p@ (in \Haskell this could be expressed as @ys = filter p $ map f $ xs@):
 
@@ -471,7 +471,7 @@ Internally however, the library uses unique integers to distinguish between simi
 
 
 
-\subsubsection{Iterate over a \code{Manifest} array}
+\subsubsection{Iterate over manifest array}
 \label{sec:manifest}
 
 Recalling that the @Manifest@ combinator is the only combinator in the pipeline that holds a reference to the physical array, its loop does nothing more than to read the array @arr@\sub{mfst} element by element.
