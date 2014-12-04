@@ -21,7 +21,7 @@ In this chapter I will introduce the reader to the context of my work - the \nam
 
 In a nested data parallel program, parallel computations can call further data parallel computations. For example when traversing an unbalanced tree each node may process each of its children in parallel. Without statically knowing the branching of the tree, it may be difficult to adequately parallelise the process. \DPH offers an elegant solution through its vectorisation process which will be discussed in Section \ref{sec:Vectorisation}.
 
-\DPH takes an active part in the optimisation and the compilation of its client code. It guides the compilation process in many ways including vectorisation \cite{PLKC08}, choosing the optimal data representation \cite{CDL09} as well as applying fusion \cite{CLP+07} and rewrite rules \cite{PTH01} to improve performance.
+\DPH takes an active part in the optimisation and the compilation of its client code. It guides the compilation process in many ways including vectorisation \cite{PLKC08}, choosing the optimal data representation \cite{InstantGenerics} as well as applying fusion \cite{CLP+07} and rewrite rules \cite{PTH01} to improve performance.
 
 In essence \DPH reimplements the familiar list interface in terms of seamlessly parallelised arrays. Listing \ref{lst:DPH-interface} shows some of the most important functions in the \DPH interface. Since \DPH has language support, the bracket notation for parallel arrays closely resembles that for \Haskell lists: @[:a:]@ denotes a parallel array of type @a@, while @[:[:a:]:]@ is a nested parallel array. The counterpart of \Haskell's list comprehensions is also present and is called \*parallel array comprehensions*.
 
@@ -215,7 +215,7 @@ Instead, \DPH uses arrays of unboxed values in its backend which will be referre
 
 \Haskell's product types, or the tuples of two of more heterogeneous elements, are allocated as boxed values on the heap. As discussed, dereferencing heap allocated values considerably affects performance. Instead, an array of pairs @[:(a,b):]@ is stored as a pair of arrays @([:a:],[:b:])@. Similarly an array of larger n-tuples becomes an n-tuple of arrays.
 
-This parametric representation is made possible through the use of type families as described in \cite{CDL09}.
+This parametric representation is made possible through the use of families as described in \cite{InstantGenerics, AssocTypes}.
 
 
 \subsection{Sum types}

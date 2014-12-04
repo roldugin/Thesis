@@ -45,7 +45,7 @@ The work described in this thesis has resulted in a system that can exploit more
 
 Granted, such a fusion system targeting nested data parallel applications defeats the purpose. Granted, introducing parallel execution would have its own challenges since it typically results in more fusion-preventing edges in combinator graphs.
 
-However, parallelising collective array operations is a well researched problem which includes the lessons learnt from implementing parallelism in the \StreamFusion based backend of \DPH. In particular \name{Distributed Types} \cite{CLP+07} allow for seamless parallelisation given sequential combinator implementations.
+However, parallelising collective array operations is a well researched problem which includes the lessons learnt from implementing parallelism in the \StreamFusion based backend of \DPH. In particular \name{Distributed Types} \cite{CLP+07} allow for seamless parallelisation given sequential combinator implementations. Additionally, my previous work on parallelism granularity shows that for many operations, the cost of distributing the computation across threads may be considerably higher than computing it sequentially.
 
 Lastly, with vector registers growing in size in modern CPUs (512 bits in the near future \cite{IntelISA}) and their instruction sets expanding, it may prove to be fruitful to target instruction-level vectorisation at the same time as full-featured parallelism.
 

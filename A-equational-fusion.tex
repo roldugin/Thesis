@@ -63,7 +63,9 @@ While this leads to the desired results in many cases, it requires the programme
 
 The above limiting factor is critical to the application of the fusion system to lists but is less relevant to \LiveFusion system since the number of combinators is fixed.
 
-However, the limitations that do make it unattractive are the inability to effectively fuse left @fold@s and @zip@s which are both crucial to \DPH. The inability to fuse into multiple consumers is likewise very considerable for such application of the technique as \DPH.
+However, the limitations that do make it unattractive are the inability to effectively fuse left @fold@s and @zip@s which are both crucial to \DPH. The inability to fuse into multiple consumers is likewise very considerable for such application of the technique as \DPH. 
+
+A dual of @foldr/build@ is @destroy/unfoldr@ \cite{DestroyUnfoldr} fusion framework, which while able to fuse reductions and pointwise consumers, is also unable to fuse a producer into multiple consumers.
 
 
 \clearpage
