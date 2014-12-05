@@ -15,7 +15,7 @@ While the hardware for running highly parallel computations is readily available
 
 The resulting application is a mixture of the actual algorithm and the implementation specific code, dealing with concurrency and parallelism. This obscures code clarity and may generally be error-prone.
 
-One alternative to this practice of explicit parallelisation is to provide a common set of collective operations\icollop on large data structures. Programs implemented in terms of these operations would be automatically parallelised across the available processing elements. This approach is successfully exercised by a multitude of frameworks covering many host languages, target architectures and suitable application domains \cite{PLKC08,KCL+10,CKL+11,AS07}.
+One alternative to this practice of explicit parallelisation is to provide a common set of collective operations\icollop on large data structures. Programs implemented in terms of these operations would be automatically parallelised across available processing elements. This approach is successfully exercised by a multitude of frameworks covering many host languages, target architectures and suitable application domains \cite{PLKC08,KCL+10,CKL+11,AS07}. 
 
 However, in the pursuit of a high level approach to programming a major inefficiency is introduced. Having provided a number of collective operations, the problem of multiple traversals arises. In each program there is likely to be a number of such operations composed together in some way to compute the desired result. With each collective operation potentially traversing a large data structure, the memory traffic is considerably increased.
 

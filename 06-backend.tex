@@ -443,7 +443,9 @@ compileAndLoad hsFilePath moduleName entryFnName =
 
 \subsection{Alternative backends}
 
-This chapter has introduced the \Haskell backend for \LiveFusion. However, it was mentioned that the system is not limited to only that backend. Indeed, in order to extend the framework to other backends an interpretation of the \Loop language is required, together with an appropriate implementation of the scalar language functions.
+This chapter has introduced the \Haskell backend for \LiveFusion. Dynamically compiling \Haskell modules has become a popular way of extending \Haskell applications with plugins \cite{DonsThesis, PlugginHaskellIn, DynApps}. These applications tend to have their plugins written by hand. This is contrary to the present work, where the plugin code is generated on the fly from the \Loop language code.
+
+However, \LiveFusion is not limited to only one backend. In order to extend the framework to support other backends, a new interpreter for the \Loop language can be built together with an appropriate implementation of the scalar language functions (Section~\ref{sec:Scalar-language}).
 
 One particularly attractive alternative is \LLVM framework \cite{LLVM:CGO04}. \GHC already uses \LLVM to produce highly efficient code. However, using a framework such as \LLVM for compiling \LiveFusion generated code may avoid the costs associated with running the generated code through the complete \GHC compilation pipeline. As it will be seen in the next chapter, a compilation overhead of 600 ms is not uncommon when compiling the generated code with \GHC. Reducing those costs may make \LiveFusion more widely applicable to use cases where many pieces of code must be compiled independently and amortisation cannot be as easily exploited.
 
