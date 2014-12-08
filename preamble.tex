@@ -42,6 +42,9 @@
 \usepackage{makeidx} % for index
 \usepackage{tikz}
 \usepackage{csvsimple}
+\usepackage[backend=bibtex]{biblatex}
+\addbibresource{bib.bib}
+%\bibliography{bib}
 
 
 %% Packages included in this distribution
@@ -537,7 +540,7 @@
 %
 % - In chapter files put:
 %   \IfNotCompilingAll{\bibliography{bib}}
-\bibliographystyle{ieeetr}
+% Only BibTeX: \bibliographystyle{ieeetr}
 
 \newcommand\IfNotCompilingAll[1]{
     \ifx\CompilingAll\undefined
