@@ -14,3 +14,7 @@ Through my research, I have designed and implemented an embedded domain specific
 The results show that *LiveFusion* is considerably more effective at exploiting opportunities for fusion than previous systems. Specifically, the average performance increase of 3.2 for a non-trivial program indicates the attractiveness of the approach.
 
 George Roldugin
+
+
+See also: https://github.com/roldugin/LiveFusion
+
