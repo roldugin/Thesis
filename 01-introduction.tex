@@ -32,17 +32,17 @@ In this thesis I explore the problem of loop fusion in the context of purely fun
 In the following I summarise the areas of my contribution, explicitly noting which are my individual work:
 \begin{itemize}
 
-  \item We propose a novel system, \LiveFusion, for fusing collective array operations at the run-time of the program in a purely functional setting\todo{ref}.
+  \item We propose a novel system, \LiveFusion, for fusing collective array operations at the run-time of the program in a purely functional setting (Chapter~\ref{ch:frontend}).
 
-  \item I implement the proposed system as a embedded domain-specific language for the \Haskell programming language which includes automatic recovery of shared terms\todo{ref} and a user-extensible scalar language\todo{ref}.
+  \item I implement the proposed system as a embedded domain-specific language for the \Haskell programming language which includes automatic recovery of shared terms (Section~\ref{sec:sharing-recovery}), explicit tupling of results and a scalar language (Section~\ref{sec:Scalar-language}).
 
-  \item I devise a generic representation of loops as a more structured and composable alternative to @while@ and @for@ loops found in procedural languages. I implement the new looping construct as an intermediate language, \Loop, inside \LiveFusion.
+  \item I devise a generic representation of loops as a more structured and composable alternative to @while@ and @for@ loops found in procedural languages. I implement the new looping construct as an intermediate language, \Loop, inside \LiveFusion (Chapter~\ref{ch:Loops}).
 
-  \item I present the mapping of \term{flat} and \term{segmented}\footnote{The term \term{segmented} describes combinators that operate on nested arrays. It owes its name to the way such arrays are represented and is discussed in Section~\ref{sec:Flattening}. \term{Flat} combinators operate on regular arrays.} array combinators onto the generic loop representation designed to enable fusion in the \name{Data Parallel Haskell} framework\todo{ref}.
+  \item I present the mapping of \term{flat} (Sections \ref{sec:loop-generation}, \ref{sec:Loops-flat-combinators}) and \term{segmented} (Section~\ref{sec:Loops-segmented-combinators})\footnote{The term \term{segmented} describes combinators that operate on nested arrays. It owes its name to the way such arrays are represented and is discussed in Section~\ref{sec:Flattening}. \term{Flat} combinators operate on regular arrays.} array combinators onto the generic loop representation designed to enable fusion in the \name{Data Parallel Haskell} framework (Chapter~\ref{ch:NDP}).
 
-  \item I implement a dynamic code generator which translates the fused loops expressed in the intermediate \Loop language into \Haskell source code. I also implement type-safe dynamic code compilation and loading facilities enabling the highly efficient execution of the generated code.\todo{ref}
+  \item I implement a dynamic code generator which translates fused loops expressed in the intermediate \Loop language into \Haskell source code. I also implement dynamic code compilation and loading facilities enabling highly efficient execution of the generated code (Chapter~\ref{ch:Code-Generation}).
 
-  \item I present performance benchmarks evaluating \LiveFusion against the types of programs resulting from the use of \*nested data parallel* frameworks such as \name{Data Parallel Haskell (DPH)}\todo{ref}.
+  \item I present performance benchmarks evaluating \LiveFusion against the types of programs resulting from the use of \*nested data parallel* frameworks such as \name{Data Parallel Haskell} (Chapter~\ref{ch:results}).
 
 % \item I develop a suite of invariants in the form of \name{QuickCheck} \*properties* for automatic testing of individual combinators.
 \end{itemize}

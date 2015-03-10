@@ -17,7 +17,7 @@ A person familiar with the fundamentals of functional programming is likely to s
 
 This one-liner was an attempt to develop the motivation for the high-level view on numeric computations. It may seem reasonable to replace the lists with arrays and reimplement the same high-level interface in terms of traditional arrays to avoid random memory access penalties as in the case of lists.
 
-Providing an instantly familiar interface without compromising performance has been one of the goals of the \name{Data Parallel Haskell (DPH)}\idph project \cite{PLKC08,CLP+07}. The work described in this essay has been carried out in the context of this project. It will be discussed in more detail in section \ref{sec:DPH}.
+Providing an instantly familiar interface without compromising performance has been one of the goals of the \name{Data Parallel Haskell (DPH)}\idph project \cite{PLKC08,CLP+07} discussed in more detail in Section~\ref{sec:DPH}. The work described in this essay has been carried out in the context of this project.
 
 However, even if we replaced the lists with arrays and gave efficient implementations to @sum@ and @zipWith@, the resulting algorithm is still likely to be slower than one written by hand in a language such as \C. The @zipWith@ combinator \*produces* an \*intermediate array*\iintermediate containing the element-wise product of the two input vectors. It is immediately \*consumed* by @sum@, yielding the final (scalar) value. Thus the algorithm performs two traversals and allocates another array of the size of the input arrays.
 
