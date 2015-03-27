@@ -7,7 +7,7 @@
 \chapter{Delaying array computations}
 \label{ch:frontend}
 
-This chapter describes \LiveFusion - the new array language that I designed. It offers a library of fusible array combinators and is able to exploit more fusion opportunities than equational fusion frameworks\ieqf (see Appendix \ref{sec:Equational-Fusion-Systems})
+This chapter describes \LiveFusion\ -- a new array language that I designed. It offers a library of fusible array combinators and is able to exploit more fusion opportunities than equational fusion frameworks\ieqf (see Appendix \ref{sec:Equational-Fusion-Systems})
 
 In its essence \LiveFusion takes the approach of \*deeply embedded domain specific languages* (EDSLs).\iedsl
 
@@ -44,7 +44,7 @@ The difference from the ASTs found in compilers is that it allows for analysis, 
 
 \LiveFusion EDSL falls under the category of deeply embedded domain-specific languages. In this chapter I describe the process of embedding array computations.
 
-Figure~\ref{fig:Overview} presents the overview of the \LiveFusion language and the way it fits into the \name{Data Parallel Haskell} framework. While many of the concepts in the figure have not yet been discussed, it can serve as reference to the reader in future chapters,
+Figure~\ref{fig:Overview} presents the overview of the \LiveFusion language and the way it fits into the \name{Data Parallel Haskell} framework. While many of the concepts in the figure have not yet been discussed, it can serve as reference to the reader in future chapters.
 
 \begin{figure}
   \includegraphics[width=\textwidth]{img/Overview.pdf}
@@ -86,7 +86,7 @@ main = print
 
 The function uses the familiar @map@, @filter@ and @fold@ combinators. Operators and functions of @Num@ type class (@+@, @-@, @abs@...) and number literals (0, 0.5, 1...) are supported directly. Versions of @Ord@ and @Eq@ operators are available postfixed with a dot (@>.@, @==.@ ...).
 
-The example employs the explicit tuple constructor @:*:@, which brings together the branches computing @pos@ and @mx@ to be analysed for fusion. It addresses the problem of \*tupling* that prohibits fusion of independent terms in a pure context.
+The example employs the explicit tuple constructor @(:*:)@, which brings together the branches computing @pos@ and @mx@ to be analysed for fusion. It addresses the problem of \*tupling* that prohibits fusion of independent terms in a pure context.
 
 A vectorised version of this function will be presented in the Section~\ref{sec:FilterMax} when we look at the \QuickHull algorithm implementation in \DPH.
 
@@ -113,11 +113,11 @@ zipWith  :: (Term a -> Term b -> Term c) -> Array a -> Array b -> Array c
 zip      :: Array a -> Array b -> Array (a,b)
 fold     :: (Term a -> Term a -> Term a) -> Term a -> Array a -> Scalar a
 scan     :: (Term a -> Term a -> Term a) -> Term a -> Array a -> Array a
-replicate :: Term Int -> Term a -> Array a
+replicate:: Term Int -> Term a -> Array a
 bpermute :: Array a      -- Source array
          -> Array Int    -- Indices to pick elements from
          -> Array a
-packByTag :: Term Bool -> Array Bool -> Array a -> Array a
+packByTag:: Term Bool -> Array Bool -> Array a -> Array a
 
 %\CommentPlusPlus{Segmented array combinators}%
 scan_s   :: (Term a -> Term a -> Term a) -> Term a
@@ -210,7 +210,7 @@ The second group of \*implicit* sharing approaches involves using techniques to 
 \label{fig:Flat-FilterMax-Sharing}
 \end{figure}
 
-More specifically, the approach is adapted to support a GADT AST \cite{GADTSharing}. An \*abstract semantic graph* data type is specified (Listing~\ref{lst:ASG}) which has the same constructors as the original AST in addition to @VarG@ -- a representation of a shared variable in the graph. Then a @mapDeRef@ function is implemented that converts the AST to ASG, \*replacing every point of recursion with a* @VarG@ node. Sharing recovery of @filterMax@ results in the following graph, where recursive variable references have been replaced with unique integers:
+More specifically, the approach is adapted to support a GADT AST \cite{GADTSharing}. An \*abstract semantic graph (ASG)* data type is specified (Listing~\ref{lst:ASG}) which has the same constructors as the original AST in addition to @VarG@ -- a representation of a shared variable in the graph. Then a @mapDeRef@ function is implemented that converts the AST to ASG, \*replacing every point of recursion with a* @VarG@ node. Sharing recovery of @filterMax@ results in the following graph, where recursive variable references have been replaced with unique integers:
 
 
 \begin{hscode}
@@ -280,13 +280,14 @@ The corresponding \Haskell list functions or array libraries like @Vector@ or @R
 The question that should be asked, however, is why cannot \LiveFusion do the same?
 
 %\LiveFusion AST is open to interpretation by several backends as discussed in Chapter \ref{ch:Code-Generation}.
-The answer lies in the approach to evaluating the AST. In order to be efficient the AST needs to be compiled into highly optimised code. During compilation (discussed in Chapter \ref{ch:Code-Generation}) the AST is compiled to one or more loops for which \Haskell code is generated and written out to file.
+The answer lies in the approach to evaluating the AST. In order to be efficient the AST needs to be compiled to highly optimised code. During compilation (discussed in Chapter \ref{ch:Code-Generation}) the AST is compiled \*at runtime* to one or more loops for which \Haskell code is generated.
 
-If the parametrising functions were simple \Haskell functions, they would have been compiled to machine code before the program is run. When the AST is later constructed at runtime they would only be available in the form of closures which can be called but not inspected\footnote{There is a non-portable way to explore closures in \Haskell, but it will not allow one to easily make use of the code compiled to binary.}.
+If the parametrising functions were simple \Haskell functions, they would have been compiled to machine code \*before* the program is run. When the AST is later constructed at runtime they would only be available in the form of closures which can be called but not inspected\footnote{There is a non-portable way to explore closures in \Haskell, but it will not allow one to easily make use of the code compiled to binary.}.
 
-Suppose the user writes @map (+1) xs@. The function @(+1)@ needs to be inlined into the compiled loop code to produce efficient code. If this does not happen, calling @(+1)@ for every element in the array will result in the following:
+Suppose the user writes @map (+1) xs@. The function @(+1)@ needs to be inlined into the compiled loop code to produce efficient code. If this does not happen, calling @(+1)@ for every element in the @xs@ array will result in the following:
 
 \begin{enumerate}
+\halfspacing
 \item Boxing the element value by placing it in the heap
 \item Calling the closure with the pointer to the boxed value
 \item Jumping to the address of the @(+1)@ function referenced in the closure
@@ -296,12 +297,13 @@ Suppose the user writes @map (+1) xs@. The function @(+1)@ needs to be inlined i
 
 This is a very round-about way of incrementing a value in a tight loop and will greatly affect the performance of the loop.
 
-Unfortunately, at the time of generating code for AST, all these Haskell functions will have been compiled to machine code and are only available as closures. There is currently no way to inline them or reify them into the original Haskell source code from which they were created.
+Unfortunately, at the time of generating code for AST, all these Haskell functions will have been compiled to machine code and are only available as closures. There is currently no way to inline them or reify them into the original \Haskell source code from which they were created.
 
 I needed to find a way to generate efficient code for user specified functions at runtime. I needed a way to record the user-provided functions in a more high level way than machine code.
 
 In summary the chosen representation for functions:
 \begin{enumerate}
+\halfspacing
 \item Provides backend independent interface offering many common functions
 \item Allows backend-specific implementation for each function
 \item Hides implementation from the user by default
@@ -384,11 +386,11 @@ absImpl :: Num a => Impl (a -> a)
 absImpl = HsImpl { hs = abs; th = [| abs |] } 
 \end{hscode}
 
-It is easy to see that \name{Template Haskell} expressions are trivially created from simple Haskell functions using \name{quasi-quotation} extension \cite{QQ}.
+It is easy to see that \name{Template Haskell} expressions are trivially created from simple \Haskell functions using \name{quasi-quotation} extension \cite{QQ}.
 
 When the backend is ready to generate \Haskell source for these functions, it will be a simple matter of using a \name{Template Haskell's} pretty printer. 
 
-The reasons for using \name{Template Haskell} expressions (is the following):
+The following are the reasons for using \name{Template Haskell} expressions to represent the user specified functions:
 \begin{itemize}
 \item The backend does non-trivial code generation as discussed in Chapter \ref{ch:Code-Generation}, where the full power of \name{Template Haskell} is required. Functions defined this way become very easy to incorporate into the generated code
 \item New developments in \name{Template Haskell}\footnote{Starting with GHC 7.8.} will allow its expressions to be typed. Having @Q (TExp t)@ as opposed to @Q Exp@ will provide an extra layer of safety to the function representation
@@ -428,7 +430,7 @@ In particular \GHC allows to specify transformations of its internal \name{Core}
 
 The approach of \FlowFusion solves sharing by analysing the entire graphs of combinators and avoids runtime overheads of building, analysis and compilation of ASTs. The downsides of \FlowFusion are that control flow breaks fusion. However, in \DPH control flow is not an issue since most of control flow is transformed into data flow by the vectoriser.
 
-\FlowFusion is currently in its early development stages and is not yet able to fuse segmented combinator. In the future it may be a very comprehensive fusion platform. In fact there are plans for build CPU backend for \Accelerate on top of \FlowFusion.
+\FlowFusion is currently in its early development stages and is not yet able to fuse segmented combinators. In the future it may become a very comprehensive fusion platform. In fact there are plans for building the CPU backend for \Accelerate on top of \FlowFusion.
 
 
 
