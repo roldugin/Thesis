@@ -4,7 +4,7 @@
 
 \clearpage
 
-\chapter{Imperative Code Generation}
+\chapter{Imperative code generation}
 \label{ch:Code-Generation}
 
 The previous chapter introduced the process of translating a graph of delayed array combinators to an assembly-like EDSL for expressing array computations.
@@ -102,7 +102,7 @@ let elt_map = elt_xs * 100
 
 
 
-\subsection{Blocks and Gotos}
+\subsection{Blocks and \texttt{goto}s}
 
 A \Loop is essentially a group of labelled basic blocks with a predefined entry block. Every basic block becomes its own function in the generated code. We see in the example that each block like \[body]\sub{map/xs} became @body@\sub{map} function choosing only one label to represent the block. Each basic block has a unique identifier associated with it (in our case $map$), which distinguishes it from similarly named blocks of any nested loops which may be present.
 

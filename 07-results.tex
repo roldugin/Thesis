@@ -16,7 +16,7 @@ The convex hull for a set of points in the plane can be visualised as a polygon 
 Figure~\ref{fig:qh-result} depicts three steps of a sample run of \QuickHull algorithm with the final result shown on the right.
 
 
-\section{\QuickHull in \DPH}
+\section{QuickHull in DPH}
 
 \name{Data Parallel Haskell} implementation of \QuickHull in Listing~\ref{lst:dph-qh} closely follows the recursive solution:
 \begin{enumerate}
@@ -83,7 +83,7 @@ distance (xo, yo) ((x1, y1), (x2, y2))
 
 
 
-\section{\QuickHull vectorisation}
+\section{QuickHull vectorisation}
 
 \QuickHull program presented is a typical example of a divide and conquer algorithm. Recursive calls of @quickHullR@ function in most languages would be processed sequentially one at a time. However, in \DPH the function is vectorised as described in Section~\ref{sec:Vectorisation} to give @quickHullR^@ of the following type:
 
@@ -100,7 +100,7 @@ The vectorised function is able to process not one, but an array of lines at a t
 
 
 
-\section{\QuickHull in the backend}
+\section{QuickHull in the backend}
 
 The vectorised @quickHullR^@ function takes a \*nested parallel array* of points @[:[:Point:]:]@ as its first argument. It was discussed in Section~\ref{sec:Flattening} that such nested arrays are represented using \*segmented* arrays in the backend.
 
@@ -170,7 +170,7 @@ QuickHullR_ :: Array Int                      -- segment descriptor
 
 
 
-\section{The heart of \QuickHull: segmented \FilterMax}
+\section{The heart of QuickHull: segmented FilterMax}
 \label{sec:FilterMax}
 
 By the time a \DPH program is compiled in the backend, it is composed of a large data flow graph of flat and segmented array combinators. The complete data flow graph for \QuickHull is shown in Figure~\ref{fig:DFD-QuickHull}.
@@ -189,7 +189,7 @@ The complete implementation of \FilterMax using \LiveFusion interface is given i
 
 
 
-\section{\StreamFusion and \FilterMax}
+\section{Stream Fusion and FilterMax}
 
 In the previous section we have identified groups of combinators \*a* through \*e* that make up the functionality of segmented \FilterMax. The grouping is not incidental. When vectorised \QuickHull is compiled using \StreamFusion framework the combinators in each of these groups get fused together.
 
@@ -249,7 +249,7 @@ Figure~\ref{fig:Eval-QuickHull} shows the runtime of the complete \QuickHull pro
 \end{figure}
 
 
-\subsection{\FilterMax performance}
+\subsection{FilterMax performance}
 
 To compare \LiveFusion and \StreamFusion directly, Figures \ref{fig:DFD-QuickHull} and \ref{fig:Eval-QuickHull-numbers} show the performance of each running just \FilterMax. The running times given are for 100 million points and less. Timing for fewer than 65 thousand points has been omitted even though it shows at least as good performance of \LiveFusion as compared to \StreamFusion.
 
