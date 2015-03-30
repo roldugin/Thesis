@@ -274,7 +274,7 @@ loop = \ i j k l s ->
 
 Even though the arrays are consumed in lockstep, \StreamFusion introduces a separate counter for each input array (@i@, @j@ and @k@) as well as the output index variable @l@. \StreamFusion is unable to replace all four with one counter based on the fact that @i = j = k = l@. Not only this introduces extra bounds checks on lines 2, 6 and 10 and increments on line 14, but also increases register pressure. At present \GHC compiler is unable to identify the invariant @i = j = k = l@ and remove the redundant variables either.
 
-In \DPH\idph it is not uncommon to to encounter point-wise processing of a much larger number of arrays. For example, the \QuickHull example mentioned in the previous section and discussed more thoroughly in Chapter~\ref{ch:results}, processes as many as 6 arrays using the @zipWith6@ combinator.
+In \DPH\idph it is not uncommon to to encounter point-wise processing of a much larger number of arrays. For example, the \QuickHull example mentioned in the previous section and discussed more thoroughly in Chapter~\ref{ch:Results}, processes as many as 6 arrays using the @zipWith6@ combinator.
 
 \name{Functional Array Fusion}\ifaf is able to fuse \codemath{zipWith$N$} combinators without introducing repeated counter variable but is overall a more fragile system than \StreamFusion as it relies on more complex rewrite to function. \name{foldr/build}\ishortcut fusion is unable to fuse point-wise operations altogether.
 

@@ -14,7 +14,7 @@ Chapter~\ref{ch:Loops} presented a common loop structure to which fusible combin
 
 Chapter~\ref{ch:Code-Generation} offered the requirements to the backend code generators such as fast mutable arrays and mutable variables. It applied these requirements to a backend that generated monadic \Haskell code through the use of \name{Template Haskell}. The chapter also described \name{liveness analysis} used to analyse data flow in a control flow graph of \Loop's basic blocks (Section~\ref{sec:Liveness-analysis}). The analysis ensured that the generated code is well-scoped and all variables are assigned exactly once (generating fresh names on destructive update).
 
-Chapter~\ref{ch:results} applied the \LiveFusion framework to the \QuickHull algorithm. The algorithm was chosen since it was illustrative of \DPH vectoriser's inner workings and used a wide range of combinators offered by \LiveFusion. It was shown that \LiveFusion's ability to fuse more complex combinator graphs can yield speedups of 3.2 times on average as compared to \StreamFusion.
+Chapter~\ref{ch:Results} applied the \LiveFusion framework to the \QuickHull algorithm. The algorithm was chosen since it was illustrative of \DPH vectoriser's inner workings and used a wide range of combinators offered by \LiveFusion. It was shown that \LiveFusion's ability to fuse more complex combinator graphs can yield speedups of 3.2 times on average as compared to \StreamFusion.
 
 
 
