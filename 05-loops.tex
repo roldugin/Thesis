@@ -1152,11 +1152,11 @@ halfdouble flag xs ys = scan (+) 0
 \subsection{Flow Fusion}
 \label{sec:FlowFusion}
 
-The work most closely related to \LiveFusion is \FlowFusion framework \cite{FlowFusion} for \Haskell originally designed with \DPH in mind. It extends Waters' work on Series Expressions with the notion of rates (which is where  \LiveFusion the term from). Rates are also known as clock typing inIt was discussed in some detail in Section~\ref{sec:Fronted-FlowFusion}. One particular advantage of \FlowFusion is its ability to use rate information to cluster combinators into fusible groups optimising for memory traffic \cite{FusingFiltersILP}. The need for this arises from the fact that for sufficiently advanced examples there is more that one way to cluster combinators in a graph. The system uses Integer Linear Programming to determine clustering which is a non-polynomial problem in the general case. 
+The work most closely related to \LiveFusion is \FlowFusion framework \cite{FlowFusion} for \Haskell originally also designed with \DPH in mind. It extends Waters' work on Series Expressions with the notion of rates (which is where \LiveFusion borrows the term from). It was discussed in some detail in Section~\ref{sec:Fronted-FlowFusion}. One particular advantage of \FlowFusion is its ability to use rate information to cluster combinators into fusible groups optimising for memory traffic \cite{FusingFiltersILP}. The need for this arises from the fact that for sufficiently advanced examples there is more that one way to cluster combinators in a graph. The system uses Integer Linear Programming to determine clustering which is a non-polynomial problem in the general case. 
 
 Its applicability to graphs with a large number of combinators \*at runtime* remains an open question since running an ILP solver may outweigh performance gains achieved. None-the-less, clustering of graphs with heavy branching and many non-fusible edges remains an important research question \LiveFusion is facing.
 
-As mentioned previously, \FlowFusion cannot currently fuse segmented combinators although this is not a fundamental limitation and it may be lifted in the future.
+As mentioned previously, \FlowFusion cannot currently fuse segmented combinators although this is not a fundamental limitation and it is likely to be lifted in the future.
 
 
 \subsection{Correctness of resulting loops}
