@@ -27,11 +27,11 @@ In the following sections we will look more closely at what a loop really is and
 \section{Anatomy of a loop}
 \label{sec:anatomy}
 
-Despite the purely functional, combinatorial interface to the library, looking at a loop in a procedural way is the approach I have opted for in the middle layer of the system. It is represented by the \Loop language.\iloop
+Despite the purely functional, combinatorial interface of the library, looking at a loop in a procedural way is the approach I have opted for in the middle layer of the system. It is represented by the \Loop language.\iloop
 
 The loops \LiveFusion generates can be viewed as similar to those one might write in an Assembly language. It uses labelled basic blocks and has explicit control flow using @goto@ statements\footnote{The formal grammar of the \Loop language is introduced later in the chapter. It is presented in Figure \ref{fig:Loop-grammar} on page \pageref{fig:Loop-grammar}}.
 
-However, as we will see later, the loops are more structured than those in \C and other procedural languages. As such I urge the reader to think of them as being high-level and treat the explicit control flow as implementation details.
+However, as we will see later, the loops are more structured than those in \C and many other procedural languages. As such I urge the reader to think of them as being high-level and treat the explicit control flow as implementation details.
 
 %The downside, however, is that our loop relies on @goto@-like statements whose use is almost always considered bad practice in modern software engineering.
 
@@ -40,7 +40,7 @@ Without further delaying the discussion of the matter we will now look at the st
 
 \subsection{Structure of a \texttt{for} loop}
 
-Consider the following fragment of a \C program that creates a new array @ys@, by applying some function @f@ to those elements of array @xs@ that satisfy some predicate function @p@ (in \Haskell this could be expressed as @ys = filter p $ map f $ xs@):
+Consider the following fragment of a \C program that creates a new array @ys@, by applying some function @f@ to those elements of array @xs@ that satisfy some predicate function @p@ (in \Haskell this could be expressed as @ys = map f $ filter p $ xs@):
 
 \begin{ccode}[numbers=left, label=lst:filterMapC]
 double *ys = malloc(len * sizeof(double)); // result array
@@ -231,6 +231,7 @@ The \[yield] block also provides a convenient place to update the index variable
 
 In our example the loop contains two \*rates*\irate:
 \begin{itemize}
+\halfspacing
 \item one at which the elements are read from the source array,
 \item and one at which the elements of @filter@ and @map@ are produced
 \end{itemize}
@@ -463,7 +464,7 @@ In order to generate the \Loop language code for an AST of combinators, the eval
 
 \subfile{lst-toPercentages-loops}
 
-The left of Figure~\ref{fig:toPercentages-loops} shows the loops generated for the individual combinators. It is implicitly referenced in the following discussion.
+The left of Figure~\ref{fig:toPercentages-loops} shows the loops generated for the individual combinators. The figure is implicitly referenced in the following discussion.
 
 All variables and labels introduced by a particular combinator are given a unique identifier. In listings these are: \*mfst* (short for \*Manifest*), \*map* or \*filt*.
 
@@ -487,7 +488,7 @@ Notably, the combinator does not bind the index variable @ix@\sub{mfst} itself b
 
 \subsubsection{Filter}
 
-In the loop representing @filter@ code all bound variables and label names are identified by \*filt*.
+In the partial loop representing the @filter@ combinator, all bound variables and label names are identified by \*filt*.
 
 As discussed previously in Section~\ref{sec:Scalar-language} it is essential for performance that the user functions parametrising combinators be inlined in the generated code. In case of the @filter@ the predicate function $(\geq 0.01)$ has been inlined as the predicate expression to the @unless@ statement.
 
@@ -572,15 +573,16 @@ In order a create a succinct loop, these individual loops are merged into one lo
 
 For combinators as simple as @map@ and @filter@ merging loops means to simply merge the statements of the corresponding blocks blocks in no particular order.
 
-As seen from the final loop on Figure~\ref{fig:toPercentages-loops} (right), not only the block statement lists have been merged together, but also the block labels: each block can now be identified by any of the three identifiers (\*mfst*, \*filt*, \*map*).
+As seen from the final loop on Figure~\ref{fig:toPercentages-loops} (right), not only the statements of same rate blocks have been merged together, but also their labels: each block can now be identified by one more of the three identifiers (e.g. @body@\sub{filt/map} can be identified by either \*filt* or \*map* identifier).
 
-This is done in order to support fusing complex ASTs with many shared nodes. The benefit of this may appear much clearer when we introduce nested combinators\todo{in Section}.
-\todo{Elaborate.}
+This is done in order to support fusing complex ASTs with many shared nodes. The benefit of this may appear much clearer when we introduce nested combinators in Section~\ref{sec:Loops-segmented-combinators}.
+
+We will now briefly discuss the mechanism by which this is done.
 
 
 \subsubsection{Managing label sets with \name{AliasMap}}
 
-In order to achieve the flexibility of having multiple labels associated with the same block I have implemented a new type of associations @Map@ called \name{AliasMap}.
+In order to achieve the flexibility of having multiple labels associated with the same block I have implemented a new type of associations map called \name{AliasMap}.
 
 It offers a familiar interface (Listing~\ref{lst:AliasMap-interface}) similar to that of \Haskell's @Data.Map@. The difference is that it allows for a \*set* of keys to be associated with one value. In addition to the usual functions found in @Data.Map@ one can query the map using \*synonyms*. That is, a value can be retrieved from the map given any key associated with that value.
 
@@ -599,7 +601,7 @@ While the use of @goto@s is considered bad practice in modern software engineeri
 
   Given a well behaving \Loop code generator the produced code will always be valid if the user program is valid.
 
-  This is akin to using @unsafePerformIO@ and the like within the library internals for performance reasons. They can lead to bad code but with careful use give very noticeable advantages to purely functional programs.
+  This is akin to using @unsafePerformIO@ and the like within the library internals for performance reasons. They can lead to bad code but with careful use result in very noticeable performance gains in purely functional programs.
 
 
   \item The \Loop language was designed with a pluggable backend in mind.
@@ -608,7 +610,7 @@ While the use of @goto@s is considered bad practice in modern software engineeri
 
   Specifically in the \Haskell backend, @goto@ statements are translated to tail-recursive function calls.
 
-  An \LLVM backend is also planned. \LLVM uses a very similar notions of \*basic blocks*.
+  An \LLVM backend is also planned. \LLVM uses a very similar notion of \*basic blocks*.
 
 
   \item The @goto@ based design was the most flexible and the easiest to implement.
@@ -661,7 +663,7 @@ Generating loop code for @fold@ is very similar except no element @elt@\sub{fold
 
 So far the combinator pipelines we have looked at had a list like structure. Each combinator would consume exactly one array and produce another. However, for many programs this is not sufficient. Many combinators take multiple arrays as input.
 
-In general there is no constraint on how a combinator would consume each of those arrays. Some combinators (e.g. @backpermute@) require that one of the argument arrays can be accessed randomly. Combinators like @append@ and @interleave@ consume arrays independently and not at the same time.
+In general there is no constraint on how a combinator would consume each of those arrays. Some combinators (e.g. @backpermute@) require that one of the argument arrays can be accessed randomly. In other cases, combinators like @append@ and @interleave@ consume arrays independently (not in a lock step).
 
 However, there are combinators like @zipWith@$N$ which consume $N$ arrays in lock step.
 
@@ -769,7 +771,7 @@ body_bperm/_is:
 \label{fig:Loop-bpermute}
 \end{figure}
 
-The \*rate system* of the \Loop language makes it easy to switch between sequential and random accessing. Sequential looping statements are not inserted into the loop until the very end. This makes it possible for individual combinators to override that behaviour and take on the responsibility of setting the appropriate indices.
+The \*rate system* of the \Loop language makes it straightforward to switch between sequential and random accessing. Statements responsible for sequential looping (index initialisation and updates) are not inserted into the loop until the very end. This makes it possible for individual combinators to override that behaviour and take on the responsibility of setting the appropriate indices.
 
 %\clearpage
 %\section{Array generators: Enumeration and Replication}
@@ -786,6 +788,7 @@ Segmented arrays is a representation of nested arrays where all of the data is s
 
 It was said that segmented combinators fall into two categories:
 \begin{enumerate}
+\halfspacing
 \label{segmented-classification}
 \item Combinators that \*produce* elements at the \*rate* of the segment descriptor, i.e. one element per segment (Figure~\ref{fig:fold-s}).
 \item Combinators that \*produce* elements at the \*rate* of data, i.e. producing entire segments (Figure~\ref{fig:scanl-s}).
@@ -801,7 +804,7 @@ Conceptually segmented combinators resemble nested loops in procedural languages
 So far in this chapter we have been looking at flat loops. In the \Loop language they have the standard structure and control flow presented in Figure~\ref{fig:CFG-flat-segmented} (left).
 
 \begin{bluebox}
-In order to support nested loops the \Loop language offers a special basic block, \[nest].
+In order to support nested loops the \Loop language offers a special basic block -- \[nest].
 
 If a loop contains a nested loop, the \[nest] basic block transfers control to it. After the nested loop is finished, the control is returned to the \[body] block of the outer loop.
 \end{bluebox}
@@ -1073,13 +1076,13 @@ enumFromStepLen   :: Int        -- start
                   -> Array a
 
 enumFromStepLen_s :: Int        -- result length
-                  -> Array Int  -- start
-                  -> Array Int  -- step
-                  -> Array Int  -- segment descriptor
+                  -> Array Int  -- starts
+                  -> Array Int  -- steps
+                  -> Array Int  -- lengths (segment descriptor)
                   -> Array a
 \end{hscode}
 
-Many of these combinators are also \*point-wise consumers* (Sections \ref{sec:zipping} and \ref{sec:DPH-pointwise-consumers}). They consume values from multiple arrays in lockstep in order to generate an array segment in the inner loop. An example of @replicate_s@ application is shown in Figure~\ref{fig:replicate-s}.
+Most of these combinators are also \*point-wise consumers* (Sections \ref{sec:zipping} and \ref{sec:DPH-pointwise-consumers}). They consume values from multiple arrays in lockstep in order to generate an array segment in the inner loop. An example of @replicate_s@ application is shown in Figure~\ref{fig:replicate-s}.
 
 \begin{figure}
 \includegraphics[scale=\omniscale]{img/Example-replicate-s}
@@ -1106,7 +1109,7 @@ Many of these combinators are also \*point-wise consumers* (Sections \ref{sec:zi
 
 Shivers' work on loop anatomy in \name{LISP} \cite{Anatomy} has served as the primary motivation for designing the structure for the loops described in this chapter. Besides striving for a more modular structure, the work was intended to ensure the correct scoping of variables introduced by loop generation macros. This problem is solved by \LiveFusion's \*Liveness Analysis* introduced in the next chapter.
 
-Shivers identifies eight sections shown in Figure~\ref{fig:Shivers-Anatomy}. \LiveFusion's seven sections (\[init], \[guard], \[nest], \[body], \[yield], \[bottom], \[done]) reflect its intention as an intermediate language for fusing loops generated by \DPH combinators. While Shivers' loops may be more flexible in how they can be constructed by the library user, \LiveFusion's rate system allows to compose loops that were generated independently of each other.
+Shivers identifies eight sections shown in Figure~\ref{fig:Shivers-Anatomy}. \LiveFusion's seven sections (\[init], \[guard], \[nest], \[body], \[yield], \[bottom], \[done]) reflect its intended use as an intermediate language for fusing loops generated by \DPH combinators. While Shivers' loops may be more flexible in how they can be constructed by the library user, \LiveFusion's rate system allows to compose loops that were generated independently of each other.
 
 \begin{figure}
 \includegraphics[center]{img/CFG-Shivers-Loop-Anatomy}
@@ -1125,7 +1128,7 @@ While identifying loop anatomy provided a convenient way to fuse combinators to 
 
   \item Fusible series expressions must not be subjected to conditional control flow as in example in \ref{fig:halfdouble}.
 
-  This largely demands that the combinator graph contains no control flow at the time it is optimised. This restriction is important when the optimisations take place at compile time and the data flow is not statically known. However, in the case of \LiveFusion all control flow takes place as AST is being constructed.
+  This largely demands that the combinator graph contains no control flow at the time it is optimised. This restriction is important when the optimisations take place at compile time and the data flow is not statically known. However, in the case of \LiveFusion all control flow takes place as AST is being constructed thus lifting the restriction.
 
   \item The program is statically analysable.
 
@@ -1133,7 +1136,7 @@ While identifying loop anatomy provided a convenient way to fuse combinators to 
 
   \item Series are not consumed in a random access manner.
 
-  This restrictions is largely present in \LiveFusion. Even though \LiveFusion supports random accessing of arrays, these array are required to be manifest.
+  This restriction is largely present in \LiveFusion. Even though \LiveFusion supports random accessing of arrays, these array are required to be manifest.
 \end{enumerate}
 
 \begin{hscode}[%
@@ -1161,7 +1164,7 @@ As mentioned previously, \FlowFusion cannot currently fuse segmented combinators
 
 The code for a single loop in the \Loop language is generated by multiple combinators independently of each other. Because of the interleaving of variable binders, their use and the control flow, one must be careful to ensure that all the right variables are in scope when they are referenced.
 
-The recent on ``Combinators for impure yet hygienic code generation'' \cite{HygienicCodeGen} may prove useful to avoid these problems statically.
+The recent work on ``Combinators for impure yet hygienic code generation'' \cite{HygienicCodeGen} may prove useful to avoid these problems statically.
 
 Alternatively, \FlowFusion only allows binding variables before the loop begins ensuring that all variables will be available at all times.
 
