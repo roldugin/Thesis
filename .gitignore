@@ -23,3 +23,6 @@
 .DS_Store
 .dropbox
 Icon?
+*-blx.bib
+*.run.xml
+*.bcf
