@@ -9,7 +9,7 @@
 
 The previous chapter introduced the process of translating a graph of delayed array combinators to an assembly-like EDSL for expressing array computations.
 
-We first identified a generic loop structure consisting of \[init], \[guard], \[body], \[yield], \[bottom] and \[done] section represented by \*basic blocks* in the \Loop language. A \[nest] basic block was introduces later to support nested loops, needed by segmented combinators. These loop sections ultimately represented a skeleton which every combinator would populate with relevant \*statements* that would eventually be merged into a single loop.
+We first identified a generic loop structure consisting of \[init], \[guard], \[body], \[yield], \[bottom] and \[done] section represented by \*basic blocks* in the \Loop language. A \[nest] basic block was introduces later to support nested loops, needed by segmented combinators. These loop sections ultimately constituted a skeleton which every combinator would populate with relevant \*statements* that would eventually be merged into a single loop.
 
 We then looked at the translation of a number of flat and segmented array combinators into the \Loop language and showed how the partial loops would be merged together into ``runnable'' loops.
 
@@ -36,9 +36,9 @@ If we are to generate \Haskell code that loops over arrays we need a way to expr
 \clearpage
 \section{Fast mutable arrays in \Haskell}
 
-The principle data structure that \LiveFusion is ultimately working with is an array. To achieve high performance, the generated code must be able to efficiently loops over arrays in memory which includes both reading an writing.
+The principle data structure that \LiveFusion is ultimately working with is an array. To achieve high performance, the generated code must be able to efficiently loop over arrays in memory which includes both reading an writing.
 
-We have established that the looping in \Haskell is done using recursive functions and this section discusses how this can be applied to array computations.
+We have established that looping in \Haskell is done using recursive functions and this section discusses how this can be applied to array computations.
 
 The internal \Loop language has @writeArray@ statement which hints the need for \*mutable* arrays. The use of mutable values is not typical in \Haskell and is discouraged. However, for performance reasons there are mechanisms through which this can be done.
 
@@ -64,7 +64,7 @@ In this section I present the translation of the \Loop EDSL to \Haskell. The gra
 \caption{\Loop language grammar.}
 \label{fig:Loop-grammar-again}
 \end{figure}
-\todo{Put the footnotetext on the same page where the grammar ends up}\footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings.}
+\todo{Put the footnotetext on the same page where the grammar ends up}\footnotetext{For improved readability the unique integers are replaced with meaningful names in the code listings. (Footnote for Figure~\ref{fig:Loop-grammar-again})}
 
 A simple example to be used for illustration purposes is based on the @toPercetages@ function thoroughly studied in the previous chapter (Section~\ref{sec:loop-generation}). The following expression multiplies every element of an array by 100:
 
@@ -74,14 +74,14 @@ map (* 100) xs
 
 While the expression only consists of one combinator, @map@, the @xs@ argument may be a fusible pipeline of combinators. Likewise the @map@ itself may be fused into its consumer. However, for our purposes we assume that @xs@ is a \*manifest* array and that the result of @map@ is immediately forced.
 
-The generated \Loop code for the example is shown on the right of Figure~\ref{fig:times100-hs-loop}. Its translation by the \Haskell backend is presented in the left of the same figure. For improved readability the code has been altered in the following ways:
+The generated \Loop code for the example is shown in the right of Figure~\ref{fig:times100-hs-loop}. Its translation by the \Haskell backend is presented in the left of the same figure. For improved readability the code has been altered in the following ways:
 \begin{enumerate}
 \halfspacing
 \item Function applications $\beta$-reduced
 \item Fully qualified names simplified
 \item Operators moved to infix position
-\item Unique integer suffixes replaced with more descriptive names names
-\item Explicit literal conversions
+\item Unique integer suffixes replaced with more descriptive names
+\item Explicit literal conversions omitted
 \item Strictness annotations (@!@) omitted
 \end{enumerate}
 
@@ -108,7 +108,7 @@ A \Loop is essentially a group of labelled basic blocks with a predefined entry 
 
 A \*block* becomes a \*function* in the generated code. Consequently, the @goto@ statements become \*function calls*.
 
-Blocks of the internal \Loop language do not explicitly specify what loop state they reference or declare. A loop's state is implicit and global. In the generated code the state of the loop is passed as function. This is the reason for a large number of arguments to functions generated from blocks. The process for generating the arguments from loop variables will be outlined in Section~\ref{sec:Liveness-analysis}.
+Blocks of the internal \Loop language do not explicitly specify what loop state they reference or declare. A loop's state is implicit and global. In the generated code the state of the loop is passed as function arguments. This is the reason for a large number of arguments to functions generated from blocks. The process for generating the arguments from loop variables will be outlined in Section~\ref{sec:Liveness-analysis} on liveness analysis.
 
 
 \subsection{Conditionals}
@@ -134,12 +134,12 @@ Whenever a new variable binding is encountered in a block of the loop it is assu
 
 The situation with mutable variables is slightly more complex. For example, the loop index @ix@\sub{xs} is bound like a regular variable in the \[init] block. However, once it has been \*assigned to* in \[bottom], it is given a fresh name @ix@\sub{xs}@'@ in the generated code. This is because variables in \Haskell are immutable. While there are ways to have mutable variables in @ST@ or @IO@ monads it results in less efficient code.\todo{as discussed further in Section ref.}
 
-During liveness analysis mutable variable are treated the same way as their immutable counterparts. Technically it is possible to have a mutable variable that lives during one loop iteration but is not carried over to the next iteration. However, the author is yet to see a combinator that would require that.
+During liveness analysis mutable variable are treated the same way as their immutable counterparts. Technically it is possible to have a mutable variable that lives during one loop iteration but is not carried over to the next iteration. However, the author is yet to come across a combinator that would require that.
 
 
 \subsection{Array manipulation}
 
-Array is the fundamental data structure the \Loop language works with. As such the array primitives are built right into the language: @readArray@, @writeArray@, @arrayLength@, @newArray@ and @sliceArray@. The implementation of the primitives is presented in Figure~\ref{lst:array-primitives}.
+Array is the fundamental data structure the \Loop language works with. Consequently the array primitives are built right into the language: @readArray@, @writeArray@, @arrayLength@, @newArray@ and @sliceArray@. The implementation of the primitives is presented in Figure~\ref{lst:array-primitives}.
 
 \begin{figure}
 \begin{hscode}
@@ -201,7 +201,7 @@ writeArray :: Unbox a
 
 In the above type of @writeArray@, both the type of @MVector@ and the resulting @ST@ computation are indexed by @s@. This ensures that stateful computations on the same MVector value are performed inside the same state thread and do not escape from the @ST@ monad.
 
-In order to return an array from the plugin, and thus outside the @ST@ monad, it must first be converted to an immutable @Vector@. @sliceArray@ is used for that as indicated by its type. The extra @Int@ argument it takes allows to take only a portion of the array and return that. This is useful in @filter@-like operations which may produce a shorter array than initially allocated. 
+In order to return an array from the plugin, and thus outside the @ST@ monad, it must first be converted to an immutable @Vector@. @sliceArray@ is used for that as indicated by its type. The extra @Int@ argument allows to take only a portion of the array and return that. This is useful in @filter@-like operations which may produce a shorter array than initially allocated. 
 
 
 
@@ -246,9 +246,10 @@ How does one pass state as pure \Haskell values? Each loop potentially has a lot
 
 The problem, however, is that there is no fixed state alive in the loop at any given time. Referencing the original example in Figure~\ref{fig:times100-hs-loop}:
 \begin{itemize}
+\halfspacing
 \item some intermediate variables like @elt@\sub{xs} are only used inside the block they are defined in (\[body])
-\item some variable like @elt@\sub{map} are bound in \[body] and are later used in \[yield] but are unused after that
-\item some variable are bound in \[init] and are persistent for the whole duration of the loop. These are of course counters and accumulators.
+\item some variables like @elt@\sub{map} are bound in \[body] and are later referenced in \[yield] but are unused after that
+\item some variables are bound in \[init] and are persistent for the whole duration of the loop (counters and accumulators).
 \end{itemize}
 
 In order to appropriately generate the argument lists to the functions representing loop blocks I have implemented a \name{liveness analysis} pass in the \LiveFusion EDSL compiler.
@@ -256,7 +257,7 @@ In order to appropriately generate the argument lists to the functions represent
 \begin{bluebox}
 \textbf{\large{Liveness analysis is not a backend feature}}
 
-Liveness analysis operates on \Loop EDSL specification of the program. It computes environment for a control flow graph (CFG) of \*basic blocks* and operates on the notions of variable \*bindings* (@=@) and \*assignments* (@:=@). The outcome of liveness analysis is the information about the use of state in a CFG.\\
+Liveness analysis operates on \Loop EDSL specification of the program. It computes environment for a control flow graph (CFG) of \*basic blocks* and operates on the notions of variable \*bindings* (@let@) and \*assignments* (@:=@). The outcome of liveness analysis is the information about the use of state in a CFG.\\
 
 As such this pass is not specific to any specific backend and is a way to analyse a program given in \Loop EDSL. Nonetheless, I believe that the necessity for liveness analysis has not been justified until now. With enough foreword, it is described below.
 \end{bluebox}
@@ -266,7 +267,8 @@ I will now offer an intuitive description for how the algorithm works.
 
 Each loop has a single entry block. Starting with that block, and following the loop's control flow graph (CFG) we recursively determine an environment which holds three properties: 
 \begin{enumerate}
-  \item new variables \*bound* in the block (using @=@)
+\halfspacing
+  \item new variables \*bound* in the block (using @let@)
   \item variables that are \*destructively updated* in the current block (using assignment @:=@)
   \item variables otherwise \*assumed* to be in \*environment*:
     \begin{itemize}
@@ -277,7 +279,7 @@ Each loop has a single entry block. Starting with that block, and following the 
 
 \todo{Give concrete examples}
 
-Once the environment has been computed, it is used to generate function argument lists and the appropriate function calls for each @goto@, @unless@ and @if@ statement. Each of the block's \*assumed* variables becomes the argument of the \Haskell function corresponding to that block. \todo{In the example on Figure, the variable assumed are because...blah}.
+Once the environment has been computed, it is used to generate function argument lists and the appropriate function calls for each @goto@, @unless@ and @if@ statement. Each of the block's \*assumed* variables becomes the argument of the \Haskell function corresponding to that block. \todo{In the example on Figure, the variable assumed are because...blah}
 
 %The exact same list of variables is used to transfer control to that block, i.e. to make function calls to it. The only important point to make here is that the list of \*updated* variables in the calling block and use the appropriate variable on the caller side (e.g. @i'_xs@ instead of @i_xs@ \todo{on line ...})
 
@@ -292,18 +294,19 @@ Several points to note about computing the environment:
 
   \item \Loop variables may not be required by the immediate \*successor* basic blocks in the CFG. However, they will be in the set of \*assumed* variables if they are required later on. The relationship is transitive.
 
-  \item The liveness analysis pass will catch any use of variables that have not been previously bound (resulting in a runtime error).
+  \item The liveness analysis pass will catch any use of variables that have not been previously bound (resulting in a runtime error indicating a problem in the library, not in the client code).
 \end{enumerate}
 
 There are also two caveats of the \Haskell code generator in its current state:
 \begin{itemize}
-\item A variable can only be assigned to once in any given block
+\halfspacing
+\item A variable can only be assigned once in any given block
 \item The new value won't be available until the control is transferred to a successor block
 \end{itemize}
 
 Both of the above are not fundamental limitations of either \Loop EDSL or the \Haskell backend. They arise from the fact that the liveness analysis works on \*per-block* basis and not \*per-statement*. This means that liveness analysis attempts to determine which variables are expected to be in scope in a particular block, which are updated and which are passed to successor blocks. However, it does not attempt to do the same for each statement.
 
-So far neither of these limitations posed a problem since the loop structure itself is so modular. There is no apparent need in a more fine-grained per-statement liveness analysis. The generated \Haskell code is run through \GHC which itself has excellent liveness analysis and other compilation tactics resulting in efficient code. The proposed \LLVM backend is also likely to be able to optimise the code in its current form.
+So far neither of these limitations posed a problem since the loop structure itself is so modular. There is no apparent need in a more fine-grained per-statement liveness analysis. The generated \Haskell code is run through \GHC which itself has excellent liveness analysis and other compilation tactics resulting in efficient code. The planned \LLVM backend is also likely to be able to optimise the code in its current form.
 
 
 
@@ -359,7 +362,7 @@ run arr_1 arr_2 arr_3 len_4 = runST (init_5 arr_1 arr_2 arr_3 len_4)
 \end{hscode}
 
 
-Note that the return values are structured in a nested tuple. It resulted from the use of explicit tupling constructor @:*:@ as discussed in Section~\ref{sec:AST}. For example:
+Note that the return values are structured in a nested tuple. It resulted from the use of explicit tupling constructor @:*:@ discussed in Section~\ref{sec:AST}. For example:
 
 
 \begin{hscode}
@@ -449,7 +452,7 @@ However, \LiveFusion is not limited to only one backend. In order to extend the 
 
 One particularly attractive alternative is \LLVM framework \cite{LLVM:CGO04}. \GHC already uses \LLVM to produce highly efficient code. However, using a framework such as \LLVM for compiling \LiveFusion generated code may avoid the costs associated with running the generated code through the complete \GHC compilation pipeline. As it will be seen in the next chapter, a compilation overhead of 600 ms is not uncommon when compiling the generated code with \GHC. Reducing those costs may make \LiveFusion more widely applicable to use cases where many pieces of code must be compiled independently and amortisation cannot be as easily exploited.
 
-With \LiveFusion is already produces optimised procedural style code that is likely to be optimisable by \LLVM, it still relies on \GHC to perform some optimisations. In particular user defined scalar functions that parametrise higher-order combinators are inlined without further analysis in hopes that \GHC will subsequently perform all the necessary optimisations on them. This may not be sufficient if \LLVM code is generated directly and \LiveFusion might need extra optimisation passes before the emitted code can target \LLVM.
+While \LiveFusion is already producing optimised procedural style code, it still relies on \GHC to perform some optimisations. In particular user defined scalar functions that parametrise higher-order combinators are inlined without further analysis in hopes that \GHC will subsequently perform all the necessary optimisations on them. This may not be sufficient if \LLVM code is generated directly and \LiveFusion might need extra optimisation passes before the emitted code can target \LLVM.
 
 Direct \LLVM code generation is becoming popular with EDSL for high performance computations. Both \FlowFusion \cite{FlowFusion} and \Accelerate \cite{acc-llvm} are targeting it. The former first converts the AST to \name{DDC Core} \cite{DDC}, an intermediate compiler language similar to \name{GHC Core}. \LLVM has also been successfully used for compiling a digital signal processing EDSL \cite{Thielemann-LLVM, Thielemann-Audio-LLVM}. 
 
