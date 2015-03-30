@@ -6,15 +6,15 @@
 
 \chapter{Conclusion}
 
-The problem of array fusion is not in its infancy. Yet there is no definitive and widely accepted approach to it. Every technique has to be tailored to the surrounding context and align well with the programming model offered by the framework. The work described in the present dissertation has been carried out in the context of nested data parallelism (Chapter~\ref{ch:NDP}) in purely functional languages. It was argued that \*equational* approaches to fusion (Appendix~\ref{sec:Equational-Fusion-Systems}) fall short in attempting to fuse complex combinator graphs (Section~\ref{sec:multiple-consumers}) using only local program transformations (rewrite rules).
+The problem of array fusion is not in its infancy. Yet there is no definitive and widely accepted approach to it. Every technique is often tailored to the surrounding context to support the programming model offered by the framework. The work described in the present dissertation has been carried out in the context of nested data parallelism (Chapter~\ref{ch:NDP}) in purely functional languages. It was argued that \*equational* approaches to fusion (Appendix~\ref{sec:Equational-Fusion-Systems}) fall short in attempting to fuse complex combinator graphs (Section~\ref{sec:multiple-consumers}) using only local program transformations (rewrite rules).
 
 Chapter~\ref{ch:frontend} introduced an EDSL based approach to fusion using a new language called \LiveFusion. Following this approach, collective array operations are not performed immediately but are recorded in an AST. The chapter also covered sharing recovery of AST terms (Section~\ref{sec:sharing-recovery}) as well as a way of embedding inlineable scalar functions (Section~\ref{sec:Scalar-language}).
 
 Chapter~\ref{ch:Loops} presented a common loop structure to which fusible combinators can be mapped using an assembly-like \Loop language. It showed the translation of a large number of combinators to loops which included segmented combinators (Section~\ref{sec:Loops-segmented-combinators}) that are fundamental to fusing vectorised code.
 
-Chapter~\ref{ch:Code-Generation} offered the requirements to the backend code generators such as fast mutable arrays and mutable variables. As an example it used a backend that generated monadic \Haskell code through the use of \name{Template Haskell}. The chapter also described \name{Liveness Analysis} used to analyse data flow in a control flow graph of \Loop's basic blocks (Section~\ref{sec:Liveness-analysis}). The analysis ensured that the generated code is well-scoped and all variables are assigned once (generating fresh names on destructive update).
+Chapter~\ref{ch:Code-Generation} offered the requirements to the backend code generators such as fast mutable arrays and mutable variables. It applied these requirements to a backend that generated monadic \Haskell code through the use of \name{Template Haskell}. The chapter also described \name{liveness analysis} used to analyse data flow in a control flow graph of \Loop's basic blocks (Section~\ref{sec:Liveness-analysis}). The analysis ensured that the generated code is well-scoped and all variables are assigned exactly once (generating fresh names on destructive update).
 
-Chapter~\ref{ch:results} applied the \LiveFusion framework to \QuickHull algorithm. The algorithm was chosen since it was illustrative of \DPH vectoriser's inner workings and used a wide range of combinators offered by \LiveFusion. It was shown that \LiveFusion's ability to fuse more complex combinator graphs can yield speedups of 3.2 times on average as compared to \StreamFusion.
+Chapter~\ref{ch:results} applied the \LiveFusion framework to the \QuickHull algorithm. The algorithm was chosen since it was illustrative of \DPH vectoriser's inner workings and used a wide range of combinators offered by \LiveFusion. It was shown that \LiveFusion's ability to fuse more complex combinator graphs can yield speedups of 3.2 times on average as compared to \StreamFusion.
 
 
 
@@ -22,19 +22,17 @@ Chapter~\ref{ch:results} applied the \LiveFusion framework to \QuickHull algorit
 
 In this thesis I present two main research contributions. First, I show how to implement an embedded domain specific language that is able to:
 \begin{itemize}
-  \item fuse flat and segmented array combinators without depending on compiler term rewriting
-
-  \item fuse combinator graphs with a lot of internal node sharing
-
-  \item fuse graphs producing multiple results and/or demand materialisation of graph's intermediate nodes through explicit tupling.
+\item fuse flat and segmented array combinators without depending on compiler term rewriting
+\item fuse combinator graphs with a large amount of internal node sharing
+\item fuse graphs producing multiple results and/or demand materialisation of graph's intermediate nodes through explicit tupling.
 \end{itemize}
 
 \LiveFusion language lifts many of the restrictions imposed by currently available fusion libraries such as the inability to fuse a producer into multiple consumers or to compute multiple results in one fusion pass (tupling). Compared to frameworks that do allow tupling and/or multiple consumers fusion, the new language has support for segmented combinators which is vital for its application in nested data parallelism.
 
-Second, I devise a generic representation of fusible loops onto which many types of combinators can be mapped. The \Loop language with a \*rate* system and built-in control and data flow analysis offers a way to write composable loops. This is a core contribution which may be applied in a variety of languages and programming paradigms. Neither does it have to be a runtime feature provided the combinator graph is known at compile time and is free of control flow.
+Second, I devise a generic representation of fusible loops onto which many types of combinators can be mapped. The \Loop language with a \*rate* system and built-in control and data flow analysis offers a way to write composable loops. This is a core contribution which may be applied in a variety of languages and programming paradigms. It does not have to be a runtime feature, provided the combinator graph is known at compile time and is free of control flow.
 
 
-
+%\clearpage
 \section{Future work}
 
 Following on from the work carried out and the results achieved, there are several research and development paths that can be taken to advance the \LiveFusion system.
@@ -45,7 +43,7 @@ The work described in this thesis has resulted in a system that can exploit more
 
 Granted, such a fusion system targeting nested data parallel applications defeats the purpose. Granted, introducing parallel execution would have its own challenges since it typically results in more fusion-preventing edges in combinator graphs.
 
-However, parallelising collective array operations is a well researched problem which includes the lessons learnt from implementing parallelism in the \StreamFusion based backend of \DPH. In particular \name{Distributed Types} \cite{CLP+07} allow for seamless parallelisation given sequential combinator implementations. Additionally, my previous work on parallelism granularity shows that for many operations, the cost of distributing the computation across threads may be considerably higher than computing it sequentially.
+However, parallelising collective array operations is a well researched problem which includes the lessons learnt from implementing parallelism in the \StreamFusion based backend of \DPH. In particular \name{Distributed Types} \cite{CLP+07} allow for seamless parallelisation given sequential combinator implementations. Additionally, my previous work on parallelism granularity shows that for many operations, the overhead of distributing the computation across threads may be considerably higher than computing it sequentially.
 
 Lastly, with vector registers growing in size in modern CPUs (512 bits in the near future \cite{IntelISA}) and their instruction sets expanding, it may prove to be fruitful to target instruction-level vectorisation at the same time as full-featured parallelism.
 
@@ -53,11 +51,11 @@ Lastly, with vector registers growing in size in modern CPUs (512 bits in the ne
 
 \subsection{Clustering and advanced rate inference}
 
-Not all combinator graphs can be fused into a single loop, especially in the parallel context. Randomly accessing the data, or reducing an array using @fold@ before proceeding, or scanning an array in the parallel context - all of these operations are fusion-preventing.
+Not all combinator graphs can be fused into a single loop, especially in the parallel context. Randomly accessing the data, or reducing an array using @fold@, or scanning an array in the parallel context -- all of these operations are fusion-preventing.
 
 As discussed in Section~\ref{sec:FlowFusion} there may be more than one way to cluster combinators into fusible groups. At present the fusion performed by \LiveFusion is opportunistic. Preventing fusion where it is not allowed and scheduling multiple loops would be the next priority for \LiveFusion.
 
-Finally, a more sophisticated rate inference system supporting flat and segmented appends and other interleaved access patterns would also be highly beneficial to the application of \LiveFusion in \DPH. It would not be an understatement that the rate system, being fundamental to composing loops, is at the absolute core of the proposed fusion technique.
+Finally, a more sophisticated rate inference system supporting flat and segmented appends and other interleaved access patterns would also be highly beneficial to the application of \LiveFusion in \DPH. It would not be an understatement to say that the rate system, being fundamental to composing loops, is at the absolute core of the proposed fusion technique.
 
 
 \todo{\section{Final words}}
