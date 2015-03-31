@@ -18,6 +18,7 @@
 *.pdf
 !img/*.pdf
 !originality-statement.pdf
+!dissertation-sheet.pdf
 *converted-to.pdf
 
 # Mac and Dropbox stuff
