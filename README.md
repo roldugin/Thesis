@@ -2,6 +2,8 @@
 Master of Engineering - Computer Science and Engineering (Research)<br>
 *The University of New South Wales*, Australia, 2014
 
+[PDF version](https://raw.github.com/roldugin/Thesis/master/Runtime Array Fusion for Data Parallelism.pdf)
+
 #### Abstract
 The benefits of high level approach to parallel programming are well understood and are often desired in order to separate the *domain view* of the problem from the intricate implementation details. Yet, a naive execution of the resulting programs attracts unnecessary and even prohibitive performance costs.
 
